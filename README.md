@@ -1,8 +1,10 @@
-# Spinnaker terraform bootsatrap scripts
+# Spinnaker terraform bootstrap
 
 ## requirements
 
 ### vault
+
+<img src="https://s3.amazonaws.com/hashicorp-marketing-web-assets/brand/Vault_PrimaryLogo_FullColor.HkwAATB6e.svg" width="100" height="100">
 
 In order for this to work properly, you must be logged-in to vault,
 
@@ -12,6 +14,8 @@ vault login <your token>
 ```
 
 ### gcloud
+
+<img src="https://www.gstatic.com/images/branding/product/2x/cloud_512dp.png" width="100" height="100">
 
 You must also be logged into your gcloud account
 
@@ -28,6 +32,10 @@ scripts/01-create-terraform-service-account.sh
 ```
 
 ## terraform
+
+<img src="https://s3.amazonaws.com/hashicorp-marketing-web-assets/brand/Terraform_VerticalLogo_FullColor.B1rgyCrag.svg" width="100" height="100">
+
+<TBD>
 
 ```shell
 terraform init

@@ -39,4 +39,4 @@ gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
     --iam-account "$SA_EMAIL"
 
 echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/terraform-account & deleting temp file"
-vault write secret/terraform-account value=@${SERVICE_ACCOUNT_DEST} && rm "$SERVICE_ACCOUNT_DEST"
+vault write secret/terraform-account "$PROJECT"=@${SERVICE_ACCOUNT_DEST} && rm "$SERVICE_ACCOUNT_DEST"

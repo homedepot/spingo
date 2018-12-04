@@ -13,9 +13,9 @@ resource "google_container_cluster" "cluster" {
   # https://github.com/terraform-providers/terraform-provider-kubernetes/pull/73
   enable_legacy_abac = "${var.enable_legacy_abac}"
 
-  master_authorized_networks_config {
-    cidr_blocks = ["${var.master_authorized_network_cidrs}"]
-  }
+  # master_authorized_networks_config {
+  #   cidr_blocks = ["${var.master_authorized_network_cidrs}"]
+  # }
 
   # Remove the default node pool during cluster creation.
   # We use google_container_node_pools for better control and
@@ -49,33 +49,6 @@ resource "google_container_node_pool" "primary_pool" {
   node_config {
     machine_type = "${var.machine_type}"
     oauth_scopes = ["${var.oauth_scopes}"]
-  }
-}
-
-# Optional preemptible node pool for use in lower lifecycles
-resource "google_container_node_pool" "preemptible_pool" {
-  count              = "${var.preemptible_pool ? length(var.cluster_regions) : 0}"
-  name               = "${var.cluster_name}-${var.cluster_regions[count.index]}-${count.index}-preemptible-pool"
-  cluster            = "${google_container_cluster.cluster.*.name[count.index]}"
-  region             = "${var.cluster_regions[count.index]}"
-  version            = "${var.gke_version}"
-  initial_node_count = 0
-
-  autoscaling {
-    min_node_count = 0
-    max_node_count = "${var.max_node_count}"
-  }
-
-  node_config {
-    preemptible  = true
-    machine_type = "${var.machine_type}"
-    oauth_scopes = ["${var.oauth_scopes}"]
-
-    taint {
-      key    = "preemptible"
-      value  = "true"
-      effect = "PREFER_NO_SCHEDULE"
-    }
   }
 }
 

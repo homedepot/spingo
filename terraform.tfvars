@@ -9,3 +9,5 @@ cluster_name = "spinnaker"
 cluster_regions = ["us-east1"]
 
 enable_legacy_abac = true
+
+master_authorized_network_cidrs = []

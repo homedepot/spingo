@@ -26,7 +26,7 @@ SA_EMAIL=$(gcloud iam service-accounts list \
 
 PROJECT=$(gcloud info --format='value(config.project)')
 
-echo "adding iam.serviceAccountUser,compute.admin,container.clusterAdmin,storage.admin roles to $SERVICE_ACCOUNT_NAME"
+echo "adding iam.serviceAccountUser,compute.admin,container.admin,storage.admin roles to $SERVICE_ACCOUNT_NAME"
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/iam.serviceAccountUser'
@@ -35,7 +35,7 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --role='roles/compute.admin'
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/container.clusterAdmin'
+    --role='roles/container.admin'
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/storage.admin'

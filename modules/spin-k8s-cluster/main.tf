@@ -33,14 +33,6 @@ resource "google_container_cluster" "cluster" {
     ignore_changes = ["node_pool"]
     ignore_changes = ["network"]
   }
-
-  master_auth {
-    password = ""
-    username = ""
-    # client_certificate_config {
-    #   issue_client_certificate = true
-    # }
-  }
 }
 
 

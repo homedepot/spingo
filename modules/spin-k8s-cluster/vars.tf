@@ -7,8 +7,8 @@ variable cluster_name {
   type = "string"
 }
 
-variable cluster_regions {
-  type = "list"
+variable cluster_region {
+  type = "string"
 }
 
 ######################################################################################

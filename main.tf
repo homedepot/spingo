@@ -33,7 +33,7 @@ module "halyard-storage" {
 }
 
 module "service-accounts" {
-  source                 = "./modules/service-accounts"
+  source                 = "./modules/spin-k8s-cluster/service-account"
   host                   = "${module.spin-k8s-cluster.host}"
   client_certificate     = "${module.spin-k8s-cluster.client_certificate}"
   client_key             = "${module.spin-k8s-cluster.client_key}"

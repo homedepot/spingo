@@ -18,13 +18,16 @@ SA_EMAIL=$(gcloud iam service-accounts list \
 
 PROJECT=$(gcloud info --format='value(config.project)')
 
-echo "removing resourcemanager.projectIamAdmin,iam.serviceAccountUser,compute.admin,container.admin,storage.admin roles from $SERVICE_ACCOUNT_NAME"
+echo "removing resourcemanager.projectIamAdmin,iam.serviceAccountAdmin,iam.serviceAccountKeyAdmin,compute.admin,container.admin,storage.admin roles from $SERVICE_ACCOUNT_NAME"
 gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role=roles/resourcemanager.projectIamAdmin
 gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountUser
+    --role roles/iam.serviceAccountAdmin
+gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role roles/iam.serviceAccountKeyAdmin
 gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role roles/compute.admin

@@ -43,7 +43,10 @@ module "k8s-spinnaker-service-account" {
   cluster_ca_certificate    = "${module.spin-k8s-cluster.cluster_ca_certificate}"
 }
 
+# to retrieve the keys for this for use outside of terraform, run 
+# `vault read -format json -field=data secret/spinnaker-gcs-account > somefile.json`
 module "spinnaker-gcp-service-account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-gcs-account"
+  vault_address        = "${var.vault_address}"
 }

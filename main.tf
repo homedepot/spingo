@@ -20,7 +20,7 @@ provider "google-beta" {
 data "google_project" "project" {}
 
 module "spin-k8s-cluster" {
-  source                          = "./modules/spin-k8s-cluster"
+  source                          = "./modules/gke"
   cluster_name                    = "spinnaker"
   cluster_region                  = "us-east1"
   enable_legacy_abac              = true
@@ -28,14 +28,17 @@ module "spin-k8s-cluster" {
 }
 
 module "halyard-storage" {
-  source      = "./modules/halyard-storage"
+  source      = "./modules/gcp-bucket"
   gcp_project = "${var.gcp_project}"
+  bucket_name = "halyard"
 }
 
-module "service-accounts" {
-  source                 = "./modules/spin-k8s-cluster/service-account"
-  host                   = "${module.spin-k8s-cluster.host}"
-  client_certificate     = "${module.spin-k8s-cluster.client_certificate}"
-  client_key             = "${module.spin-k8s-cluster.client_key}"
-  cluster_ca_certificate = "${module.spin-k8s-cluster.cluster_ca_certificate}"
+module "spinnaker-service-account" {
+  source                    = "./modules/gke/k8s-service-account"
+  service_account_name      = "spinnaker"
+  service_account_namespace = "spinnaker"
+  host                      = "${module.spin-k8s-cluster.host}"
+  client_certificate        = "${module.spin-k8s-cluster.client_certificate}"
+  client_key                = "${module.spin-k8s-cluster.client_key}"
+  cluster_ca_certificate    = "${module.spin-k8s-cluster.cluster_ca_certificate}"
 }

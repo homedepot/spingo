@@ -2,8 +2,10 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-resource "google_storage_bucket" "halyard-config" {
-  name          = "${var.gcp_project}-halyard-bucket"
+variable "bucket_name" {}
+
+resource "google_storage_bucket" "bucket-config" {
+  name          = "${var.gcp_project}-${var.bucket_name}-bucket"
   storage_class = "MULTI_REGIONAL"
 }
 

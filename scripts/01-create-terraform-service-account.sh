@@ -10,6 +10,8 @@
 
 echo "enabling compute.googleapis.com service"
 gcloud services enable compute.googleapis.com
+echo "enabling iam.googleapis.com service"
+gcloud services enable iam.googleapis.com
 
 PROJECT=np-platforms-cd-thd
 SERVICE_ACCOUNT_NAME=terraform-account
@@ -26,7 +28,10 @@ SA_EMAIL=$(gcloud iam service-accounts list \
 
 PROJECT=$(gcloud info --format='value(config.project)')
 
-echo "adding iam.serviceAccountUser,compute.admin,container.admin,storage.admin roles to $SERVICE_ACCOUNT_NAME"
+echo "adding resourcemanager.projectIamAdmin,iam.serviceAccountUser,compute.admin,container.admin,storage.admin roles to $SERVICE_ACCOUNT_NAME"
+gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/resourcemanager.projectIamAdmin'
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/iam.serviceAccountUser'

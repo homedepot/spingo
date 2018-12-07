@@ -33,7 +33,7 @@ module "halyard-storage" {
   bucket_name = "halyard"
 }
 
-module "spinnaker-service-account" {
+module "k8s-spinnaker-service-account" {
   source                    = "./modules/gke/k8s-service-account"
   service_account_name      = "spinnaker"
   service_account_namespace = "spinnaker"
@@ -41,4 +41,9 @@ module "spinnaker-service-account" {
   client_certificate        = "${module.spin-k8s-cluster.client_certificate}"
   client_key                = "${module.spin-k8s-cluster.client_key}"
   cluster_ca_certificate    = "${module.spin-k8s-cluster.cluster_ca_certificate}"
+}
+
+module "spinnaker-gcp-service-account" {
+  source               = "./modules/gcp-service-account"
+  service_account_name = "spinnaker-gcs-account"
 }

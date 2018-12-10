@@ -59,7 +59,7 @@ gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
     --iam-account "$SA_EMAIL"
 
 echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/terraform-account"
-vault write secret/terraform-account "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+vault write secret/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
 
 echo "create the bucket that will store the Terraform State"
 gsutil mb -p "$PROJECT" -c "$TERRAFORM_REMOTE_GCS_STORAGE_CLASS" -l "$TERRAFORM_REMOTE_GCS_LOCATION" gs://"$TERRAFORM_REMOTE_GCS_NAME"/

@@ -13,9 +13,12 @@ gcloud services enable compute.googleapis.com
 echo "enabling iam.googleapis.com service"
 gcloud services enable iam.googleapis.com
 
-PROJECT=np-platforms-cd-thd
-SERVICE_ACCOUNT_NAME=terraform-account
-SERVICE_ACCOUNT_DEST=terraform-account.json
+PROJECT="np-platforms-cd-thd"
+TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
+TERRAFORM_REMOTE_GCS_LOCATION="us-east1"
+TERRAFORM_REMOTE_GCS_STORAGE_CLASS="regional"
+SERVICE_ACCOUNT_NAME="terraform-account"
+SERVICE_ACCOUNT_DEST="terraform-account.json"
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
 gcloud iam service-accounts create \
@@ -55,5 +58,8 @@ echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
     --iam-account "$SA_EMAIL"
 
-echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/terraform-account & deleting temp file"
-vault write secret/terraform-account "$PROJECT"=@${SERVICE_ACCOUNT_DEST} && rm "$SERVICE_ACCOUNT_DEST"
+echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/terraform-account"
+vault write secret/terraform-account "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+
+echo "create the bucket that will store the Terraform State"
+gsutil mb -p "$PROJECT" -c "$TERRAFORM_REMOTE_GCS_STORAGE_CLASS" -l "$TERRAFORM_REMOTE_GCS_LOCATION" gs://"$TERRAFORM_REMOTE_GCS_NAME"/

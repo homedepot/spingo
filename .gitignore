@@ -25,3 +25,4 @@ override.tf.json
 #
 # !example_override.tf
 *.json
+terraform-account.json

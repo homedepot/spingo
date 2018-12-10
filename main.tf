@@ -17,6 +17,14 @@ provider "google-beta" {
   region      = "${var.gcp_region}"
 }
 
+terraform {
+  backend "gcs" {
+    bucket      = "np-platforms-cd-thd-tf"
+    prefix      = "np"
+    credentials = "terraform-account.json"
+  }
+}
+
 data "google_project" "project" {}
 
 module "spin-k8s-cluster" {

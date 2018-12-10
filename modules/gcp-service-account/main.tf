@@ -9,8 +9,8 @@ resource "google_service_account" "service_account" {
 }
 
 resource "google_project_iam_member" "storage_admin" {
-  role    = "roles/storage.admin"
-  member  = "serviceAccount:${google_service_account.service_account.email}"
+  role   = "roles/storage.admin"
+  member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
 resource "google_service_account_key" "svc_key" {
@@ -22,7 +22,7 @@ provider "vault" {
 }
 
 resource "vault_generic_secret" "service-account-key" {
-  path = "secret/${var.service_account_name}"
+  path      = "secret/${var.service_account_name}"
   data_json = "${base64decode(google_service_account_key.svc_key.private_key)}"
 }
 

@@ -1,4 +1,5 @@
 variable "service_account_name" {}
+
 variable vault_address {
   type = "string"
 }
@@ -25,7 +26,6 @@ resource "vault_generic_secret" "service-account-key" {
   path      = "secret/${var.service_account_name}"
   data_json = "${base64decode(google_service_account_key.svc_key.private_key)}"
 }
-
 
 output "service-account-id" {
   value = "${google_service_account.service_account.unique_id}"

@@ -11,6 +11,7 @@ provider "google" {
   project     = "${var.gcp_project}"
   region      = "${var.gcp_region}"
 }
+
 provider "google-beta" {
   credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
   project     = "${var.gcp_project}"

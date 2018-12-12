@@ -13,7 +13,7 @@ resource "kubernetes_namespace" "namespace" {
 
 resource "kubernetes_service_account" "service_account" {
   metadata {
-    name = "${var.service_account_name}"
+    name      = "${var.service_account_name}"
     namespace = "${var.service_account_namespace}"
   }
 }
@@ -24,14 +24,14 @@ resource "kubernetes_cluster_role_binding" "cluster_role_binding" {
   }
 
   role_ref {
-    kind = "ClusterRole"
-    name = "cluster-admin"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
     api_group = "rbac.authorization.k8s.io"
   }
 
   subject {
-    kind = "ServiceAccount"
-    name = "${var.service_account_name}-service-acc"
+    kind      = "ServiceAccount"
+    name      = "${var.service_account_name}-service-acc"
     namespace = "${var.service_account_namespace}"
     api_group = ""
   }

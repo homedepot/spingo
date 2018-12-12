@@ -29,7 +29,6 @@ resource "google_container_cluster" "cluster" {
   }
 }
 
-
 # Primary node pool
 resource "google_container_node_pool" "primary_pool" {
   name               = "${var.cluster_name}-${var.cluster_region}-primary-pool"

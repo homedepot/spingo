@@ -15,11 +15,14 @@ resource "google_storage_bucket" "bucket-config" {
 # appeared to get created with the regular default permissions.
 # Keeping this below for future reference in case we want to re-visit
 
+
 # resource "google_storage_bucket_acl" "halyard-config-acl" {
 #   bucket = "${google_storage_bucket.halyard-config.name}"
+
 
 #   role_entity = [
 #     "OWNER:project-owners-${data.google_project.project.number}",
 #     "OWNER:project-editors-${data.google_project.project.number}"
 #   ]
 # }
+

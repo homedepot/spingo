@@ -1,5 +1,10 @@
 variable "service_account_name" {}
-variable vault_address {
+
+variable "vault_address" {
+  type = "string"
+}
+
+variable "bucket_name" {
   type = "string"
 }
 
@@ -10,6 +15,11 @@ resource "google_service_account" "service_account" {
 
 resource "google_project_iam_member" "storage_admin" {
   role   = "roles/storage.admin"
+  member = "serviceAccount:${google_service_account.service_account.email}"
+}
+
+resource "google_project_iam_member" "browser" {
+  role   = "roles/browser"
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
@@ -26,6 +36,12 @@ resource "vault_generic_secret" "service-account-key" {
   data_json = "${base64decode(google_service_account_key.svc_key.private_key)}"
 }
 
+resource "google_storage_bucket_object" "service_account_key_storage" {
+  name         = ".gcp/${var.service_account_name}.json"
+  content      = "${base64decode(google_service_account_key.svc_key.private_key)}"
+  bucket       = "${var.bucket_name}"
+  content_type = "application/json"
+}
 
 output "service-account-id" {
   value = "${google_service_account.service_account.unique_id}"

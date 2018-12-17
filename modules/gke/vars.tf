@@ -1,6 +1,6 @@
 variable "gcp_region" {
   description = "GCP region, e.g. us-east1"
-  default = "us-east1"
+  default     = "us-east1"
 }
 
 variable cluster_name {

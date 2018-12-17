@@ -12,7 +12,7 @@ variable terraform_account {
 
 variable "gcp_region" {
   description = "GCP region, e.g. us-east1"
-  default = "us-east1"
+  default     = "us-east1"
 }
 
 variable "gcp_project" {

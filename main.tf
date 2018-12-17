@@ -11,6 +11,7 @@ provider "google" {
   project     = "${var.gcp_project}"
   region      = "${var.gcp_region}"
 }
+
 provider "google-beta" {
   credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
   project     = "${var.gcp_project}"
@@ -57,4 +58,5 @@ module "spinnaker-gcp-service-account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-gcs-account"
   vault_address        = "${var.vault_address}"
+  bucket_name          = "${module.halyard-storage.bucket_name}"
 }

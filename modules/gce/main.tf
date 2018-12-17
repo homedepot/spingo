@@ -46,6 +46,21 @@ resource "google_project_iam_member" "clusterAdmin" {
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
+resource "google_project_iam_member" "serviceAccountKeyAdmin" {
+  role   = "roles/iam.serviceAccountKeyAdmin"
+  member = "serviceAccount:${google_service_account.service_account.email}"
+}
+
+resource "google_project_iam_member" "containeradmin" {
+  role   = "roles/container.admin"
+  member = "serviceAccount:${google_service_account.service_account.email}"
+}
+
+resource "google_project_iam_member" "rolesbrowser" {
+  role   = "roles/browser"
+  member = "serviceAccount:${google_service_account.service_account.email}"
+}
+
 resource "google_project_iam_member" "serviceAccountUser" {
   role   = "roles/iam.serviceAccountUser"
   member = "serviceAccount:${google_service_account.service_account.email}"
@@ -92,7 +107,6 @@ echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/
 apt-get update
 apt-get install -y --allow-unauthenticated --no-install-recommends google-cloud-sdk gcsfuse
 apt-get install -y kubectl
-
 
 mkdir /spinnaker
 chown -R spinnaker:google-sudoers /spinnaker

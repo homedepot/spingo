@@ -8,6 +8,11 @@ variable "gcp_project" {
   default     = "np-platforms-cd-thd"
 }
 
+variable "bucket_name" {
+  description = "GCP Bucket for Halyard"
+  default     = "np-platforms-cd-thd-halyard-bucket"
+}
+
 variable "service_account_name" {
   description = "spinnaker service account to run on halyard vm"
   default     = "spinnaker"
@@ -34,6 +39,10 @@ data "vault_generic_secret" "terraform-account" {
 resource "google_service_account" "service_account" {
   display_name = "${var.service_account_name}"
   account_id   = "${var.service_account_name}"
+}
+
+resource "google_service_account_key" "svc_key" {
+  service_account_id = "${google_service_account.service_account.name}"
 }
 
 resource "google_project_iam_member" "storage_admin" {
@@ -72,6 +81,13 @@ provider "google" {
   region      = "${var.gcp_region}"
 }
 
+resource "google_storage_bucket_object" "service_account_key_storage" {
+  name         = ".gcp/${var.service_account_name}.json"
+  content      = "${base64decode(google_service_account_key.svc_key.private_key)}"
+  bucket       = "${var.bucket_name}"
+  content_type = "application/json"
+}
+
 resource "google_compute_instance" "halyard-spin-vm-grueld" {
   count                     = 1                       // Adjust as desired
   name                      = "halyard-thd-spinnaker"
@@ -108,6 +124,7 @@ apt-get update
 apt-get install -y --allow-unauthenticated --no-install-recommends google-cloud-sdk gcsfuse
 apt-get install -y kubectl
 
+
 mkdir /spinnaker
 chown -R spinnaker:google-sudoers /spinnaker
 chmod -R 776 /spinnaker
@@ -119,15 +136,21 @@ runuser -l spinnaker -c 'ln -s /spinnaker/.gcp /home/spinnaker/.gcp'
 
 cd /home/spinnaker
 runuser -l spinnaker -c 'curl -O https://raw.githubusercontent.com/spinnaker/halyard/master/install/debian/InstallHalyard.sh'
-bash InstallHalyard.sh -y --user spinnaker
-rm -rfd /home/spinnaker/.hal
+runuser -l spinnaker -c 'sudo bash InstallHalyard.sh -y --user spinnaker'
+runuser -l spinnaker -c 'rm -rfd /home/spinnaker/.hal'
 runuser -l spinnaker -c 'ln -s /spinnaker/.hal /home/spinnaker/.hal'
+
+runuser -l spinnaker -c 'gcloud auth activate-service-account --key-file=/home/spinnaker/.gcp/spinnaker.json'
+runuser -l spinnaker -c 'gcloud beta container clusters get-credentials spinnaker-us-east1 --region us-east1 --project np-platforms-cd-thd'
 SCRIPT
+
+  #Use sudo -H -u spinnaker bash to log in
+
 
   //metadata_startup_script = "${file("${path.module}/start.sh")}"
 
   service_account {
     email  = "${google_service_account.service_account.email}"
-    scopes = ["userinfo-email", "compute-rw", "storage-full"]
+    scopes = ["userinfo-email", "compute-rw", "storage-full", "service-control", "https://www.googleapis.com/auth/cloud-platform"]
   }
 }

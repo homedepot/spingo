@@ -9,6 +9,10 @@ resource "google_storage_bucket" "bucket-config" {
   storage_class = "MULTI_REGIONAL"
 }
 
+output "bucket_name" {
+  value = "${var.gcp_project}-${var.bucket_name}-bucket"
+}
+
 # Not using the below for now.  The purpose of this block was to attempt to
 # set bucket ACL permissions such that only project owners and editors
 # had acccess to the created bucket. When we attempted to do this, the bucket

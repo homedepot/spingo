@@ -58,4 +58,5 @@ module "spinnaker-gcp-service-account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-gcs-account"
   vault_address        = "${var.vault_address}"
+  bucket_name          = "${module.halyard-storage.bucket_name}"
 }

@@ -43,7 +43,6 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
   content_type = "application/json"
 }
 
-
 output "service-account-id" {
   value = "${google_service_account.service_account.unique_id}"
 }

@@ -49,6 +49,27 @@ resource "google_container_node_pool" "primary_pool" {
   }
 }
 
+
+resource "google_compute_address" "ui" {
+  name = "spinnaker-ui"
+}
+
+resource "google_compute_address" "api" {
+  name = "spinnaker-api"
+}
+
+resource "vault_generic_secret" "vault-api" {
+  path = "secret/vault-api"
+  data_json = <<-EOF
+              {"address":"${google_compute_address.api.address}"}
+              EOF
+}
+resource "vault_generic_secret" "vault-ui" {
+  path = "secret/vault-ui"
+  data_json = <<-EOF
+              {"address":"${google_compute_address.ui.address}"}
+              EOF
+}
 output "host" {
   value     = "${google_container_cluster.cluster.endpoint}"
   sensitive = false

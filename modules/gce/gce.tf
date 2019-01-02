@@ -87,10 +87,10 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
   bucket       = "${var.bucket_name}"
   content_type = "application/json"
 }
+
 data "template_file" start_script {
   template = "${file("${path.module}/start.sh")}"
 }
-
 
 resource "google_compute_instance" "halyard-spin-vm-grueld" {
   count                     = 1                       // Adjust as desired
@@ -116,7 +116,7 @@ resource "google_compute_instance" "halyard-spin-vm-grueld" {
     }
   }
 
-  metadata_startup_script ="${file("${path.module}/start.sh")}"
+  metadata_startup_script = "${file("${path.module}/start.sh")}"
 
   service_account {
     email  = "${google_service_account.service_account.email}"

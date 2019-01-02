@@ -3,6 +3,13 @@
 # It creates a user named spinnaker and its home directory.
 # It attempts to run everything as spinnaker as much as possible.
 
+set -x
+
+logfile=/tmp/install.log
+exec > $logfile 2>&1
+
+runuser -l root -c 'echo "alias spingo=\"sudo -H -u spinnaker bash\"" > /etc/profile.d/spingo.sh'
+
 useradd ${USER}
 usermod -g google-sudoers ${USER}
 mkhomedir_helper ${USER}
@@ -19,9 +26,6 @@ mkdir /${USER}
 chown -R ${USER}:google-sudoers /${USER}
 chmod -R 776 /${USER}
 
-echo "alias spingo='sudo -H -u spinnaker bash'" > /tmp/spingo.sh
-cp /tmp/spingo.sh /etc/profile.d
-
 #Mount the drive as /spinnaker
 runuser -l ${USER} -c 'gcsfuse --dir-mode 777  ${BUCKET} /${USER}'
 runuser -l ${USER} -c 'touch /${USER}/good.txt'
@@ -31,7 +35,6 @@ if ! ls /${USER}/good.txt 1> /dev/null 2>&1; then
 else
   runuser -l ${USER} -c 'gcsfuse --dir-mode 777  ${BUCKET} /${USER}'
 fi
-
 
 runuser -l ${USER} -c 'ln -s /${USER}/.kube /home/${USER}/.kube'
 runuser -l ${USER} -c 'ln -s /${USER}/.gcp /home/${USER}/.gcp'
@@ -54,9 +57,6 @@ runuser -l ${USER} -c 'ln -s /${USER}/.hal /home/${USER}/.hal'
 #Note halinit.sh depends on this existing.
 runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${USER}/.gcp/${USER}.json'
 runuser -l ${USER} -c 'gcloud beta container clusters get-credentials ${USER}-${REGION} --region ${REGION} --project ${PROJECT}'
-
-runuser -l root -c 'echo "alias spingo=\"sudo -H -u spinnaker bash\"" > /etc/profile.d/spingo.sh'
-
 
 #Use sudo -H -u spinnaker bash at log in
 

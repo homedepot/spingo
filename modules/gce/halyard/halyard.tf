@@ -88,9 +88,37 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
   content_type = "application/json"
 }
 
-data "template_file" start_script {
+data "template_file" "start_script" {
   template = "${file("${path.module}/start.sh")}"
+
+  vars {
+    #REPLACE = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
+    USER    = "${var.service_account_name}"
+    BUCKET  = "${var.bucket_name}"
+    REGION  = "${var.gcp_region}"
+    PROJECT = "${var.gcp_project}"
+    #WRITE secrets
+    CLIENT_ID="${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
+    CLIENT_SECRET="${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
+    SPIN_UI_IP="${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP="${data.vault_generic_secret.vault-api.data["address"]}"
+  }
 }
+
+#Get urls
+data "vault_generic_secret" "vault-ui" {
+  path = "secret/vault-ui"
+}
+data "vault_generic_secret" "vault-api" {
+  path = "secret/vault-ui"
+}
+
+#This is manually put into vault and created manually
+#Get OAUTH secrets
+data "vault_generic_secret" "gcp-oauth" {
+  path = "secret/gcp-oauth"
+}
+
 
 resource "google_compute_instance" "halyard-spin-vm-grueld" {
   count                     = 1                       // Adjust as desired
@@ -116,7 +144,7 @@ resource "google_compute_instance" "halyard-spin-vm-grueld" {
     }
   }
 
-  metadata_startup_script = "${file("${path.module}/start.sh")}"
+  metadata_startup_script = "${data.template_file.start_script.rendered}"
 
   service_account {
     email  = "${google_service_account.service_account.email}"

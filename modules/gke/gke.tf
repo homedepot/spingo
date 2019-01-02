@@ -49,7 +49,6 @@ resource "google_container_node_pool" "primary_pool" {
   }
 }
 
-
 resource "google_compute_address" "ui" {
   name = "spinnaker-ui"
 }
@@ -60,16 +59,45 @@ resource "google_compute_address" "api" {
 
 resource "vault_generic_secret" "vault-api" {
   path = "secret/vault-api"
+
   data_json = <<-EOF
               {"address":"${google_compute_address.api.address}"}
               EOF
 }
+
 resource "vault_generic_secret" "vault-ui" {
   path = "secret/vault-ui"
+
   data_json = <<-EOF
               {"address":"${google_compute_address.ui.address}"}
               EOF
 }
+
+resource "google_dns_managed_zone" "project_zone" {
+  name     = "${var.gcp_project}"
+  dns_name = "${var.gcp_project}.gcp.homedepot.com."
+}
+
+resource "google_dns_record_set" "spinnaker-ui" {
+  name = "spinnaker.${google_dns_managed_zone.project_zone.dns_name}"
+  type = "A"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.project_zone.name}"
+
+  rrdatas = ["${google_compute_address.ui.address}"]
+}
+
+resource "google_dns_record_set" "spinnaker-api" {
+  name = "spinnaker-api.${google_dns_managed_zone.project_zone.dns_name}"
+  type = "A"
+  ttl  = 300
+
+  managed_zone = "${google_dns_managed_zone.project_zone.name}"
+
+  rrdatas = ["${google_compute_address.api.address}"]
+}
+
 output "host" {
   value     = "${google_container_cluster.cluster.endpoint}"
   sensitive = false

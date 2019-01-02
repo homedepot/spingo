@@ -24,6 +24,14 @@ cp /tmp/spingo.sh /etc/profile.d
 
 #Mount the drive as /spinnaker
 runuser -l ${USER} -c 'gcsfuse --dir-mode 777  ${BUCKET} /${USER}'
+runuser -l ${USER} -c 'touch /${USER}/good.txt'
+# give it a retry
+if ! ls /${USER}/good.txt 1> /dev/null 2>&1; then
+  touch /tmp/directory_worked.chk
+else
+  runuser -l ${USER} -c 'gcsfuse --dir-mode 777  ${BUCKET} /${USER}'
+fi
+
 
 runuser -l ${USER} -c 'ln -s /${USER}/.kube /home/${USER}/.kube'
 runuser -l ${USER} -c 'ln -s /${USER}/.gcp /home/${USER}/.gcp'

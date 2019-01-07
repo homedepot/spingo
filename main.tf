@@ -33,6 +33,7 @@ module "spin-k8s-cluster" {
   cluster_name                    = "spinnaker"
   cluster_region                  = "us-east1"
   enable_legacy_abac              = true
+  gcp_project                     = "${var.gcp_project}"
   master_authorized_network_cidrs = []
 }
 

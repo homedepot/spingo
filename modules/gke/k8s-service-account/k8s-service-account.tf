@@ -11,6 +11,11 @@ resource "kubernetes_namespace" "namespace" {
   }
 }
 
+/*
+  If getting error related to creating cluster try reseting .kube config
+  This should reset.
+  gcloud beta container clusters get-credentials spinnaker-us-east1 --region us-east1 --project np-platforms-cd-thd
+*/
 resource "kubernetes_service_account" "service_account" {
   metadata {
     name      = "${var.service_account_name}"

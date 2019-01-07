@@ -41,6 +41,9 @@ gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
 gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role roles/iam.serviceAccountUser
+gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role roles/dns.admin
 
 echo "deleting $SERVICE_ACCOUNT_NAME service account"
 gcloud -q iam service-accounts delete "$SERVICE_ACCOUNT_NAME@$PROJECT.iam.gserviceaccount.com"

@@ -3,6 +3,10 @@ variable "gcp_region" {
   default     = "us-east1"
 }
 
+variable "gcp_project" {
+  description = "GCP project name"
+}
+
 variable cluster_name {
   type = "string"
 }
@@ -28,7 +32,7 @@ variable machine_type {
 }
 
 variable gke_version {
-  default = "1.11.2-gke.18"
+  default = "1.11.5-gke.5"
 }
 
 variable master_authorized_network_cidrs {

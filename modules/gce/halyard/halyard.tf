@@ -92,7 +92,6 @@ data "template_file" "start_script" {
   template = "${file("${path.module}/start.sh")}"
 
   vars {
-    #REPLACE = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
     USER    = "${var.service_account_name}"
     BUCKET  = "${var.bucket_name}"
     REGION  = "${var.gcp_region}"
@@ -125,7 +124,7 @@ resource "google_compute_instance" "halyard-spin-vm-grueld" {
   count                     = 1                       // Adjust as desired
   name                      = "halyard-thd-spinnaker"
   machine_type              = "n1-standard-4"         // smallest (CPU &amp; RAM) available instance
-  zone                      = "${var.gcp_region}-c"   // yields "europe-west1-d" as setup previously. Places your VM in Europe
+  zone                      = "${var.gcp_region}-c"
   allow_stopping_for_update = true
 
   boot_disk {

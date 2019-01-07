@@ -97,11 +97,12 @@ data "template_file" "start_script" {
     BUCKET  = "${var.bucket_name}"
     REGION  = "${var.gcp_region}"
     PROJECT = "${var.gcp_project}"
+
     #WRITE secrets
-    CLIENT_ID="${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
-    CLIENT_SECRET="${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
-    SPIN_UI_IP="${data.vault_generic_secret.vault-ui.data["address"]}"
-    SPIN_API_IP="${data.vault_generic_secret.vault-api.data["address"]}"
+    CLIENT_ID     = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
+    CLIENT_SECRET = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
+    SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
   }
 }
 
@@ -109,6 +110,7 @@ data "template_file" "start_script" {
 data "vault_generic_secret" "vault-ui" {
   path = "secret/vault-ui"
 }
+
 data "vault_generic_secret" "vault-api" {
   path = "secret/vault-ui"
 }
@@ -118,7 +120,6 @@ data "vault_generic_secret" "vault-api" {
 data "vault_generic_secret" "gcp-oauth" {
   path = "secret/gcp-oauth"
 }
-
 
 resource "google_compute_instance" "halyard-spin-vm-grueld" {
   count                     = 1                       // Adjust as desired

@@ -70,6 +70,13 @@ resource "google_project_iam_member" "rolesbrowser" {
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
+
+resource "google_project_iam_member" "containerclusteradmin" {
+  role   = "roles/container.clusterAdmin"
+  member = "serviceAccount:${google_service_account.service_account.email}"
+}
+
+
 resource "google_project_iam_member" "serviceAccountUser" {
   role   = "roles/iam.serviceAccountUser"
   member = "serviceAccount:${google_service_account.service_account.email}"

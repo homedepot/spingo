@@ -13,7 +13,7 @@ exec > $logfile 2>&1
 #################################
 
 echo "Setting up alias for sudo action."
-runuser -l root -c 'echo "alias spingo=\"sudo -H -u spinnaker bash\"" > /etc/profile.d/spingo.sh'
+runuser -l root -c 'echo "alias spingo=\"sudo -H -u ${USER} bash\"" > /etc/profile.d/spingo.sh'
 
 #CREATE USER
 echo "Creating user"

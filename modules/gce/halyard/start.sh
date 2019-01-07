@@ -76,7 +76,9 @@ runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${U
 echo "Setting up cluster access"
 runuser -l ${USER} -c 'gcloud beta container clusters get-credentials ${USER}-${REGION} --region ${REGION} --project ${PROJECT}'
 
-#Use sudo -H -u spinnaker bash at log in or use spingo alias
+runuser -l {USER} -c 'kubectl config set-credentials sa-user --token=$(kubectl get secret $(kubectl get secret --namespace=spinnaker | grep spinnaker-token | awk '"'"'{print $1}'"'"') --namespace=spinnaker -o jsonpath={.data.token} | base64 -d)'
 
+runuser -l {USER} -c 'kubectl config set-context $(kubectl config current-context) --user=sa-user'
+#Use sudo -H -u spinnaker bash at log in or use spingo alias
 
 

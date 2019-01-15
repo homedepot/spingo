@@ -118,7 +118,7 @@ data "vault_generic_secret" "vault-ui" {
 }
 
 data "vault_generic_secret" "vault-api" {
-  path = "secret/vault-ui"
+  path = "secret/vault-api"
 }
 
 #This is manually put into vault and created manually
@@ -136,7 +136,7 @@ resource "google_compute_instance" "halyard-spin-vm-grueld" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1604-lts"
+      image = "ubuntu-os-cloud/ubuntu-1804-lts"
     }
   }
 

@@ -28,6 +28,7 @@ echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/
 apt-get update
 apt-get install -y --allow-unauthenticated --no-install-recommends google-cloud-sdk gcsfuse
 apt-get install -y kubectl
+apt-get install -y --allow-unauthenticated --no-install-recommends python-pip
 
 #This is where the sym links will point and the google S3 bucket will be linked
 echo "Setting up directory permissions."
@@ -76,9 +77,10 @@ runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${U
 echo "Setting up cluster access"
 runuser -l ${USER} -c 'gcloud beta container clusters get-credentials ${USER}-${REGION} --region ${REGION} --project ${PROJECT}'
 
-runuser -l {USER} -c 'kubectl config set-credentials sa-user --token=$(kubectl get secret $(kubectl get secret --namespace=spinnaker | grep spinnaker-token | awk '"'"'{print $1}'"'"') --namespace=spinnaker -o jsonpath={.data.token} | base64 -d)'
+runuser -l {USER} -c 'kubectl config set-credentials halyard-gcr --token=$(kubectl get secret $(kubectl get secret --namespace=kube-system | grep default-token | awk '"'"'{print $1}'"'"') --namespace=kube-system -o jsonpath={.data.token} | base64 -d)'
 
-runuser -l {USER} -c 'kubectl config set-context $(kubectl config current-context) --user=sa-user'
+runuser -l {USER} -c 'kubectl config set-context $(kubectl config current-context) --user=halyard-gcr'
+
 #Use sudo -H -u spinnaker bash at log in or use spingo alias
 
 

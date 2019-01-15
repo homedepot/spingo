@@ -5,11 +5,12 @@ provider "kubernetes" {
   cluster_ca_certificate = "${base64decode(var.cluster_ca_certificate)}"
 }
 
-resource "kubernetes_namespace" "namespace" {
-  metadata {
-    name = "${var.service_account_namespace}"
-  }
-}
+# Commenting this because we are using a namespace that already exists (kube-system)
+# resource "kubernetes_namespace" "namespace" {
+#   metadata {
+#     name = "${var.service_account_namespace}"
+#   }
+# }
 
 /*
   If getting error related to creating cluster try reseting .kube config

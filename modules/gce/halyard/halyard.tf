@@ -10,7 +10,7 @@ variable "gcp_project" {
 
 variable "bucket_name" {
   description = "GCP Bucket for Halyard"
-  default     = "np-platforms-cd-thd-halyard-bucket"
+  default     = "-halyard-bucket"
 }
 
 variable "service_account_name" {
@@ -50,11 +50,6 @@ resource "google_project_iam_member" "storage_admin" {
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
-resource "google_project_iam_member" "clusterAdmin" {
-  role   = "roles/container.clusterAdmin"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
 resource "google_project_iam_member" "serviceAccountKeyAdmin" {
   role   = "roles/iam.serviceAccountKeyAdmin"
   member = "serviceAccount:${google_service_account.service_account.email}"
@@ -70,12 +65,10 @@ resource "google_project_iam_member" "rolesbrowser" {
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
-
 resource "google_project_iam_member" "containerclusteradmin" {
   role   = "roles/container.clusterAdmin"
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
-
 
 resource "google_project_iam_member" "serviceAccountUser" {
   role   = "roles/iam.serviceAccountUser"
@@ -91,7 +84,7 @@ provider "google" {
 resource "google_storage_bucket_object" "service_account_key_storage" {
   name         = ".gcp/${var.service_account_name}.json"
   content      = "${base64decode(google_service_account_key.svc_key.private_key)}"
-  bucket       = "${var.bucket_name}"
+  bucket       = "${var.gcp_project}${var.bucket_name}"
   content_type = "application/json"
 }
 
@@ -100,15 +93,65 @@ data "template_file" "start_script" {
 
   vars {
     USER    = "${var.service_account_name}"
-    BUCKET  = "${var.bucket_name}"
+    BUCKET  = "${var.gcp_project}${var.bucket_name}"
     REGION  = "${var.gcp_region}"
     PROJECT = "${var.gcp_project}"
+    REPLACE = "${google_service_account_key.svc_key.private_key}"
 
+    //REPLACE              = "${base64encode(jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," ")))}"
+
+    SCRIPT_SSL           = "${base64encode(data.template_file.setupSSL.rendered)}"
+    SCRIPT_SAML          = "${base64encode(data.template_file.setupSAML.rendered)}"
+    SCRIPT_HALYARD       = "${base64encode(data.template_file.setupHalyard.rendered)}"
+    SCRIPT_HALYARD       = "${base64encode(data.template_file.halpush.rendered)}"
+    SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
     #WRITE secrets
     CLIENT_ID     = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
     CLIENT_SECRET = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
     SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
     SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
+  }
+}
+
+data "template_file" "halpush" {
+  template = "${file("${path.module}/halScripts/hal-push.sh")}"
+
+  vars {
+    USER   = "${var.service_account_name}"
+    BUCKET = "${var.gcp_project}${var.bucket_name}"
+  }
+}
+
+data "template_file" "setupSSL" {
+  template = "${file("${path.module}/halScripts/setupSSL.sh")}"
+
+  vars {
+    USER    = "${var.service_account_name}"
+    UI_URL  = "https://${var.service_account_name}.${var.gcp_project}.gcp.homedepot.com"
+    API_URL = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
+
+    SPIN_UI_IP  = "${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP = "${data.vault_generic_secret.vault-api.data["address"]}"
+  }
+}
+
+data "template_file" "setupSAML" {
+  template = "${file("${path.module}/halScripts/setupSAML.sh")}"
+
+  vars {
+    USER    = "${var.service_account_name}"
+    API_URL = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
+  }
+}
+
+data "template_file" "setupHalyard" {
+  template = "${file("${path.module}/halScripts/setupHalyard.sh")}"
+
+  vars {
+    USER         = "${var.service_account_name}"
+    ACCOUNT_PATH = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
+    DOCKER       = "docker-registry"
+    ACCOUNT_NAME = "spin-cluster-account"
   }
 }
 
@@ -136,7 +179,7 @@ resource "google_compute_instance" "halyard-spin-vm-grueld" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1804-lts"
+      image = "ubuntu-os-cloud/ubuntu-1604-lts"
     }
   }
 

@@ -10,6 +10,7 @@
 #openssl pkcs12 -in PKCS12file -out keys_out.txt 
 #Then convert to cert.
 
+#REMEMBER memberOf is needed in saml response from security. 
 
 KEYSTORE_PATH="/${USER}/saml/saml.jks"
 KEYSTORE_PASSWORD="nosecrets"
@@ -25,8 +26,12 @@ ISSUER_ID="spinnaker.np"
    --metadata $METADATA_PATH \
    --issuer-id $ISSUER_ID \
    --service-address-url $SERVICE_ADDR_URL \
-      
+ 
+ echo "Enable authn and authz" 
  hal config security authn saml enable
-    
-echo "You will need to do a hal deploy apply to push the changes."
+ hal config security authz enable
+ 
+ echo "Turn on FIAT!"
+ sed -i /home/${USER}/.hal/config -e 's/    fiat: false/    fiat: true/g'
+ echo "You will need to do a hal deploy apply to push the changes."
 

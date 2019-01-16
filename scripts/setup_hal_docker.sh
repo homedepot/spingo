@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# set target directory where the bucket will sync locally and where the 
+# set target directory where the bucket will sync locally and where the local kubeconfig file will live
+# these two things are necessary to volume-mount into the docker container
 export HAL_RUN_DIR=~/tmp
 echo "putting all files into ${HAL_RUN_DIR}"
 

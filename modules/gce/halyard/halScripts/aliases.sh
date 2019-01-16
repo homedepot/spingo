@@ -1,4 +1,3 @@
-alias spingo="sudo -H -u ${USER} bash"
-alias hpush="bash /home/${USER}/hpush.sh"
-alias hget="bash /home/${USER}/hget.sh"
-alias hdiff="bash /home/${USER}/hdiff.sh"
+alias halpush="bash /home/${USER}/halpush.sh"
+alias halget="bash /home/${USER}/halget.sh"
+alias haldiff="bash /home/${USER}/haldiff.sh"

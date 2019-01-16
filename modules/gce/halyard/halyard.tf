@@ -88,6 +88,22 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
   content_type = "application/json"
 }
 
+data "template_file" "aliases" {
+  template = "${file("${path.module}/halScripts/aliases.sh")}"
+
+  vars {
+    USER = "${var.service_account_name}"
+  }
+}
+
+data "template_file" "spingo" {
+  template = "${file("${path.module}/halScripts/spingo.sh")}"
+
+  vars {
+    USER = "${var.service_account_name}"
+  }
+}
+
 data "template_file" "start_script" {
   template = "${file("${path.module}/start.sh")}"
 
@@ -107,6 +123,7 @@ data "template_file" "start_script" {
     SCRIPT_HALGET        = "${base64encode(data.template_file.halget.rendered)}"
     SCRIPT_HALDIFF       = "${base64encode(data.template_file.haldiff.rendered)}"
     SCRIPT_ALIASES       = "${base64encode(data.template_file.aliases.rendered)}"
+    SCRIPT_SPINGO        = "${base64encode(data.template_file.spingo.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
     #WRITE secrets
     CLIENT_ID     = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
@@ -116,13 +133,6 @@ data "template_file" "start_script" {
   }
 }
 
-data "template_file" "aliases" {
-  template = "${file("${path.module}/halScripts/aliases.sh")}"
-
-  vars {
-    USER   = "${var.service_account_name}"
-  }
-}
 data "template_file" "halpush" {
   template = "${file("${path.module}/halScripts/halpush.sh")}"
 

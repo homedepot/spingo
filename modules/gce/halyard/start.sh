@@ -13,7 +13,7 @@ exec > $logfile 2>&1
 #################################
 
 echo "Setting up alias for sudo action."
-runuser -l root -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /etc/profile.d/spingo.sh'
+runuser -l root -c 'echo "${SCRIPT_SPINGO}" | base64 -d > /etc/profile.d/spingo.sh'
 
 #CREATE USER
 echo "Creating user"
@@ -66,12 +66,14 @@ runuser -l ${USER} -c 'kubectl config set-context $(kubectl config current-conte
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_SAML}" | base64 -d > /home/${USER}/setupSAML.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setupHalyard.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/hpush.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/hget.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/hdiff.sh'
-runuser -l ${USER} -c 'chmod 777 /home/${USER}/hpush.sh'
-runuser -l ${USER} -c 'chmod 777 /home/${USER}/hget.sh'
-runuser -l ${USER} -c 'chmod 777 /home/${USER}/hdiff.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/halpush.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/halget.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/haldiff.sh'
+runuser -l ${USER} -c 'chmod +x /home/${USER}/halpush.sh'
+runuser -l ${USER} -c 'chmod +x /home/${USER}/halget.sh'
+runuser -l ${USER} -c 'chmod +x /home/${USER}/haldiff.sh'
+
+runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
 #Use sudo -H -u spinnaker bash at log in or use spingo alias
 

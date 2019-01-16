@@ -22,13 +22,11 @@ usermod -g google-sudoers ${USER}
 mkhomedir_helper ${USER}
 
 echo "Setting up repos"
-#echo "deb http://packages.cloud.google.com/apt gcsfuse-xenial main" | tee /etc/apt/sources.list.d/gcsfuse.list
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 apt-get update
 apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk 
 
-#This is where the sym links will point and the google S3 bucket will be linked
 echo "Setting up directory permissions."
 mkdir /${USER}
 chown -R ${USER}:google-sudoers /${USER}
@@ -72,7 +70,6 @@ runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/hald
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/haldiff.sh'
-
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
 #Use sudo -H -u spinnaker bash at log in or use spingo alias

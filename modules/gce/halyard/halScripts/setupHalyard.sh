@@ -5,8 +5,6 @@ GCS_SA=${USER}
 #GCS_SA_DEST="/home/spinnaker/.gcp/spinnaker-gcs-account.json"
 GCS_SA_DEST="${ACCOUNT_PATH}"
 
-#gcloud beta container clusters get-credentials spinnaker-us-east1 --region us-east1 --project np-platforms-cd-thd
-
 hal config storage gcs edit \
     --project $(gcloud info --format='value(config.project)') \
     --json-path "$GCS_SA_DEST"
@@ -30,4 +28,5 @@ hal config provider kubernetes account add ${ACCOUNT_NAME} \
 hal config version edit --version $(hal version latest -q)
 
 hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}"
-#hal deploy apply
+
+echo "You may want to run 'hal deploy apply'"

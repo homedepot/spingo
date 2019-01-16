@@ -113,9 +113,6 @@ data "template_file" "start_script" {
     REGION  = "${var.gcp_region}"
     PROJECT = "${var.gcp_project}"
     REPLACE = "${google_service_account_key.svc_key.private_key}"
-
-    //REPLACE              = "${base64encode(jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," ")))}"
-
     SCRIPT_SSL           = "${base64encode(data.template_file.setupSSL.rendered)}"
     SCRIPT_SAML          = "${base64encode(data.template_file.setupSAML.rendered)}"
     SCRIPT_HALYARD       = "${base64encode(data.template_file.setupHalyard.rendered)}"

@@ -12,7 +12,6 @@ hal config security api edit \
    # --override-base-url https://spinnaker-api.np-platforms-cd-thd.gcp.homedepot.com
 
 hal config security ui ssl edit --ssl-certificate-file /${USER}/certbot/wildcard.crt --ssl-certificate-key-file /${USER}/certbot/wildcard.key
-hal config security ui ssl enable
 
 echo "You will need to type nosecrets in 2 times."
 
@@ -23,5 +22,7 @@ hal config security api ssl edit --key-alias ${USER} \
   --keystore-type jks --truststore $KEYSTORE_PATH \
   --truststore-password --truststore-type jks
 hal config security api ssl enable
+hal config security ui ssl enable
+
 
 echo "You will need to do a hal deploy apply"

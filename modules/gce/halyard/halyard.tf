@@ -103,7 +103,10 @@ data "template_file" "start_script" {
     SCRIPT_SSL           = "${base64encode(data.template_file.setupSSL.rendered)}"
     SCRIPT_SAML          = "${base64encode(data.template_file.setupSAML.rendered)}"
     SCRIPT_HALYARD       = "${base64encode(data.template_file.setupHalyard.rendered)}"
-    SCRIPT_HALYARD       = "${base64encode(data.template_file.halpush.rendered)}"
+    SCRIPT_HALPUSH       = "${base64encode(data.template_file.halpush.rendered)}"
+    SCRIPT_HALGET        = "${base64encode(data.template_file.halget.rendered)}"
+    SCRIPT_HALDIFF       = "${base64encode(data.template_file.haldiff.rendered)}"
+    SCRIPT_ALIASES       = "${base64encode(data.template_file.aliases.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
     #WRITE secrets
     CLIENT_ID     = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
@@ -113,8 +116,33 @@ data "template_file" "start_script" {
   }
 }
 
+data "template_file" "aliases" {
+  template = "${file("${path.module}/halScripts/aliases.sh")}"
+
+  vars {
+    USER   = "${var.service_account_name}"
+  }
+}
 data "template_file" "halpush" {
-  template = "${file("${path.module}/halScripts/hal-push.sh")}"
+  template = "${file("${path.module}/halScripts/halpush.sh")}"
+
+  vars {
+    USER   = "${var.service_account_name}"
+    BUCKET = "${var.gcp_project}${var.bucket_name}"
+  }
+}
+
+data "template_file" "halget" {
+  template = "${file("${path.module}/halScripts/halget.sh")}"
+
+  vars {
+    USER   = "${var.service_account_name}"
+    BUCKET = "${var.gcp_project}${var.bucket_name}"
+  }
+}
+
+data "template_file" "haldiff" {
+  template = "${file("${path.module}/halScripts/haldiff.sh")}"
 
   vars {
     USER   = "${var.service_account_name}"

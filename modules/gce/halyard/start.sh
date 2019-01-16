@@ -13,7 +13,7 @@ exec > $logfile 2>&1
 #################################
 
 echo "Setting up alias for sudo action."
-runuser -l root -c 'echo "alias spingo=\"sudo -H -u ${USER} bash\"" > /etc/profile.d/spingo.sh'
+runuser -l root -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /etc/profile.d/spingo.sh'
 
 #CREATE USER
 echo "Creating user"
@@ -67,9 +67,11 @@ runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL
 runuser -l ${USER} -c 'echo "${SCRIPT_SAML}" | base64 -d > /home/${USER}/setupSAML.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setupHalyard.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/hpush.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/hget.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/hdiff.sh'
 runuser -l ${USER} -c 'chmod 777 /home/${USER}/hpush.sh'
-
-
+runuser -l ${USER} -c 'chmod 777 /home/${USER}/hget.sh'
+runuser -l ${USER} -c 'chmod 777 /home/${USER}/hdiff.sh'
 
 #Use sudo -H -u spinnaker bash at log in or use spingo alias
 

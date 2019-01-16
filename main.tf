@@ -46,7 +46,7 @@ module "halyard-storage" {
 module "k8s-spinnaker-service-account" {
   source                    = "./modules/gke/k8s-service-account"
   service_account_name      = "spinnaker"
-  service_account_namespace = "spinnaker"
+  service_account_namespace = "kube-system"
   host                      = "${module.spin-k8s-cluster.host}"
   client_certificate        = "${module.spin-k8s-cluster.client_certificate}"
   client_key                = "${module.spin-k8s-cluster.client_key}"

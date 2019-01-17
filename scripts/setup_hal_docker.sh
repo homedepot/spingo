@@ -11,7 +11,7 @@ PROJECT="np-platforms-cd-thd"
 SERVICE_ACCOUNT="spinnaker-us-east1"
 
 # bucket to use
-BUCKET="np-platforms-cd-thd-halyard-bucket"
+BUCKET="$PROJECT-halyard-bucket"
 
 # base64 operates differently in OSX vs linux
 if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f /usr/local/bin/base64 ]]; then

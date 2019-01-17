@@ -1,7 +1,6 @@
 #!/bin/bash
 
-kubectl -n spinnaker patch svc spin-deck --type=merge -p '{"spec": {"ports": [{"name": "http","port": 443,"targetPort": 9000},{"name": "monitoring","port": 8008,"targetPort": 8008}],"type": "LoadBalancer","loadBalancerIP": "'"${SPIN_UI_IP}"'"}}'
-kubectl -n spinnaker patch svc spin-gate --type=merge -p '{"spec": {"ports": [{"name": "http","port": 443,"targetPort": 8084},{"name": "monitoring","port": 8008,"targetPort": 8008}],"type": "LoadBalancer","loadBalancerIP": "'"${SPIN_API_IP}"'"}}'
+./home/${USER}/setK8SSL.sh
 
 hal config security ui edit \
     --override-base-url ${UI_URL}

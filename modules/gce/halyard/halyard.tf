@@ -108,11 +108,11 @@ data "template_file" "start_script" {
   template = "${file("${path.module}/start.sh")}"
 
   vars {
-    USER    = "${var.service_account_name}"
-    BUCKET  = "${var.gcp_project}${var.bucket_name}"
-    REGION  = "${var.gcp_region}"
-    PROJECT = "${var.gcp_project}"
-    REPLACE = "${google_service_account_key.svc_key.private_key}"
+    USER                 = "${var.service_account_name}"
+    BUCKET               = "${var.gcp_project}${var.bucket_name}"
+    REGION               = "${var.gcp_region}"
+    PROJECT              = "${var.gcp_project}"
+    REPLACE              = "${google_service_account_key.svc_key.private_key}"
     SCRIPT_SSL           = "${base64encode(data.template_file.setupSSL.rendered)}"
     SCRIPT_SAML          = "${base64encode(data.template_file.setupSAML.rendered)}"
     SCRIPT_HALYARD       = "${base64encode(data.template_file.setupHalyard.rendered)}"
@@ -121,7 +121,9 @@ data "template_file" "start_script" {
     SCRIPT_HALDIFF       = "${base64encode(data.template_file.haldiff.rendered)}"
     SCRIPT_ALIASES       = "${base64encode(data.template_file.aliases.rendered)}"
     SCRIPT_SPINGO        = "${base64encode(data.template_file.spingo.rendered)}"
+    SCRIPT_K8SSL         = "${base64encode(data.template_file.k8ssl.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
+
     #WRITE secrets
     CLIENT_ID     = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
     CLIENT_SECRET = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
@@ -165,6 +167,15 @@ data "template_file" "setupSSL" {
     UI_URL  = "https://${var.service_account_name}.${var.gcp_project}.gcp.homedepot.com"
     API_URL = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
 
+    SPIN_UI_IP  = "${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP = "${data.vault_generic_secret.vault-api.data["address"]}"
+  }
+}
+
+data "template_file" "k8ssl" {
+  template = "${file("${path.module}/halScripts/setupK8SSL.sh")}"
+
+  vars {
     SPIN_UI_IP  = "${data.vault_generic_secret.vault-ui.data["address"]}"
     SPIN_API_IP = "${data.vault_generic_secret.vault-api.data["address"]}"
   }

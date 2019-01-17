@@ -3,7 +3,6 @@
 # set target directory where the bucket will sync locally and where the local kubeconfig file will live
 # these two things are necessary to volume-mount into the docker container
 export HAL_RUN_DIR=~/tmp
-echo "putting all files into ${HAL_RUN_DIR}"
 
 # base64 operates differently in OSX vs linux
 if [[ "$OSTYPE" == "darwin"* ]] && [[ ! -f /usr/local/bin/base64 ]]; then
@@ -12,15 +11,23 @@ else
     BASE64_DECODE="-d"
 fi
 
+ABORT=0
 if [[ ! $(which gsutil) ]] || [[ ! $(which gcloud) ]]; then
-    echo "gcloud or gsutil is not installed, cannot proceed"
-    echo "see THD AppStore to install google cloud platform SDK"
-    exit 1
-elif [[ ! $(which docker) ]]; then
-    echo "docker is not installed, cannot proceed"
-    echo "see THD AppStore to install docker"
+    echo "gcloud or gsutil is not installed, cannot proceed. see THD AppStore to install google cloud platform SDK"
+    ABORT=1
+fi
+if [[ ! $(which docker) ]]; then
+    echo "docker is not installed, cannot proceed. see THD AppStore to install docker"
+    ABORT=1
+fi
+if [[ ! $(which kubectl) ]]; then
+    echo "kubectl is not installed, cannot proceed. see https://kubernetes.io/docs/tasks/tools/install-kubectl/ install kubectl"
+    ABORT=1
+fi
+if [[ "$ABORT" != 0 ]]; then
     exit 1
 else
+    echo "putting all files into ${HAL_RUN_DIR}"
     if [[ ! -d "${HAL_RUN_DIR}"/spinnaker ]]; then
         mkdir -p "${HAL_RUN_DIR}"/spinnaker
     fi

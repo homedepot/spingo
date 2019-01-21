@@ -73,6 +73,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/res
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/haldiff.sh'
+runuser -l ${USER} -c 'chmod +x /home/${USER}/resetgcp.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
 #Use sudo -H -u spinnaker bash at log in or use spingo alias

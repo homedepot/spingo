@@ -122,6 +122,7 @@ data "template_file" "start_script" {
     SCRIPT_ALIASES       = "${base64encode(data.template_file.aliases.rendered)}"
     SCRIPT_SPINGO        = "${base64encode(data.template_file.spingo.rendered)}"
     SCRIPT_K8SSL         = "${base64encode(data.template_file.k8ssl.rendered)}"
+    SCRIPT_RESETGCP      = "${base64encode(data.template_file.resetgcp.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
 
     #WRITE secrets
@@ -129,6 +130,16 @@ data "template_file" "start_script" {
     CLIENT_SECRET = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
     SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
     SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
+  }
+}
+data "template_file" "resetgcp" {
+  template = "${file("${path.module}/halscripts/resetgcp.sh")}"
+
+  vars {
+    USER                 = "${var.service_account_name}"
+    REGION               = "${var.gcp_region}"
+    PROJECT              = "${var.gcp_project}"
+    SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
 }
 

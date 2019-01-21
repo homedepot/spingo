@@ -67,7 +67,9 @@ runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setu
 runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/haldiff.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL" | base64 -d > /home/${USER}/setK8SSL.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL}" | base64 -d > /home/${USER}/setK8SSL.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/resetgcp.sh'
+
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/haldiff.sh'

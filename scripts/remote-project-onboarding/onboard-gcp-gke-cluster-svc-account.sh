@@ -25,6 +25,10 @@ gcloud --project "$PROJECT" --no-user-output-enabled projects add-iam-policy-bin
 gcloud --project "$PROJECT" --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/container.admin'
+# needed for image access within project GCR
+gcloud --project "$PROJECT" --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/storage.objectViewer'
 
 ls -al $SERVICE_ACCOUNT_FILE
 echo "generating keys for $SERVICE_ACCOUNT_NAME"

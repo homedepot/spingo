@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./home/${USER}/setK8SSL.sh
+./home/${USER}/setupK8SSL.sh
 
 hal config security ui edit \
     --override-base-url ${UI_URL}

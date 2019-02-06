@@ -29,4 +29,6 @@ hal config version edit --version $(hal version latest -q)
 
 hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}"
 
+hal config edit --timezone America/New_York
+
 echo "You may want to run 'hal deploy apply'"

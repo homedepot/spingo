@@ -56,8 +56,8 @@ runuser -l ${USER} -c 'rm -fdr /home/${USER}/.hal'
 runuser -l ${USER} -c 'ln -s /${USER}/.hal /home/${USER}/'
 
 echo "Setting up cluster access"
+runuser -l ${USER} -c 'gcloud config set container/use_client_certificate true'
 runuser -l ${USER} -c 'gcloud beta container clusters get-credentials ${USER}-${REGION} --region ${REGION} --project ${PROJECT}'
-
 runuser -l ${USER} -c 'kubectl config set-credentials ${SPIN_CLUSTER_ACCOUNT} --token=$(kubectl get secret $(kubectl get secret --namespace=kube-system | grep default-token | awk '"'"'{print $1}'"'"') --namespace=kube-system -o jsonpath={.data.token} | base64 -d)'
 
 runuser -l ${USER} -c 'kubectl config set-context $(kubectl config current-context) --user=${SPIN_CLUSTER_ACCOUNT}'
@@ -67,10 +67,13 @@ runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setu
 runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/haldiff.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL" | base64 -d > /home/${USER}/setK8SSL.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL}" | base64 -d > /home/${USER}/setupK8SSL.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/resetgcp.sh'
+
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/haldiff.sh'
+runuser -l ${USER} -c 'chmod +x /home/${USER}/resetgcp.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
 #Use sudo -H -u spinnaker bash at log in or use spingo alias

@@ -132,8 +132,9 @@ data "template_file" "start_script" {
     SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
   }
 }
+
 data "template_file" "resetgcp" {
-  template = "${file("${path.module}/halscripts/resetgcp.sh")}"
+  template = "${file("${path.module}/halScripts/resetgcp.sh")}"
 
   vars {
     USER                 = "${var.service_account_name}"

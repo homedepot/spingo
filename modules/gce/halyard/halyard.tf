@@ -228,6 +228,14 @@ data "vault_generic_secret" "gcp-oauth" {
   path = "secret/gcp-oauth"
 }
 
+terraform {
+  backend "gcs" {
+    bucket      = "np-platforms-cd-thd-tf"
+    prefix      = "np-hal-vm"
+    credentials = "terraform-account.json"
+  }
+}
+
 resource "google_compute_instance" "halyard-spin-vm-grueld" {
   count                     = 1                       // Adjust as desired
   name                      = "halyard-thd-spinnaker"

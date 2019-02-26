@@ -26,7 +26,7 @@ endpoint=`kubectl config view -o jsonpath="{.clusters[?(@.name == \"$name\")].cl
 
 # Create the yaml to bind the cluster admin role to spinnaker-user
 cat <<EOF >> rbac-config-spinnaker-user.yaml
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: spinnaker-admin-user-bootstrap

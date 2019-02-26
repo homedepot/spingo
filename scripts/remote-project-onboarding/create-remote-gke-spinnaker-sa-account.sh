@@ -59,5 +59,6 @@ kubectl config set-credentials "spinnaker-user-${c}" --token=$user_token --kubec
 kubectl config set-context "spinnaker-user-${c}" --cluster="$c" --user="spinnaker-user-${c}" --namespace=default --kubeconfig="${c}.config"
 kubectl config use-context "spinnaker-user-${c}" --kubeconfig="${c}.config"
 
-echo -e "\n\nprovide the ${c}.config file to the spinnaker admins."
-echo "THIS FILE CONTAINS SECRETS AND SHOULD BE HANDLED AS SUCH"
+gsutil cp "${c}.config" gs://np-platforms-cd-thd-spinnaker-onboarding && rm "${c}.config"
+
+echo -e "\nThe creation of the service account is complete"

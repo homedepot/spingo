@@ -29,7 +29,7 @@ cat <<EOF >> rbac-config-spinnaker-user.yaml
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: spinnaker-user
+  name: spinnaker-admin-user-bootstrap
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -50,7 +50,6 @@ kubectl apply -f rbac-config-spinnaker-user.yaml && rm rbac-config-spinnaker-use
 ####################################################
 
 # Set cluster 
-## TODO: need to put (and reference) the "${c}.config" file in a proper path for halyard to reference for realz
 kubectl config set-cluster $c --embed-certs=true --server=$endpoint --certificate-authority=./ca.crt --kubeconfig="${c}.config" && rm ca.crt
 # Set user credentials 
 kubectl config set-credentials "spinnaker-user-${c}" --token=$user_token --kubeconfig="${c}.config"
@@ -58,6 +57,53 @@ kubectl config set-credentials "spinnaker-user-${c}" --token=$user_token --kubec
 # Define the combination of spinnaker-user user with the EKS cluster
 kubectl config set-context "spinnaker-user-${c}" --cluster="$c" --user="spinnaker-user-${c}" --namespace=default --kubeconfig="${c}.config"
 kubectl config use-context "spinnaker-user-${c}" --kubeconfig="${c}.config"
+
+# create a new ClusterRoleBinding with only permissions necessary for spinnaker and not anythig more
+cat <<EOF >> rbac-config-spinnaker-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+ name: spinnaker-role
+rules:
+- apiGroups: [""]
+  resources: ["namespaces", "configmaps", "events", "replicationcontrollers", "serviceaccounts", "pods/log"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods", "services", "secrets"]
+  verbs: ["create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["list", "get"]
+- apiGroups: ["apps"]
+  resources: ["controllerrevisions", "statefulsets"]
+  verbs: ["list"]
+- apiGroups: ["extensions", "apps"]
+  resources: ["deployments", "replicasets", "ingresses"]
+  verbs: ["create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"]
+# These permissions are necessary for halyard to operate. We use this role also to deploy Spinnaker itself.
+- apiGroups: [""]
+  resources: ["services/proxy", "pods/portforward"]
+  verbs: ["create", "delete", "deletecollection", "get", "list", "patch", "update", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+ name: spinnaker-role-binding
+roleRef:
+ apiGroup: rbac.authorization.k8s.io
+ kind: ClusterRole
+ name: spinnaker-role
+subjects:
+- namespace: default
+  kind: ServiceAccount
+  name: spinnaker-user
+EOF
+
+# apply the new ClusterRoleBinding and ClusterRole
+kubectl apply -f rbac-config-spinnaker-role.yaml --kubeconfig="${c}.config" && rm rbac-config-spinnaker-role.yaml
+
+# delete the now-uneeded spinnaker-admin-user-bootstrap ClusterRoleBinding
+kubectl delete clusterrolebinding/spinnaker-admin-user-bootstrap --kubeconfig="${c}.config"
 
 gsutil cp "${c}.config" gs://np-platforms-cd-thd-spinnaker-onboarding && rm "${c}.config"
 

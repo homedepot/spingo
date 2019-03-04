@@ -51,6 +51,10 @@ module "k8s-spinnaker-service-account" {
   client_certificate        = "${module.spin-k8s-cluster.client_certificate}"
   client_key                = "${module.spin-k8s-cluster.client_key}"
   cluster_ca_certificate    = "${module.spin-k8s-cluster.cluster_ca_certificate}"
+  bucket_name               = "${module.halyard-storage.bucket_name}"
+  gcp_project               = "${var.gcp_project}"
+  cluster_name              = "${module.spin-k8s-cluster.cluster_name}"
+  cluster_region            = "${module.spin-k8s-cluster.cluster_region}"
 }
 
 # to retrieve the keys for this for use outside of terraform, run 

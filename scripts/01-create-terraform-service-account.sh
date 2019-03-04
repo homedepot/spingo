@@ -13,6 +13,7 @@ gcloud services enable compute.googleapis.com
 echo "enabling iam.googleapis.com service"
 gcloud services enable iam.googleapis.com
 
+# can also run "gcloud config list --format 'value(core.project)' 2>/dev/null" to get the project name dynamically
 PROJECT="np-platforms-cd-thd"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 TERRAFORM_REMOTE_GCS_LOCATION="us-east1"

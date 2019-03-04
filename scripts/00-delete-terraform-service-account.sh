@@ -8,6 +8,7 @@
 
 # if you need to delete the service account, read https://cloud.google.com/iam/docs/understanding-service-accounts#deleting_and_recreating_service_accounts
 
+# can also run "gcloud config list --format 'value(core.project)' 2>/dev/null" to get the project name dynamically
 PROJECT="np-platforms-cd-thd"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"

@@ -54,13 +54,9 @@ runuser -l ${USER} -c 'gsutil rsync -d -r gs://${BUCKET} /${USER}'
 echo "Setting symlinks"
 runuser -l ${USER} -c 'rm -fdr /home/${USER}/.hal'
 runuser -l ${USER} -c 'ln -s /${USER}/.hal /home/${USER}/'
+runuser -l ${USER} -c 'ln -s /${USER}/.kube /home/${USER}/'
 
-echo "Setting up cluster access"
-runuser -l ${USER} -c 'gcloud config set container/use_client_certificate true'
-runuser -l ${USER} -c 'gcloud beta container clusters get-credentials ${USER}-${REGION} --region ${REGION} --project ${PROJECT}'
-runuser -l ${USER} -c 'kubectl config set-credentials ${SPIN_CLUSTER_ACCOUNT} --token=$(kubectl get secret $(kubectl get secret --namespace=kube-system | grep default-token | awk '"'"'{print $1}'"'"') --namespace=kube-system -o jsonpath={.data.token} | base64 -d)'
-
-runuser -l ${USER} -c 'kubectl config set-context $(kubectl config current-context) --user=${SPIN_CLUSTER_ACCOUNT}'
+echo "Setting up helper scripts"
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_SAML}" | base64 -d > /home/${USER}/setupSAML.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setupHalyard.sh'

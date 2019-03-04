@@ -37,3 +37,28 @@ resource "kubernetes_cluster_role_binding" "cluster_role_binding" {
 
   depends_on = ["kubernetes_service_account.service_account"]
 }
+
+data "kubernetes_secret" "service_account_data" {
+  metadata {
+    name      = "${kubernetes_service_account.service_account.default_secret_name}"
+    namespace = "${kubernetes_service_account.service_account.metadata.0.namespace}"
+  }
+}
+
+data "template_file" "kubeconfig" {
+  template = "${file("${path.module}/kubeconfig.template")}"
+
+  vars {
+    CA_CERT = "${var.cluster_ca_certificate}"
+    HOST    = "https://${var.host}"
+    NAME    = "gke_${var.gcp_project}_${var.cluster_name}_${var.cluster_region}"
+    TOKEN   = "${lookup(data.kubernetes_secret.service_account_data.data, "token", "")}"
+  }
+}
+
+resource "google_storage_bucket_object" "spinnaker_kubeconfig_file" {
+  name         = ".kube/config"
+  content      = "${data.template_file.kubeconfig.rendered}"
+  bucket       = "${var.bucket_name}"
+  content_type = "application/text"
+}

@@ -15,7 +15,6 @@
 KEYSTORE_PATH="/${USER}/saml/saml.jks"
 KEYSTORE_PASSWORD="nosecrets"
 METADATA_PATH="/${USER}/saml/ssosecure-qaMetadata.xml"
-#SERVICE_ADDR_URL="https://spinnaker-api.np-platforms-cd-thd.gcp.homedepot.com"
 SERVICE_ADDR_URL="${API_URL}"
 ISSUER_ID="spinnaker.np"
 

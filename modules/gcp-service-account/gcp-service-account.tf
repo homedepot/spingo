@@ -8,6 +8,10 @@ variable "bucket_name" {
   type = "string"
 }
 
+variable "gcp_project" {
+  description = "GCP project name"
+}
+
 resource "google_service_account" "service_account" {
   display_name = "svc-${var.service_account_name}"
   account_id   = "svc-${var.service_account_name}"
@@ -32,7 +36,7 @@ provider "vault" {
 }
 
 resource "vault_generic_secret" "service-account-key" {
-  path      = "secret/${var.service_account_name}"
+  path      = "secret/${var.gcp_project}/${var.service_account_name}"
   data_json = "${base64decode(google_service_account_key.svc_key.private_key)}"
 }
 

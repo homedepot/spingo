@@ -15,6 +15,12 @@ variable "gcp_region" {
   default     = "us-east1"
 }
 
+variable "cluster_region" {
+  type        = "string"
+  description = "GCP region, e.g. us-east1"
+  default     = "us-east1"
+}
+
 variable "gcp_project" {
   description = "GCP project name"
 }

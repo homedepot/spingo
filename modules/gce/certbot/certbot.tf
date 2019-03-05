@@ -9,13 +9,11 @@ variable "gcp_project" {
 }
 
 variable "service_account_name" {
-  description = "certbot"
-  default     = "certbot"
+  default = "certbot"
 }
 
 variable "bucket_name" {
-  description = "np-platforms-cd-thd-halyard-bucket"
-  default     = "np-platforms-cd-thd-halyard-bucket"
+  default = "np-platforms-cd-thd-halyard-bucket"
 }
 
 resource "google_storage_bucket" "bucket-config" {
@@ -36,7 +34,7 @@ variable terraform_account {
 }
 
 data "vault_generic_secret" "terraform-account" {
-  path = "secret/${var.terraform_account}"
+  path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 resource "google_service_account" "service_account" {

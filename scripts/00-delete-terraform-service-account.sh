@@ -49,8 +49,8 @@ gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
 echo "deleting $SERVICE_ACCOUNT_NAME service account"
 gcloud -q iam service-accounts delete "$SERVICE_ACCOUNT_NAME@$PROJECT.iam.gserviceaccount.com"
 
-echo "deleting secret/$SERVICE_ACCOUNT_DEST from vault"
-vault delete secret/$SERVICE_ACCOUNT_NAME
+echo "deleting secret/$PROJECT/$SERVICE_ACCOUNT_DEST from vault"
+vault delete secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME"
 
 echo "delete the bucket that holds the Terraform state"
 gsutil rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"

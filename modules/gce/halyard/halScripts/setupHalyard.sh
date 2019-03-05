@@ -1,8 +1,6 @@
 #!/bin/bash
 set -x
-#GCS_SA="svc-spinnaker-gcs-account"
 GCS_SA=${USER}
-#GCS_SA_DEST="/home/spinnaker/.gcp/spinnaker-gcs-account.json"
 GCS_SA_DEST="${ACCOUNT_PATH}"
 
 hal config storage gcs edit \
@@ -22,7 +20,8 @@ hal config provider kubernetes enable
 
 hal config provider kubernetes account add ${ACCOUNT_NAME} \
     --docker-registries "${DOCKER}" \
-    --provider-version v1 \
+    --provider-version v2 \
+    --only-spinnaker-managed=true \
     --context $(kubectl config current-context)
 
 hal config version edit --version $(hal version latest -q)

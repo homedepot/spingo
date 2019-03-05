@@ -3,16 +3,10 @@ provider "vault" {
 }
 
 data "vault_generic_secret" "terraform-account" {
-  path = "secret/${var.terraform_account}"
+  path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 provider "google" {
-  credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
-  project     = "${var.gcp_project}"
-  region      = "${var.gcp_region}"
-}
-
-provider "google-beta" {
   credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
   project     = "${var.gcp_project}"
   region      = "${var.gcp_region}"
@@ -31,8 +25,7 @@ data "google_project" "project" {}
 module "spin-k8s-cluster" {
   source                          = "./modules/gke"
   cluster_name                    = "spinnaker"
-  cluster_region                  = "us-east1"
-  enable_legacy_abac              = true
+  cluster_region                  = "${var.cluster_region}"
   gcp_project                     = "${var.gcp_project}"
   master_authorized_network_cidrs = []
 }
@@ -48,8 +41,7 @@ module "k8s-spinnaker-service-account" {
   service_account_name      = "spinnaker"
   service_account_namespace = "kube-system"
   host                      = "${module.spin-k8s-cluster.host}"
-  client_certificate        = "${module.spin-k8s-cluster.client_certificate}"
-  client_key                = "${module.spin-k8s-cluster.client_key}"
+  token                     = "${module.spin-k8s-cluster.token}"
   cluster_ca_certificate    = "${module.spin-k8s-cluster.cluster_ca_certificate}"
   bucket_name               = "${module.halyard-storage.bucket_name}"
   gcp_project               = "${var.gcp_project}"
@@ -64,4 +56,5 @@ module "spinnaker-gcp-service-account" {
   service_account_name = "spinnaker-gcs-account"
   vault_address        = "${var.vault_address}"
   bucket_name          = "${module.halyard-storage.bucket_name}"
+  gcp_project          = "${var.gcp_project}"
 }

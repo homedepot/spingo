@@ -33,7 +33,7 @@ provider "vault" {
 }
 
 data "vault_generic_secret" "terraform-account" {
-  path = "secret/${var.terraform_account}"
+  path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 resource "google_service_account" "service_account" {
@@ -215,17 +215,17 @@ data "template_file" "setupHalyard" {
 
 #Get urls
 data "vault_generic_secret" "vault-ui" {
-  path = "secret/vault-ui"
+  path = "secret/${var.gcp_project}/vault-ui"
 }
 
 data "vault_generic_secret" "vault-api" {
-  path = "secret/vault-api"
+  path = "secret/${var.gcp_project}/vault-api"
 }
 
 #This is manually put into vault and created manually
 #Get OAUTH secrets
 data "vault_generic_secret" "gcp-oauth" {
-  path = "secret/gcp-oauth"
+  path = "secret/${var.gcp_project}/gcp-oauth"
 }
 
 terraform {

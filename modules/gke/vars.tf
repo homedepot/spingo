@@ -15,19 +15,12 @@ variable cluster_region {
   type = "string"
 }
 
-# This variable is used to control the interaction of terraform to the cloud DNS
-# such that the DNS things aren't deleted during a destroy operation when desired.
-# - On a terraform apply operation where the DNS does NOT exist, and we want it created
-# change this value to 1
-# - On a terraform apply operation where the DNS DOES exist, and we do not want the DNS
-# altered, change this value to 0
-# - On a terraform destroy operation where the DNS DOES exist, and we do not want the DNS
-# removed, change this value to 0
-# - On a terraform destroy operation where the DNS DOES exist, and we DO want the DNS
-# removed, change this value to 1
-variable "alter_dns" {
-  description = "See the vars.tf file for a detailed comment about this variable"
-  default = 0
+variable "cluster_config" {
+  type = "map"
+}
+
+variable "dns_name" {
+  description = "description"
 }
 
 ######################################################################################
@@ -44,10 +37,6 @@ variable max_node_count {
 
 variable machine_type {
   default = "n1-standard-4"
-}
-
-variable gke_version {
-  default = "1.11.5-gke.5"
 }
 
 variable master_authorized_network_cidrs {

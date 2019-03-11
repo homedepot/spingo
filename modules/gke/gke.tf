@@ -1,9 +1,8 @@
 ############################################
 resource "google_container_cluster" "cluster" {
-  name               = "${var.cluster_name}-${var.cluster_region}"
+  count              = "${length(var.cluster_config)}"
+  name               = "${var.cluster_config[count.index]}-${var.cluster_region}"
   region             = "${var.cluster_region}"
-  min_master_version = "${var.gke_version}"
-  node_version       = "${var.gke_version}"
   logging_service    = "${var.logging_service}"
   monitoring_service = "${var.monitoring_service}"
 
@@ -13,22 +12,24 @@ resource "google_container_cluster" "cluster" {
   # https://github.com/terraform-providers/terraform-provider-google/issues/1712#issuecomment-410317055
   remove_default_node_pool = true
 
+  #! the below is stupid but it needs to be here or the output below will fail
+  master_auth {}
+
   node_pool {
     name = "default-pool"
   }
 
   lifecycle {
-    ignore_changes = ["node_pool"]
-    ignore_changes = ["network"]
+    ignore_changes = ["node_pool", "network"]
   }
 }
 
 # Primary node pool
 resource "google_container_node_pool" "primary_pool" {
-  name               = "${var.cluster_name}-${var.cluster_region}-primary-pool"
-  cluster            = "${google_container_cluster.cluster.name}"
+  count              = "${length(var.cluster_config)}"
+  name               = "${var.cluster_config[count.index]}-${var.cluster_region}-primary-pool"
+  cluster            = "${google_container_cluster.cluster.*.name[count.index]}"
   region             = "${var.cluster_region}"
-  version            = "${var.gke_version}"
   initial_node_count = 1
 
   autoscaling {
@@ -43,35 +44,31 @@ resource "google_container_node_pool" "primary_pool" {
 }
 
 resource "google_compute_address" "ui" {
-  name = "spinnaker-ui"
+  count = "${length(var.cluster_config)}"
+  name  = "${var.cluster_config[count.index]}-ui"
 }
 
 resource "google_compute_address" "api" {
-  name = "spinnaker-api"
+  count = "${length(var.cluster_config)}"
+  name  = "${var.cluster_config[count.index]}-api"
 }
 
 resource "vault_generic_secret" "vault-api" {
-  path = "secret/${var.gcp_project}/vault-api"
+  count = "${length(var.cluster_config)}"
+  path  = "secret/${var.gcp_project}/vault-api/${count.index}"
 
   data_json = <<-EOF
-              {"address":"${google_compute_address.api.address}"}
+              {"address":"${google_compute_address.api.*.address[count.index]}"}
               EOF
 }
 
 resource "vault_generic_secret" "vault-ui" {
-  path = "secret/${var.gcp_project}/vault-ui"
+  count = "${length(var.cluster_config)}"
+  path  = "secret/${var.gcp_project}/vault-ui/${count.index}"
 
   data_json = <<-EOF
-              {"address":"${google_compute_address.ui.address}"}
+              {"address":"${google_compute_address.ui.*.address[count.index]}"}
               EOF
-}
-
-# TODO: This will eventually change when we get a dedicated domain for spinnaker.
-resource "google_dns_managed_zone" "project_zone" {
-  # see the vars file to an explination about this count thing
-  count    = "${var.alter_dns}"
-  name     = "${var.gcp_project}"
-  dns_name = "${var.gcp_project}.gcp.homedepot.com."
 }
 
 /*
@@ -84,56 +81,40 @@ reference: https://www.terraform.io/docs/providers/google/r/dns_record_set.html
 */
 resource "google_dns_record_set" "spinnaker-ui" {
   # see the vars file to an explination about this count thing
-  count = "${var.alter_dns}"
-  name  = "spinnaker.${google_dns_managed_zone.project_zone.dns_name}"
-  type  = "A"
-  ttl   = 300
-
-  managed_zone = "${google_dns_managed_zone.project_zone.name}"
-
-  rrdatas = ["${google_compute_address.ui.address}"]
+  count        = "${length(var.cluster_config)}"
+  name         = "${var.cluster_config[count.index]}.${var.dns_name}"
+  type         = "A"
+  ttl          = 300
+  managed_zone = "${var.gcp_project}"
+  rrdatas      = ["${google_compute_address.ui.*.address[count.index]}"]
 }
 
 resource "google_dns_record_set" "spinnaker-api" {
   # see the vars file to an explination about this count thing
-  count = "${var.alter_dns}"
-  name  = "spinnaker-api.${google_dns_managed_zone.project_zone.dns_name}"
-  type  = "A"
-  ttl   = 300
-
-  managed_zone = "${google_dns_managed_zone.project_zone.name}"
-
-  rrdatas = ["${google_compute_address.api.address}"]
+  count        = "${length(var.cluster_config)}"
+  name         = "${var.cluster_config[count.index]}-api.${var.dns_name}"
+  type         = "A"
+  ttl          = 300
+  managed_zone = "${var.gcp_project}"
+  rrdatas      = ["${google_compute_address.api.*.address[count.index]}"]
 }
 
-# Query the terraform service account from GCP
-data "google_client_config" "current" {}
-
-output "host" {
-  value     = "${google_container_cluster.cluster.endpoint}"
-  sensitive = false
+output "hosts" {
+  value = "${google_container_cluster.cluster.*.endpoint}"
 }
 
-output "client_certificate" {
-  value = "${google_container_cluster.cluster.master_auth.0.client_certificate}"
+output "cluster_ca_certificates" {
+  value = "${google_container_cluster.cluster.*.master_auth.0.cluster_ca_certificate}"
 }
 
-output "client_key" {
-  value = "${google_container_cluster.cluster.master_auth.0.client_key}"
-}
-
-output "token" {
-  value = "${data.google_client_config.current.access_token}"
-}
-
-output "cluster_ca_certificate" {
-  value = "${google_container_cluster.cluster.master_auth.0.cluster_ca_certificate}"
-}
-
-output "cluster_name" {
-  value = "${var.cluster_name}"
+output "cluster_names" {
+  value = "${values(var.cluster_config)}"
 }
 
 output "cluster_region" {
   value = "${var.cluster_region}"
+}
+
+output "cluster_config" {
+  value = "${var.cluster_config}"
 }

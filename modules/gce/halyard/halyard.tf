@@ -215,11 +215,11 @@ data "template_file" "setupHalyard" {
 
 #Get urls
 data "vault_generic_secret" "vault-ui" {
-  path = "secret/${var.gcp_project}/vault-ui"
+  path = "secret/${var.gcp_project}/vault-ui/0"
 }
 
 data "vault_generic_secret" "vault-api" {
-  path = "secret/${var.gcp_project}/vault-api"
+  path = "secret/${var.gcp_project}/vault-api/0"
 }
 
 #This is manually put into vault and created manually

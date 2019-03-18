@@ -15,6 +15,10 @@ resource "google_container_cluster" "cluster" {
   #! the below is stupid but it needs to be here or the output below will fail
   master_auth {}
 
+  ip_allocation_policy {
+    use_ip_aliases = true
+  }
+
   node_pool {
     name = "default-pool"
   }
@@ -71,6 +75,15 @@ resource "vault_generic_secret" "vault-ui" {
               EOF
 }
 
+resource "vault_generic_secret" "redis-connection" {
+  count = "${length(var.cluster_config)}"
+  path  = "secret/${var.gcp_project}/redis/${count.index}"
+
+  data_json = <<-EOF
+              {"address":"${google_redis_instance.cache.*.host[count.index]}:${google_redis_instance.cache.*.port[count.index]}"}
+              EOF
+}
+
 /*
 Note: The Google Cloud DNS API requires NS records be present at all times. 
 To accommodate this, when creating NS records, the default records Google 
@@ -97,6 +110,16 @@ resource "google_dns_record_set" "spinnaker-api" {
   ttl          = 300
   managed_zone = "${var.gcp_project}"
   rrdatas      = ["${google_compute_address.api.*.address[count.index]}"]
+}
+
+resource "google_redis_instance" "cache" {
+  count          = "${length(var.cluster_config)}"
+  name           = "${var.cluster_config[count.index]}-ha-memory-cache"
+  tier           = "STANDARD_HA"
+  memory_size_gb = 1
+  redis_version  = "REDIS_3_2"
+  display_name   = "${var.cluster_config[count.index]} memorystore redis cache"
+  redis_configs  = "${var.redis_config}"
 }
 
 output "hosts" {

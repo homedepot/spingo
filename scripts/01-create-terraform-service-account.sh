@@ -32,7 +32,7 @@ SA_EMAIL=$(gcloud iam service-accounts list \
 
 PROJECT=$(gcloud info --format='value(config.project)')
 
-echo "adding resourcemanager.projectIamAdmin,iam.serviceAccountAdmin,iam.serviceAccountKeyAdmin,compute.admin,container.admin,storage.admin roles to $SERVICE_ACCOUNT_NAME"
+echo "adding roles to $SERVICE_ACCOUNT_NAME"
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/resourcemanager.projectIamAdmin'
@@ -57,6 +57,9 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/dns.admin'
+gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/redis.admin'
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \

@@ -37,7 +37,8 @@ runuser -l ${USER} -c 'echo "export CLIENT_ID=${CLIENT_ID}" >> /home/${USER}/.ba
 runuser -l ${USER} -c 'echo "export CLIENT_SECRET=${CLIENT_SECRET}" >> /home/${USER}/.bashrc'
 runuser -l ${USER} -c 'echo "export SPIN_UI_IP=${SPIN_UI_IP}" >> /home/${USER}/.bashrc'
 runuser -l ${USER} -c 'echo "export SPIN_API_IP=${SPIN_API_IP}" >> /home/${USER}/.bashrc'
-runuser -l ${USER} -c 'echo "echo \"CLIENT_ID, CLIENT_SECRET, SPIN_UI, SPIN_API_IP are loaded\" >>/home/${USER}/.bashrc'
+runuser -l ${USER} -c 'echo "export SPIN_REDIS_ADDR=${SPIN_REDIS_ADDR}" >> /home/${USER}/.bashrc'
+runuser -l ${USER} -c 'echo "echo \"CLIENT_ID, CLIENT_SECRET, SPIN_UI, SPIN_API_IP, SPIN_REDIS_ADDR are loaded\" >>/home/${USER}/.bashrc'
 
 echo "Downloading HAL"
 cd /home/${USER}
@@ -66,12 +67,9 @@ runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/hald
 runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL}" | base64 -d > /home/${USER}/setupK8SSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/resetgcp.sh'
 
-runuser -l ${USER} -c 'chmod +x /home/${USER}/halpush.sh'
-runuser -l ${USER} -c 'chmod +x /home/${USER}/halget.sh'
-runuser -l ${USER} -c 'chmod +x /home/${USER}/haldiff.sh'
-runuser -l ${USER} -c 'chmod +x /home/${USER}/resetgcp.sh'
+runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
+echo "Setup is complete"
+
 #Use sudo -H -u spinnaker bash at log in or use spingo alias
-
-

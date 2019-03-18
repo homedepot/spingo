@@ -126,10 +126,11 @@ data "template_file" "start_script" {
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
 
     #WRITE secrets
-    CLIENT_ID     = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
-    CLIENT_SECRET = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
-    SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
-    SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
+    CLIENT_ID       = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
+    CLIENT_SECRET   = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
+    SPIN_UI_IP      = "${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP     = "${data.vault_generic_secret.vault-api.data["address"]}"
+    SPIN_REDIS_ADDR = "${data.vault_generic_secret.vault-redis.data["address"]}"
   }
 }
 
@@ -220,6 +221,10 @@ data "vault_generic_secret" "vault-ui" {
 
 data "vault_generic_secret" "vault-api" {
   path = "secret/${var.gcp_project}/vault-api/0"
+}
+
+data "vault_generic_secret" "vault-redis" {
+  path = "secret/${var.gcp_project}/redis/0"
 }
 
 #This is manually put into vault and created manually

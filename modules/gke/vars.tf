@@ -84,3 +84,7 @@ variable "monitoring_service" {
   type    = "string"
   default = "monitoring.googleapis.com/kubernetes"
 }
+
+variable "redis_config" {
+  default = {"notify-keyspace-events"="gxE"}
+}

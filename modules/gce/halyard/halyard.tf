@@ -124,13 +124,6 @@ data "template_file" "start_script" {
     SCRIPT_K8SSL         = "${base64encode(data.template_file.k8ssl.rendered)}"
     SCRIPT_RESETGCP      = "${base64encode(data.template_file.resetgcp.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
-
-    #WRITE secrets
-    CLIENT_ID       = "${data.vault_generic_secret.gcp-oauth.data["client-id"]}"
-    CLIENT_SECRET   = "${data.vault_generic_secret.gcp-oauth.data["client-secret"]}"
-    SPIN_UI_IP      = "${data.vault_generic_secret.vault-ui.data["address"]}"
-    SPIN_API_IP     = "${data.vault_generic_secret.vault-api.data["address"]}"
-    SPIN_REDIS_ADDR = "${data.vault_generic_secret.vault-redis.data["address"]}"
   }
 }
 
@@ -207,10 +200,16 @@ data "template_file" "setupHalyard" {
   template = "${file("${path.module}/halScripts/setupHalyard.sh")}"
 
   vars {
-    USER         = "${var.service_account_name}"
-    ACCOUNT_PATH = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
-    DOCKER       = "docker-registry"
-    ACCOUNT_NAME = "spin-cluster-account"
+    USER                     = "${var.service_account_name}"
+    ACCOUNT_PATH             = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
+    DOCKER                   = "docker-registry"
+    ACCOUNT_NAME             = "spin-cluster-account"
+    SPIN_UI_IP               = "${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP              = "${data.vault_generic_secret.vault-api.data["address"]}"
+    SPIN_REDIS_ADDR          = "${data.vault_generic_secret.vault-redis.data["address"]}"
+    DB_CONNECTION_NAME       = "${data.vault_generic_secret.db-address.data["address"]}"
+    DB_SERVICE_USER_PASSWORD = "${data.vault_generic_secret.db-service-user-password.data["password"]}"
+    DB_MIGRATE_USER_PASSWORD = "${data.vault_generic_secret.db-migrate-user-password.data["password"]}"
   }
 }
 
@@ -225,6 +224,18 @@ data "vault_generic_secret" "vault-api" {
 
 data "vault_generic_secret" "vault-redis" {
   path = "secret/${var.gcp_project}/redis/0"
+}
+
+data "vault_generic_secret" "db-address" {
+  path = "secret/${var.gcp_project}/db-address/0"
+}
+
+data "vault_generic_secret" "db-service-user-password" {
+  path = "secret/${var.gcp_project}/db-service-user-password/0"
+}
+
+data "vault_generic_secret" "db-migrate-user-password" {
+  path = "secret/${var.gcp_project}/db-migrate-user-password/0"
 }
 
 #This is manually put into vault and created manually

@@ -24,21 +24,14 @@ mkhomedir_helper ${USER}
 echo "Setting up repos"
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+add-apt-repository -y ppa:rmescandon/yq
 apt-get update
-apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk expect
+apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk expect yq
 
 echo "Setting up directory permissions."
 mkdir /${USER}
 chown -R ${USER}:google-sudoers /${USER}
 chmod -R 776 /${USER}
-
-echo "Exporting values"
-runuser -l ${USER} -c 'echo "export CLIENT_ID=${CLIENT_ID}" >> /home/${USER}/.bashrc'
-runuser -l ${USER} -c 'echo "export CLIENT_SECRET=${CLIENT_SECRET}" >> /home/${USER}/.bashrc'
-runuser -l ${USER} -c 'echo "export SPIN_UI_IP=${SPIN_UI_IP}" >> /home/${USER}/.bashrc'
-runuser -l ${USER} -c 'echo "export SPIN_API_IP=${SPIN_API_IP}" >> /home/${USER}/.bashrc'
-runuser -l ${USER} -c 'echo "export SPIN_REDIS_ADDR=${SPIN_REDIS_ADDR}" >> /home/${USER}/.bashrc'
-runuser -l ${USER} -c 'echo "echo \"CLIENT_ID, CLIENT_SECRET, SPIN_UI, SPIN_API_IP, SPIN_REDIS_ADDR are loaded\" >>/home/${USER}/.bashrc'
 
 echo "Downloading HAL"
 cd /home/${USER}
@@ -50,7 +43,7 @@ runuser -l ${USER} -c 'sudo bash InstallHalyard.sh -y --user ${USER}'
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'
 
 runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${USER}/${USER}.json'
-runuser -l ${USER} -c 'gsutil rsync -d -r gs://${BUCKET} /${USER}'
+runuser -l ${USER} -c 'gsutil rsync -x ".*\.kube/http-cache/|.*\.kube/cache/" -d -r gs://${BUCKET} /${USER}'
 
 echo "Setting symlinks"
 runuser -l ${USER} -c 'rm -fdr /home/${USER}/.hal'

@@ -114,12 +114,42 @@ module "k8s-spinnaker-service-account-sandbox" {
   }
 }
 
+module "k8s-cloudsql-service-account-secret" {
+  source          = "./modules/gke/k8s-secret"
+  name            = "cloudsql-instance-credentials"
+  namespace       = "spinnaker"
+  secret-contents = "${module.spinnaker-gcp-cloudsql-service-account.service-account-json}"
+
+  providers = {
+    kubernetes = "kubernetes.main"
+  }
+}
+
+module "k8s-cloudsql-service-account-secret-sandbox" {
+  source          = "./modules/gke/k8s-secret"
+  name            = "cloudsql-instance-credentials"
+  namespace       = "spinnaker"
+  secret-contents = "${module.spinnaker-gcp-cloudsql-service-account.service-account-json}"
+
+  providers = {
+    kubernetes = "kubernetes.sandbox"
+  }
+}
+
 # to retrieve the keys for this for use outside of terraform, run 
 # `vault read -format json -field=data secret/spinnaker-gcs-account > somefile.json`
 module "spinnaker-gcp-service-account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-gcs-account"
-  vault_address        = "${var.vault_address}"
   bucket_name          = "${module.halyard-storage.bucket_name}"
   gcp_project          = "${var.gcp_project}"
+  roles                = ["roles/storage.admin", "roles/browser"]
+}
+
+module "spinnaker-gcp-cloudsql-service-account" {
+  source               = "./modules/gcp-service-account"
+  service_account_name = "spinnaker-cloudsql-account"
+  bucket_name          = "${module.halyard-storage.bucket_name}"
+  gcp_project          = "${var.gcp_project}"
+  roles                = ["roles/cloudsql.client"]
 }

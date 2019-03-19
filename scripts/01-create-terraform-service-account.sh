@@ -12,6 +12,8 @@ echo "enabling compute.googleapis.com service"
 gcloud services enable compute.googleapis.com
 echo "enabling iam.googleapis.com service"
 gcloud services enable iam.googleapis.com
+echo "enabling sqladmin.googleapis.com service"
+gcloud services enable sqladmin.googleapis.com
 
 # can also run "gcloud config list --format 'value(core.project)' 2>/dev/null" to get the project name dynamically
 PROJECT="np-platforms-cd-thd"
@@ -60,6 +62,9 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/redis.admin'
+gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role roles/cloudsql.admin
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \

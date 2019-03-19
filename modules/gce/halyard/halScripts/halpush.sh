@@ -1,3 +1,2 @@
 #!/bin/bash
-gsutil -m rsync -d -r /${USER} gs://${BUCKET}
-
+gsutil -m rsync -x ".*\.kube/http-cache/|.*\.kube/cache/" -d -r /${USER} gs://${BUCKET}

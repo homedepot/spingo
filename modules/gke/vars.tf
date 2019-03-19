@@ -86,5 +86,13 @@ variable "monitoring_service" {
 }
 
 variable "redis_config" {
-  default = {"notify-keyspace-events"="gxE"}
+  default = {
+    "notify-keyspace-events" = "gxE"
+  }
+
+  description = "this default setting is necessary for gate to work with hosted redis services like memorystore"
+}
+
+variable cloudsql_machine_type {
+  default = "db-n1-standard-2"
 }

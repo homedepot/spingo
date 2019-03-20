@@ -8,20 +8,16 @@ hal config security ui edit \
 hal config security api edit \
     --override-base-url ${API_URL}
 
-hal config security ui ssl edit --ssl-certificate-file /${USER}/certbot/wildcard.crt --ssl-certificate-key-file /${USER}/certbot/wildcard.key
+SIGNED_WILDCARD_CERTIFICATE="spinnaker.homedepot.com.cer"
+WILDCARD_CERT_PRIVATE_KEY="wildcard.key"
+
+hal config security ui ssl edit --ssl-certificate-file /${USER}/certs/${SIGNED_WILDCARD_CERTIFICATE} --ssl-certificate-key-file /${USER}/certs/${WILDCARD_CERT_PRIVATE_KEY}
 
 # using expect to automate the required interactive password prompt
 expect -c "spawn hal config security ui ssl edit --ssl-certificate-passphrase; sleep 1; expect -exact \"The passphrase needed to unlock your SSL certificate. This will be provided to Apache on startup.: \"; send -- \"nosecrets\r\"; expect eof"
 
-# TODO: do the expect thing below so we don't need to manually type in the password
-echo "You will need to type nosecrets in 2 times."
+expect -c "spawn hal config security api ssl edit --key-alias wildcard --keystore /spinnaker/certs/wildcard.jks --keystore-password --keystore-type jks --truststore /spinnaker/certs/wildcard.jks --truststore-password --truststore-type jks; sleep 1; expect -exact \"The password to unlock your keystore. Due to a limitation in Tomcat, this must match your key's password in the keystore.: \"; send -- \"nosecrets\r\"; expect -exact \"\rThe password to unlock your truststore.: \"; send -- \"nosecrets\r\"; expect eof"
 
-#You will have to type nosecrets passcode in twice
-KEYSTORE_PATH=/${USER}/certbot/wildcard.jks
-hal config security api ssl edit --key-alias ${USER} \
-  --keystore $KEYSTORE_PATH --keystore-password \
-  --keystore-type jks --truststore $KEYSTORE_PATH \
-  --truststore-password --truststore-type jks
 hal config security api ssl enable
 hal config security ui ssl enable
 

@@ -45,7 +45,7 @@ fi
 ########           Create an account        ######## 
 ####################################################
 # Create service account for user spinnaker-user
-kubectl create sa spinnaker-user
+kubectl create sa spinnaker-user --namespace default
 # Get related secret
 secret=$(kubectl get sa spinnaker-user -o json | jq -r '.secrets[].name')
 # Get ca.crt from secret 

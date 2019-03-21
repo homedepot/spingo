@@ -47,11 +47,11 @@ fi
 # Create service account for user spinnaker-user
 kubectl create sa spinnaker-user --namespace default
 # Get related secret
-secret=$(kubectl get sa spinnaker-user -o json | jq -r '.secrets[].name')
+secret=$(kubectl get sa spinnaker-user --namespace default -o json | jq -r '.secrets[].name')
 # Get ca.crt from secret 
-kubectl get secret "$secret" -o json | jq -r '.data["ca.crt"]' | base64 "$BASE64_DECODE" > ca.crt
+kubectl get secret "$secret" --namespace default -o json | jq -r '.data["ca.crt"]' | base64 "$BASE64_DECODE" > ca.crt
 # Get service account token from secret
-user_token=$(kubectl get secret "$secret" -o json | jq -r '.data["token"]' | base64 "$BASE64_DECODE")
+user_token=$(kubectl get secret "$secret" --namespace default -o json | jq -r '.data["token"]' | base64 "$BASE64_DECODE")
 # Get information from your kubectl config (current-context, server..)
 # get current context
 c=$(kubectl config current-context)
@@ -94,6 +94,20 @@ kubectl config set-credentials "spinnaker-user-${c}" --token="$user_token" --kub
 kubectl config set-context "${c}" --cluster="$c" --user="spinnaker-user-${c}" --namespace=default --kubeconfig="${c}.config"
 kubectl config use-context "${c}" --kubeconfig="${c}.config"
 
+# Create boto file and set path to ensure reliable gsutil operations if the user already has gsutil configurations
+cat <<EOF >> boto
+[Boto]
+https_validate_certificates = True
+[GSUtil]
+content_language = en
+default_api_version = 2
+EOF
+export BOTO_CONFIG=boto
+
 gsutil cp "${c}.config" gs://np-platforms-cd-thd-spinnaker-onboarding && rm "${c}.config"
+
+# Cleanup boto config
+rm -f boto
+unset BOTO_CONFIG
 
 echo -e "\n\nThe creation of the service account is complete"

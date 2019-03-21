@@ -17,7 +17,7 @@ echo -e "#######################################################################
 ####################################################
 
 # ensure that the required commands are present needed to run this script
-commands="jq base64 gsutil kubectl"
+commands="jq base64 gsutil kubectl gcloud"
 for i in $commands
 do
   if ! [ -x "$(command -v "$i")" ]; then
@@ -85,14 +85,40 @@ kubectl apply -f rbac-config-spinnaker-user.yaml && rm rbac-config-spinnaker-use
 ########         Consume the account        ######## 
 ####################################################
 
+
+echo -e "Getting current gcloud project configured\n"
+PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
+echo -e "Current project is : $PROJECT \n"
+echo -e "Getting current roles that have GKE Cluster Admin Access \n"
+CLUSTER_ADMIN_GROUPS=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.role:roles/container.clusterAdmin" 2>/dev/null | jq -r '.[].bindings.members' - | grep 'group:' | awk -F '[@:]' '{print $2}')
+INDENTED_CLUSTER_ADMIN_GROUPS=$(echo "$CLUSTER_ADMIN_GROUPS" | sed 's/^/    - /')
+echo -e "Getting current user \n"
+CURRENT_USER_ACCOUNT=$(gcloud config list account --format "value(core.account)" 2>/dev/null)
+echo -e "Getting cluster information \n"
+CLUSTER_ENDPOINT_IP=$(echo "$endpoint" | sed 's/https:\/\///')
+CLUSTER_LOCATION=$(gcloud container clusters list --filter="endpoint:$CLUSTER_ENDPOINT_IP" --format="value(location)" 2>/dev/null)
+CLUSTER_NAME=$(gcloud container clusters list --filter="endpoint:$CLUSTER_ENDPOINT_IP" --format="value(name)" 2>/dev/null)
+
+CLUSTER_ID="gke_${PROJECT}_${CLUSTER_LOCATION}_${CLUSTER_NAME}"
+CONFIG_FILE="$CLUSTER_ID.config"
+
 # Set cluster 
-kubectl config set-cluster "$c" --embed-certs=true --server="$endpoint" --certificate-authority=./ca.crt --kubeconfig="${c}.config" && rm ca.crt
+kubectl config set-cluster "$CLUSTER_ID" --embed-certs=true --server="$endpoint" --certificate-authority=./ca.crt --kubeconfig="$CONFIG_FILE" && rm ca.crt
 # Set user credentials 
-kubectl config set-credentials "spinnaker-user-${c}" --token="$user_token" --kubeconfig="${c}.config"
+kubectl config set-credentials "spinnaker-user-$CLUSTER_ID" --token="$user_token" --kubeconfig="$CONFIG_FILE"
 
 # Define the combination of spinnaker-user user with the EKS cluster
-kubectl config set-context "${c}" --cluster="$c" --user="spinnaker-user-${c}" --namespace=default --kubeconfig="${c}.config"
-kubectl config use-context "${c}" --kubeconfig="${c}.config"
+kubectl config set-context "$CLUSTER_ID" --cluster="$CLUSTER_ID" --user="spinnaker-user-$CLUSTER_ID" --namespace=default --kubeconfig="$CONFIG_FILE"
+kubectl config use-context "$CLUSTER_ID" --kubeconfig="$CONFIG_FILE"
+
+# Append metadata
+echo "spinnaker-metadata:" >> "$CONFIG_FILE"
+echo "  project: $PROJECT" >> "$CONFIG_FILE"
+echo "  location: $CLUSTER_LOCATION" >> "$CONFIG_FILE"
+echo "  name: $CLUSTER_NAME" >> "$CONFIG_FILE"
+echo "  requestor: $CURRENT_USER_ACCOUNT" >> "$CONFIG_FILE"
+echo "  groups:" >> "$CONFIG_FILE"
+echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
 
 # Create boto file and set path to ensure reliable gsutil operations if the user already has gsutil configurations
 cat <<EOF >> boto
@@ -104,7 +130,7 @@ default_api_version = 2
 EOF
 export BOTO_CONFIG=boto
 
-gsutil cp "${c}.config" gs://np-platforms-cd-thd-spinnaker-onboarding && rm "${c}.config"
+gsutil cp "$CONFIG_FILE" gs://np-platforms-cd-thd-spinnaker-onboarding && rm "$CONFIG_FILE"
 
 # Cleanup boto config
 rm -f boto

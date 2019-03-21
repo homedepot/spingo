@@ -13,7 +13,7 @@ CONTEXT="gke_np-com_us-central1-a_spinnaker--jxt19as"
 GROUP="gg_cloud_gcp_np-com-admin"
 
 echo "getting kubeconfig file ($KUBE_FILE) from bucket"
-gsutil cp gs://np-platforms-cd-thd-spinnaker-onboarding/gke_np-platforms-cd-thd_us-east1_spinnaker-us-east1.config $KUBE_FILE
+gsutil cp gs://np-platforms-cd-thd-spinnaker-onboarding/$KUBE_FILE $KUBE_FILE
 
 echo "adding new kubernetes provider for $PROJECT-$REGION-$CLUSTER"
 hal config provider kubernetes account add "$PROJECT-$REGION-$CLUSTER" \

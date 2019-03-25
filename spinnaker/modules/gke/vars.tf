@@ -19,10 +19,6 @@ variable "cluster_config" {
   type = "map"
 }
 
-variable "dns_name" {
-  description = "description"
-}
-
 ######################################################################################
 # Optional parameters
 ######################################################################################
@@ -68,6 +64,7 @@ variable oauth_scopes {
     "https://www.googleapis.com/auth/service.management.readonly",
     "https://www.googleapis.com/auth/servicecontrol",
     "https://www.googleapis.com/auth/trace.append",
+    "https://www.googleapis.com/auth/userinfo.email",
   ]
 }
 

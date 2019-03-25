@@ -45,6 +45,11 @@ resource "google_container_node_pool" "primary_pool" {
     machine_type = "${var.machine_type}"
     oauth_scopes = ["${var.oauth_scopes}"]
   }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
 }
 
 resource "google_compute_address" "ui" {
@@ -204,34 +209,6 @@ resource "random_string" "spinnaker-db-name" {
   upper   = false
 }
 
-/*
-Note: The Google Cloud DNS API requires NS records be present at all times. 
-To accommodate this, when creating NS records, the default records Google 
-automatically creates will be silently overwritten. Also, when destroying NS 
-records, Terraform will not actually remove NS records, but will report that 
-it did.
-reference: https://www.terraform.io/docs/providers/google/r/dns_record_set.html
-*/
-resource "google_dns_record_set" "spinnaker-ui" {
-  # see the vars file to an explination about this count thing
-  count        = "${length(var.cluster_config)}"
-  name         = "${var.cluster_config[count.index]}.${var.dns_name}"
-  type         = "A"
-  ttl          = 300
-  managed_zone = "${var.gcp_project}"
-  rrdatas      = ["${google_compute_address.ui.*.address[count.index]}"]
-}
-
-resource "google_dns_record_set" "spinnaker-api" {
-  # see the vars file to an explination about this count thing
-  count        = "${length(var.cluster_config)}"
-  name         = "${var.cluster_config[count.index]}-api.${var.dns_name}"
-  type         = "A"
-  ttl          = 300
-  managed_zone = "${var.gcp_project}"
-  rrdatas      = ["${google_compute_address.api.*.address[count.index]}"]
-}
-
 resource "google_redis_instance" "cache" {
   count          = "${length(var.cluster_config)}"
   name           = "${var.cluster_config[count.index]}-ha-memory-cache"
@@ -260,4 +237,12 @@ output "cluster_region" {
 
 output "cluster_config" {
   value = "${var.cluster_config}"
+}
+
+output "ui_ip_addresses" {
+  value = "${google_compute_address.ui.*.address}"
+}
+
+output "api_ip_addresses" {
+  value = "${google_compute_address.api.*.address}"
 }

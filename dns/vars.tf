@@ -15,19 +15,8 @@ variable "gcp_region" {
   default     = "us-east1"
 }
 
-variable "cluster_region" {
-  type        = "string"
-  description = "GCP region, e.g. us-east1"
-  default     = "us-east1"
-}
-
 variable "gcp_project" {
   description = "GCP project name"
-}
-
-variable "managed_dns_gcp_project" {
-  description = "GCP project name where the DNS managed zone lives"
-  default     = "np-platforms-cd-thd"
 }
 
 variable "cloud_dns_hostname" {

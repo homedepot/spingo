@@ -14,6 +14,14 @@ provider "google" {
   region  = "${var.gcp_region}"
 }
 
+provider "google" {
+  alias       = "dns-zone"
+  credentials = "${data.vault_generic_secret.terraform-account.data[var.managed_dns_gcp_project]}"
+
+  # credentials = "${file("terraform-account-dns.json")}" //! swtich to this if you need to import stuff from GCP
+  project = "${var.managed_dns_gcp_project}"
+}
+
 # Query the terraform service account from GCP
 data "google_client_config" "current" {}
 
@@ -26,14 +34,6 @@ terraform {
 }
 
 data "google_project" "project" {}
-
-# TODO: This will eventually change when we get a dedicated domain for spinnaker.
-resource "google_dns_managed_zone" "project_zone" {
-  # see the vars file to an explination about this count thing
-  count    = "${var.alter_dns}"
-  name     = "${var.gcp_project}"
-  dns_name = "${var.gcp_project}${var.cloud_dns_hostname}."
-}
 
 variable "cluster_config" {
   description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
@@ -51,7 +51,6 @@ module "spin-k8s-cluster" {
   gcp_project                     = "${var.gcp_project}"
   master_authorized_network_cidrs = []
   cluster_config                  = "${var.cluster_config}"
-  dns_name                        = "${var.gcp_project}${var.cloud_dns_hostname}."
 }
 
 module "halyard-storage" {
@@ -152,4 +151,17 @@ module "spinnaker-gcp-cloudsql-service-account" {
   bucket_name          = "${module.halyard-storage.bucket_name}"
   gcp_project          = "${var.gcp_project}"
   roles                = ["roles/cloudsql.client"]
+}
+
+module "spinnaker-dns" {
+  source           = "./modules/dns"
+  gcp_project      = "${var.managed_dns_gcp_project}"
+  cluster_config   = "${var.cluster_config}"
+  dns_name         = "${var.gcp_project}${var.cloud_dns_hostname}."
+  ui_ip_addresses  = "${module.spin-k8s-cluster.ui_ip_addresses}"
+  api_ip_addresses = "${module.spin-k8s-cluster.api_ip_addresses}"
+
+  providers = {
+    google = "google.dns-zone"
+  }
 }

@@ -11,7 +11,7 @@ hal config security api edit \
 SIGNED_WILDCARD_CERTIFICATE="spinnaker.homedepot.com.cer"
 WILDCARD_CERT_PRIVATE_KEY="wildcard.key"
 
-hal config security ui ssl edit --ssl-certificate-file /${USER}/certs/${SIGNED_WILDCARD_CERTIFICATE} --ssl-certificate-key-file /${USER}/certs/${WILDCARD_CERT_PRIVATE_KEY}
+hal config security ui ssl edit --ssl-certificate-file /${USER}/certs/"$SIGNED_WILDCARD_CERTIFICATE" --ssl-certificate-key-file /${USER}/certs/"$WILDCARD_CERT_PRIVATE_KEY"
 
 # using expect to automate the required interactive password prompt
 expect -c "spawn hal config security ui ssl edit --ssl-certificate-passphrase; sleep 1; expect -exact \"The passphrase needed to unlock your SSL certificate. This will be provided to Apache on startup.: \"; send -- \"nosecrets\r\"; expect eof"

@@ -89,7 +89,7 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
 }
 
 data "template_file" "aliases" {
-  template = "${file("${path.module}/halScripts/aliases.sh")}"
+  template = "${file("./halScripts/aliases.sh")}"
 
   vars {
     USER = "${var.service_account_name}"
@@ -97,7 +97,7 @@ data "template_file" "aliases" {
 }
 
 data "template_file" "spingo" {
-  template = "${file("${path.module}/halScripts/spingo.sh")}"
+  template = "${file("./halScripts/spingo.sh")}"
 
   vars {
     USER = "${var.service_account_name}"
@@ -105,7 +105,7 @@ data "template_file" "spingo" {
 }
 
 data "template_file" "start_script" {
-  template = "${file("${path.module}/start.sh")}"
+  template = "${file("./start.sh")}"
 
   vars {
     USER                 = "${var.service_account_name}"
@@ -128,7 +128,7 @@ data "template_file" "start_script" {
 }
 
 data "template_file" "resetgcp" {
-  template = "${file("${path.module}/halScripts/resetgcp.sh")}"
+  template = "${file("./halScripts/resetgcp.sh")}"
 
   vars {
     USER                 = "${var.service_account_name}"
@@ -139,7 +139,7 @@ data "template_file" "resetgcp" {
 }
 
 data "template_file" "halpush" {
-  template = "${file("${path.module}/halScripts/halpush.sh")}"
+  template = "${file("./halScripts/halpush.sh")}"
 
   vars {
     USER   = "${var.service_account_name}"
@@ -148,7 +148,7 @@ data "template_file" "halpush" {
 }
 
 data "template_file" "halget" {
-  template = "${file("${path.module}/halScripts/halget.sh")}"
+  template = "${file("./halScripts/halget.sh")}"
 
   vars {
     USER   = "${var.service_account_name}"
@@ -157,7 +157,7 @@ data "template_file" "halget" {
 }
 
 data "template_file" "haldiff" {
-  template = "${file("${path.module}/halScripts/haldiff.sh")}"
+  template = "${file("./halScripts/haldiff.sh")}"
 
   vars {
     USER   = "${var.service_account_name}"
@@ -166,7 +166,7 @@ data "template_file" "haldiff" {
 }
 
 data "template_file" "setupSSL" {
-  template = "${file("${path.module}/halScripts/setupSSL.sh")}"
+  template = "${file("./halScripts/setupSSL.sh")}"
 
   vars {
     USER    = "${var.service_account_name}"
@@ -179,7 +179,7 @@ data "template_file" "setupSSL" {
 }
 
 data "template_file" "k8ssl" {
-  template = "${file("${path.module}/halScripts/setupK8SSL.sh")}"
+  template = "${file("./halScripts/setupK8SSL.sh")}"
 
   vars {
     SPIN_UI_IP  = "${data.vault_generic_secret.vault-ui.data["address"]}"
@@ -188,7 +188,7 @@ data "template_file" "k8ssl" {
 }
 
 data "template_file" "setupSAML" {
-  template = "${file("${path.module}/halScripts/setupSAML.sh")}"
+  template = "${file("./halScripts/setupSAML.sh")}"
 
   vars {
     USER    = "${var.service_account_name}"
@@ -197,7 +197,7 @@ data "template_file" "setupSAML" {
 }
 
 data "template_file" "setupHalyard" {
-  template = "${file("${path.module}/halScripts/setupHalyard.sh")}"
+  template = "${file("./halScripts/setupHalyard.sh")}"
 
   vars {
     USER                     = "${var.service_account_name}"

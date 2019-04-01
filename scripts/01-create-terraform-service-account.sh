@@ -64,7 +64,7 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --role='roles/redis.admin'
 gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
-    --role roles/cloudsql.admin
+    --role='roles/cloudsql.admin'
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \

@@ -62,7 +62,7 @@ FIAT="http://localhost:7003"
 # create the new _fiat_ service account for a given role
 curl -X POST \
   -H "Content-type: application/json" \
-  -d '{ "name": "fiat-'"$GROUP"'", "memberOf": ["'"$GROUP"'"] }' \
+  -d '{ "name": "'"$GROUP"'", "memberOf": ["'"$GROUP"'"] }' \
   "$FRONT50"/serviceAccounts
 
 # force fiat to sync the change

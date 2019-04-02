@@ -1,9 +1,9 @@
-variable hosts {
-  type = "list"
+variable host {
+  type = "string"
 }
 
-variable cluster_names {
-  type = "list"
+variable cluster_name {
+  type = "string"
 }
 
 variable cluster_region {
@@ -25,8 +25,8 @@ variable "cluster_config" {
 variable "service_account_name" {}
 variable "service_account_namespace" {}
 
-variable cluster_ca_certificates {
-  type = "list"
+variable cluster_ca_certificate {
+  type = "string"
 }
 
 variable "cluster_list_index" {

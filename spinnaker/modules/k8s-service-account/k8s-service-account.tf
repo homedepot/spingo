@@ -44,16 +44,16 @@ data "template_file" "kubeconfig" {
   template = "${file("${path.module}/kubeconfig.template")}"
 
   vars {
-    CA_CERT = "${var.cluster_ca_certificates[var.cluster_list_index]}"
-    HOST    = "https://${var.hosts[var.cluster_list_index]}"
-    NAME    = "gke_${var.gcp_project}_${var.cluster_names[var.cluster_list_index]}_${var.cluster_region}"
+    CA_CERT = "${var.cluster_ca_certificate}"
+    HOST    = "https://${var.host}"
+    NAME    = "gke_${var.gcp_project}_${var.cluster_name}_${var.cluster_region}"
     TOKEN   = "${lookup(data.kubernetes_secret.service_account_data.data, "token", "")}"
   }
 }
 
 resource "google_storage_bucket_object" "spinnaker_kubeconfig_file" {
   count        = "${var.enable}"
-  name         = "${var.cluster_list_index == 0 ? ".kube/config" : ".kube/${var.cluster_names[var.cluster_list_index]}.config"}"
+  name         = "${var.cluster_list_index == 0 ? ".kube/config" : ".kube/${var.cluster_name}.config"}"
   content      = "${data.template_file.kubeconfig.rendered}"
   bucket       = "${var.bucket_name}"
   content_type = "application/text"

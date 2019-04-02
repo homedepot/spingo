@@ -238,6 +238,10 @@ data "vault_generic_secret" "db-migrate-user-password" {
   path = "secret/${var.gcp_project}/db-migrate-user-password/0"
 }
 
+data "vault_generic_secret" "halyard-external-ip" {
+  path = "secret/${var.gcp_project}/halyard"
+}
+
 #This is manually put into vault and created manually
 #Get OAUTH secrets
 data "vault_generic_secret" "gcp-oauth" {
@@ -272,7 +276,7 @@ resource "google_compute_instance" "halyard-spin-vm-grueld" {
     network = "default"
 
     access_config {
-      // Ephemeral IP - leaving this block empty will generate a new external IP and assign it to the machine
+      nat_ip = "${data.vault_generic_secret.halyard-external-ip.data["address"]}"
     }
   }
 

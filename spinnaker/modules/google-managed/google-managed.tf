@@ -1,57 +1,3 @@
-############################################
-resource "google_container_cluster" "cluster" {
-  count              = "${length(var.cluster_config)}"
-  name               = "${var.cluster_config[count.index]}-${var.cluster_region}"
-  region             = "${var.cluster_region}"
-  logging_service    = "${var.logging_service}"
-  monitoring_service = "${var.monitoring_service}"
-
-  # Remove the default node pool during cluster creation.
-  # We use google_container_node_pools for better control and
-  # less disruptive changes.
-  # https://github.com/terraform-providers/terraform-provider-google/issues/1712#issuecomment-410317055
-  remove_default_node_pool = true
-
-  #! the below is stupid but it needs to be here or the output below will fail
-  master_auth {}
-
-  ip_allocation_policy {
-    use_ip_aliases = true
-  }
-
-  node_pool {
-    name = "default-pool"
-  }
-
-  lifecycle {
-    ignore_changes = ["node_pool", "network"]
-  }
-}
-
-# Primary node pool
-resource "google_container_node_pool" "primary_pool" {
-  count              = "${length(var.cluster_config)}"
-  name               = "${var.cluster_config[count.index]}-${var.cluster_region}-primary-pool"
-  cluster            = "${google_container_cluster.cluster.*.name[count.index]}"
-  region             = "${var.cluster_region}"
-  initial_node_count = 1
-
-  autoscaling {
-    min_node_count = "${var.min_node_count}"
-    max_node_count = "${var.max_node_count}"
-  }
-
-  node_config {
-    machine_type = "${var.machine_type}"
-    oauth_scopes = ["${var.oauth_scopes}"]
-  }
-
-  management {
-    auto_repair  = true
-    auto_upgrade = true
-  }
-}
-
 resource "google_compute_address" "ui" {
   count = "${length(var.cluster_config)}"
   name  = "${var.cluster_config[count.index]}-ui"
@@ -210,33 +156,26 @@ resource "random_string" "spinnaker-db-name" {
 }
 
 resource "google_redis_instance" "cache" {
-  count          = "${length(var.cluster_config)}"
-  name           = "${var.cluster_config[count.index]}-ha-memory-cache"
-  tier           = "STANDARD_HA"
-  memory_size_gb = 1
-  redis_version  = "REDIS_3_2"
-  display_name   = "${var.cluster_config[count.index]} memorystore redis cache"
-  redis_configs  = "${var.redis_config}"
+  count              = "${length(var.cluster_config)}"
+  name               = "${var.cluster_config[count.index]}-ha-memory-cache"
+  tier               = "STANDARD_HA"
+  memory_size_gb     = 1
+  redis_version      = "REDIS_3_2"
+  display_name       = "${var.cluster_config[count.index]} memorystore redis cache"
+  redis_configs      = "${var.redis_config}"
+  authorized_network = "${element(var.authorized_networks_redis, count.index)}"
 }
 
-output "hosts" {
-  value = "${google_container_cluster.cluster.*.endpoint}"
+resource "google_compute_address" "halyard" {
+  name = "halyard-external-ip"
 }
 
-output "cluster_ca_certificates" {
-  value = "${google_container_cluster.cluster.*.master_auth.0.cluster_ca_certificate}"
-}
+resource "vault_generic_secret" "halyard-ip" {
+  path = "secret/${var.gcp_project}/halyard"
 
-output "cluster_names" {
-  value = "${values(var.cluster_config)}"
-}
-
-output "cluster_region" {
-  value = "${var.cluster_region}"
-}
-
-output "cluster_config" {
-  value = "${var.cluster_config}"
+  data_json = <<-EOF
+              {"address":"${google_compute_address.halyard.address}"}
+              EOF
 }
 
 output "ui_ip_addresses" {
@@ -245,4 +184,8 @@ output "ui_ip_addresses" {
 
 output "api_ip_addresses" {
   value = "${google_compute_address.api.*.address}"
+}
+
+output "halyard_ip_address" {
+  value = "${google_compute_address.halyard.address}"
 }

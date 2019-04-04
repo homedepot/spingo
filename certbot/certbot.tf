@@ -12,6 +12,11 @@ variable "service_account_name" {
   default = "certbot"
 }
 
+variable "wildcard_dns_name" {
+  description = "This is the name of the dns wildcard domain"
+  default     = ".gcp.homedepot.com"
+}
+
 variable "bucket_name" {
   default = "np-platforms-cd-thd-halyard-bucket"
 }
@@ -88,11 +93,21 @@ data "template_file" "start_script" {
 
   vars {
     # Allows us to push the key without checking it in or putting it in the storage bucketcd
-    REPLACE = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
-    USER    = "${var.service_account_name}"
-    BUCKET  = "${var.bucket_name}"
-    REGION  = "${var.gcp_region}"
-    PROJECT = "${var.gcp_project}"
+    REPLACE       = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
+    USER          = "${var.service_account_name}"
+    BUCKET        = "${var.bucket_name}"
+    REGION        = "${var.gcp_region}"
+    PROJECT       = "${var.gcp_project}"
+    DNS           = "${var.gcp_project}${var.wildcard_dns_name}"
+    LINKER_SCRIPT = "${base64encode(data.template_file.linker_script.rendered)}"
+  }
+}
+
+data "template_file" "linker_script" {
+  template = "${file("${path.module}/symlinker.sh")}"
+
+  vars {
+    DNS = "${var.gcp_project}${var.wildcard_dns_name}"
   }
 }
 

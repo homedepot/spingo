@@ -8,6 +8,20 @@
 
 # if you need to delete the service account, see 00-delete-terraform-account.sh
 
+####################################################
+########             Dependencies           ######## 
+####################################################
+
+# ensure that the required commands are present needed to run this script
+commands="vault gcloud openssl"
+for i in $commands
+do
+  if ! [ -x "$(command -v "$i")" ]; then
+    echo "Error: $i is not installed." >&2
+    exit 1
+  fi
+done
+
 echo "enabling compute.googleapis.com service"
 gcloud services enable compute.googleapis.com
 echo "enabling iam.googleapis.com service"
@@ -75,3 +89,18 @@ vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCO
 
 echo "create the bucket that will store the Terraform State"
 gsutil mb -p "$PROJECT" -c "$TERRAFORM_REMOTE_GCS_STORAGE_CLASS" -l "$TERRAFORM_REMOTE_GCS_LOCATION" gs://"$TERRAFORM_REMOTE_GCS_NAME"/
+
+vault read -field "value"  secret/"$PROJECT"/keystore_pass
+
+KEYSTORE_EXISTS=$(echo "$?")
+
+if [ ! "$KEYSTORE_EXISTS" == "0" ]; then
+    echo "There is no keystore password stored within vault. Please enter a password you want to use or leave blank to create a random one."
+    read USER_KEY_PASS
+    if [ "$USER_KEY_PASS" == "" ]; then
+        KEY_PASS=$(openssl rand -base64 32)
+    else
+        KEY_PASS="$USER_KEY_PASS"
+    fi
+    vault write secret/"$PROJECT"/keystore_pass "value=$KEY_PASS"
+fi

@@ -42,6 +42,10 @@ data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
+data "vault_generic_secret" "keystore_pass" {
+  path = "secret/${var.gcp_project}/keystore_pass"
+}
+
 resource "google_service_account" "service_account" {
   display_name = "${var.service_account_name}"
   account_id   = "${var.service_account_name}"
@@ -93,13 +97,15 @@ data "template_file" "start_script" {
 
   vars {
     # Allows us to push the key without checking it in or putting it in the storage bucketcd
-    REPLACE       = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
-    USER          = "${var.service_account_name}"
-    BUCKET        = "${var.bucket_name}"
-    REGION        = "${var.gcp_region}"
-    PROJECT       = "${var.gcp_project}"
-    DNS           = "${var.gcp_project}${var.wildcard_dns_name}"
-    LINKER_SCRIPT = "${base64encode(data.template_file.linker_script.rendered)}"
+    REPLACE                     = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
+    USER                        = "${var.service_account_name}"
+    BUCKET                      = "${var.bucket_name}"
+    REGION                      = "${var.gcp_region}"
+    PROJECT                     = "${var.gcp_project}"
+    DNS                         = "${var.gcp_project}${var.wildcard_dns_name}"
+    LINKER_SCRIPT               = "${base64encode(data.template_file.linker_script.rendered)}"
+    MAKE_UPDATE_KEYSTORE_SCRIPT = "${base64encode(data.template_file.make_update_keystore_script.rendered)}"
+
   }
 }
 
@@ -108,6 +114,16 @@ data "template_file" "linker_script" {
 
   vars {
     DNS = "${var.gcp_project}${var.wildcard_dns_name}"
+  }
+}
+
+data "template_file" "make_update_keystore_script" {
+  template = "${file("${path.module}/make_or_update_keystore.sh")}"
+
+  vars {
+    DNS           = "${var.gcp_project}${var.wildcard_dns_name}"
+    KEYSTORE_PASS = "${data.vault_generic_secret.keystore_pass.data["value"]}"
+
   }
 }
 

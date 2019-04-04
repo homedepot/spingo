@@ -36,6 +36,10 @@ data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
+data "vault_generic_secret" "keystore_pass" {
+  path = "secret/${var.gcp_project}/keystore_pass"
+}
+
 resource "google_service_account" "service_account" {
   display_name = "${var.service_account_name}"
   account_id   = "${var.service_account_name}"
@@ -173,8 +177,9 @@ data "template_file" "setupSSL" {
     UI_URL  = "https://${var.service_account_name}.${var.gcp_project}.gcp.homedepot.com"
     API_URL = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
 
-    SPIN_UI_IP  = "${data.vault_generic_secret.vault-ui.data["address"]}"
-    SPIN_API_IP = "${data.vault_generic_secret.vault-api.data["address"]}"
+    SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
+    SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
+    KEYSTORE_PASS = "${data.vault_generic_secret.keystore_pass.data["value"]}"
   }
 }
 

@@ -34,6 +34,7 @@ apt-get update
 apt-get install -y --allow-unauthenticated --no-install-recommends google-cloud-sdk
 apt-get install -y --allow-unauthenticated --no-install-recommends python-certbot-apache
 apt-get install -y --allow-unauthenticated --no-install-recommends python-pip
+apt-get install -y --allow-unauthenticated --no-install-recommends openjdk-11-jre-headless # need this for keytool
 
 #install the plugin since ubuntu doesn't have it in repo
 cd ~
@@ -51,6 +52,9 @@ echo "certbot certonly --test-cert --dns-google --config-dir /${USER}/${USER} --
 echo "certbot certonly --dns-google --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work --dns-google-credentials /home/${USER}/${USER}.json --dns-google-propagation-seconds 120 -d *.${DNS}." > /home/${USER}/execute-only-if-you-are-sure.sh
 
 #write out test renew
+echo "certbot renew --dry-run --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work" > /home/${USER}/execute-renew-test.sh
+
+#write out renew
 echo "certbot renew --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work" > /home/${USER}/execute-renew.sh
 
 runuser -l ${USER} -c 'mkdir /home/${USER}/logs'
@@ -75,7 +79,8 @@ chown -R ${USER}:google-sudoers /${USER}
 
 # rsync does not persist the symlinks and certbot requires symlinks so we need to set them back
 runuser -l ${USER} -c 'echo "${LINKER_SCRIPT}" | base64 -d > /home/${USER}/symlinker.sh'
+runuser -l ${USER} -c 'echo "${MAKE_UPDATE_KEYSTORE_SCRIPT}" | base64 -d > /home/${USER}/make_or_update_keystore.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
-runuser -l ${USER} -c '/home/${USER}/symlimker.sh'
+runuser -l ${USER} -c 'cd /home/${USER} && ./symlimker.sh'
 
 echo "startup complete"

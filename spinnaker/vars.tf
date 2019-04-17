@@ -44,7 +44,7 @@ variable "default_node_options" {
     disk_type    = "pd-standard"
     image        = "COS"
     machine_type = "n1-standard-4"
-    preemptible  = true
+    preemptible  = false
   }
 }
 
@@ -111,6 +111,8 @@ variable "default_networks_that_can_access_k8s_api" {
       cidr_block = "35.237.189.247/32" # hard coded halyard vm external ip until terraform v0.12
     }, {
       cidr_block = "35.227.120.4/32" # hard coded cloud nat value until terraform v0.12
+    }, {
+      cidr_block = "35.227.117.42/32" # hard coded cloud nat value until terraform v0.12
     }]
   }]
 }

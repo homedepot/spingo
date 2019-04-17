@@ -12,9 +12,9 @@
 
 #REMEMBER memberOf is needed in saml response from security. 
 
-KEYSTORE_PATH="/${USER}/saml/saml.jks"
+KEYSTORE_PATH="/${USER}/saml/saml-np.jks"
 KEYSTORE_PASSWORD="nosecrets"
-METADATA_PATH="/${USER}/saml/ssosecure-qaMetadata.xml"
+METADATA_PATH="/${USER}/saml/ssosecure_SSO_idpMetadata.xml"
 SERVICE_ADDR_URL="${API_URL}"
 ISSUER_ID="spinnaker.np"
 
@@ -30,7 +30,7 @@ ISSUER_ID="spinnaker.np"
  hal config security authn saml enable
  hal config security authz enable
  
- echo "Turn on FIAT!"
- sed -i /home/${USER}/.hal/config -e 's/    fiat: false/    fiat: true/g'
+ echo "deploymentConfigurations.0.features.fiat: true" | yq write -s - -i /spinnaker/.hal/config
+
  echo "You will need to do a hal deploy apply to push the changes."
 

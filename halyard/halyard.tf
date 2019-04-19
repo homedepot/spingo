@@ -127,6 +127,7 @@ data "template_file" "start_script" {
     SCRIPT_SPINGO        = "${base64encode(data.template_file.spingo.rendered)}"
     SCRIPT_K8SSL         = "${base64encode(data.template_file.k8ssl.rendered)}"
     SCRIPT_RESETGCP      = "${base64encode(data.template_file.resetgcp.rendered)}"
+    SCRIPT_SWTICH        = "${base64encode(data.template_file.halswitch.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
 }
@@ -157,6 +158,14 @@ data "template_file" "halget" {
   vars {
     USER   = "${var.service_account_name}"
     BUCKET = "${var.gcp_project}${var.bucket_name}"
+  }
+}
+
+data "template_file" "halswitch" {
+  template = "${file("./halScripts/halswitch.sh")}"
+
+  vars {
+    USER = "${var.service_account_name}"
   }
 }
 

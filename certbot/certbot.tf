@@ -1,24 +1,25 @@
 variable "gcp_region" {
   description = "GCP region, e.g. us-east1"
-  default     = "us-east1"
+  type        = "string"
 }
 
 variable "gcp_project" {
   description = "GCP project name"
-  default     = "np-platforms-cd-thd"
+  type        = "string"
 }
 
 variable "service_account_name" {
   default = "certbot"
+  type    = "string"
 }
 
 variable "wildcard_dns_name" {
   description = "This is the name of the dns wildcard domain"
-  default     = ".gcp.homedepot.com"
+  type        = "string"
 }
 
 variable "bucket_name" {
-  default = "np-platforms-cd-thd-halyard-bucket"
+  type = "string"
 }
 
 resource "google_storage_bucket" "bucket-config" {
@@ -102,35 +103,29 @@ data "template_file" "start_script" {
     BUCKET                      = "${var.bucket_name}"
     REGION                      = "${var.gcp_region}"
     PROJECT                     = "${var.gcp_project}"
-    DNS                         = "${var.gcp_project}${var.wildcard_dns_name}"
+    DNS                         = "${var.wildcard_dns_name}"
     LINKER_SCRIPT               = "${base64encode(data.template_file.linker_script.rendered)}"
     MAKE_UPDATE_KEYSTORE_SCRIPT = "${base64encode(data.template_file.make_update_keystore_script.rendered)}"
-
   }
 }
 
 data "template_file" "linker_script" {
   template = "${file("${path.module}/symlinker.sh")}"
-
-  vars {
-    DNS = "${var.gcp_project}${var.wildcard_dns_name}"
-  }
 }
 
 data "template_file" "make_update_keystore_script" {
   template = "${file("${path.module}/make_or_update_keystore.sh")}"
 
   vars {
-    DNS           = "${var.gcp_project}${var.wildcard_dns_name}"
+    DNS           = "${var.wildcard_dns_name}"
     KEYSTORE_PASS = "${data.vault_generic_secret.keystore_pass.data["value"]}"
-
   }
 }
 
-resource "google_compute_instance" "certbot-thd-spinnaker" {
-  count                     = 1                       // Adjust as desired
-  name                      = "certbot-thd-spinnaker"
-  machine_type              = "n1-standard-4"         // smallest (CPU &amp; RAM) available instance
+resource "google_compute_instance" "certbot-spinnaker" {
+  count                     = 1                     // Adjust as desired
+  name                      = "certbot-spinnaker"
+  machine_type              = "n1-standard-4"       // smallest (CPU &amp; RAM) available instance
   zone                      = "${var.gcp_region}-c"
   allow_stopping_for_update = true
 

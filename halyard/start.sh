@@ -14,6 +14,7 @@ exec > $logfile 2>&1
 
 echo "Setting up alias for sudo action."
 runuser -l root -c 'echo "${SCRIPT_SPINGO}" | base64 -d > /etc/profile.d/spingo.sh'
+runuser -l root -c 'echo "alias showlog=\"tail -f /tmp/install.log | sed '/^startup complete$/ q'\"" > /etc/profile.d/showlog.sh'
 
 #CREATE USER
 echo "Creating user"
@@ -32,6 +33,7 @@ echo "Setting up directory permissions."
 mkdir /${USER}
 chown -R ${USER}:google-sudoers /${USER}
 chmod -R 776 /${USER}
+
 
 echo "Downloading HAL"
 cd /home/${USER}
@@ -57,12 +59,13 @@ runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setu
 runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/haldiff.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_SWITCH}" | base64 -d > /home/${USER}/halswitch.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL}" | base64 -d > /home/${USER}/setupK8SSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/resetgcp.sh'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
-echo "Setup is complete"
+echo "startup complete"
 
 #Use sudo -H -u spinnaker bash at log in or use spingo alias

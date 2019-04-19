@@ -1,1 +1,1 @@
-alias spingo="sudo -H -u ${USER} bash"
+alias spingo="sudo -H -u ${USER} -i bash"

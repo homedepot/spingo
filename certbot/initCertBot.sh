@@ -19,10 +19,15 @@ usermod -g google-sudoers ${USER}
 mkhomedir_helper ${USER}
 
 echo "Setting up alias for sudo action."
-runuser -l root -c 'echo "alias spingo=\"sudo -H -u ${USER} bash\"" > /etc/profile.d/spingo.sh'
-runuser -l root -c 'echo "alias showlog=\"tail -f /tmp/install.log\"" > /etc/profile.d/showlog.sh'
+# local gcp user aliases
+runuser -l root -c 'echo "alias spingo=\"sudo -H -u ${USER} -i bash\"" > /etc/profile.d/spingo.sh'
+runuser -l root -c 'echo "alias showlog=\"tail -f /tmp/install.log | sed '/^startup complete$/ q'\"" > /etc/profile.d/showlog.sh'
 runuser -l root -c 'echo "alias pushcerts=\"gsutil rsync -d -r /${USER}/${USER} gs://${BUCKET}/${USER}\"" > /etc/profile.d/pushcerts.sh'
 runuser -l root -c 'echo "alias pullcerts=\"gsutil rsync -d -r gs://${BUCKET}/${USER} /${USER}/${USER}\"" > /etc/profile.d/pullcerts.sh'
+# certbot user aliases
+runuser -l root -c 'echo "alias pullcerts=\"gsutil rsync -d -r gs://${BUCKET}/${USER} /${USER}/${USER}\"" >> /home/${USER}/.bash_aliases'
+runuser -l root -c 'echo "alias pushcerts=\"gsutil rsync -d -r /${USER}/${USER} gs://${BUCKET}/${USER}\"" >> /home/${USER}/.bash_aliases'
+runuser -l root -c 'echo "alias showlog=\"tail -f /tmp/install.log | sed '/^startup complete$/ q'\"" >> /home/${USER}/.bash_aliases'
 
 
 #Install Certbot
@@ -35,21 +40,23 @@ apt-get install -y --allow-unauthenticated --no-install-recommends google-cloud-
 apt-get install -y --allow-unauthenticated --no-install-recommends python-certbot-apache
 apt-get install -y --allow-unauthenticated --no-install-recommends python-pip
 apt-get install -y --allow-unauthenticated --no-install-recommends openjdk-11-jre-headless # need this for keytool
-
+pip install setuptools
 #install the plugin since ubuntu doesn't have it in repo
 cd ~
 mkdir source
 cd source
 git clone https://github.com/certbot/certbot.git
 cd certbot/certbot-dns-google
-pip install setuptools
+pip install certbot-dns-google
+sed -i 's/certbot>=0.34.0.dev0/certbot>=0.21.1/g; s/acme>=0.29.0/acme>=0.21.1/g' setup.py # fix for bug https://github.com/certbot/certbot/issues/6966
 python setup.py install
 
+
 #write out test execution
-echo "certbot certonly --test-cert --dns-google --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work --dns-google-credentials /home/${USER}/${USER}.json --dns-google-propagation-seconds 120 -d *.${DNS}." > /home/${USER}/execute-test.sh
+echo "certbot certonly --test-cert --dns-google --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work --dns-google-propagation-seconds 120 -d *.${DNS}." > /home/${USER}/execute-test.sh
 
 #write out cert execution
-echo "certbot certonly --dns-google --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work --dns-google-credentials /home/${USER}/${USER}.json --dns-google-propagation-seconds 120 -d *.${DNS}." > /home/${USER}/execute-only-if-you-are-sure.sh
+echo "certbot certonly --dns-google --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work --dns-google-propagation-seconds 120 -d *.${DNS}." > /home/${USER}/execute-only-if-you-are-sure.sh
 
 #write out test renew
 echo "certbot renew --dry-run --config-dir /${USER}/${USER} --logs-dir ~/logs --work-dir ~/work" > /home/${USER}/execute-renew-test.sh
@@ -71,7 +78,6 @@ mkdir -p /${USER}/${USER}
 chown -R ${USER}:google-sudoers /${USER}
 chmod -R 776 /${USER}
 
-runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${USER}/${USER}.json'
 runuser -l ${USER} -c 'gsutil rsync -x ".*\.kube/http-cache/|.*\.kube/cache/" -d -r gs://${BUCKET}/${USER} /${USER}/${USER}'
 
 # This is where the sym links will point and the google S3 bucket will be linked
@@ -81,6 +87,6 @@ chown -R ${USER}:google-sudoers /${USER}
 runuser -l ${USER} -c 'echo "${LINKER_SCRIPT}" | base64 -d > /home/${USER}/symlinker.sh'
 runuser -l ${USER} -c 'echo "${MAKE_UPDATE_KEYSTORE_SCRIPT}" | base64 -d > /home/${USER}/make_or_update_keystore.sh'
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
-runuser -l ${USER} -c 'cd /home/${USER} && ./symlimker.sh'
+runuser -l ${USER} -c 'cd /home/${USER} && ./symlinker.sh'
 
 echo "startup complete"

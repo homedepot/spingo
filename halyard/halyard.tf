@@ -119,6 +119,7 @@ data "template_file" "start_script" {
     REPLACE              = "${google_service_account_key.svc_key.private_key}"
     SCRIPT_SSL           = "${base64encode(data.template_file.setupSSL.rendered)}"
     SCRIPT_SAML          = "${base64encode(data.template_file.setupSAML.rendered)}"
+    SCRIPT_SLACK         = "${base64encode(data.template_file.setupSlack.rendered)}"
     SCRIPT_HALYARD       = "${base64encode(data.template_file.setupHalyard.rendered)}"
     SCRIPT_HALPUSH       = "${base64encode(data.template_file.halpush.rendered)}"
     SCRIPT_HALGET        = "${base64encode(data.template_file.halget.rendered)}"
@@ -127,7 +128,7 @@ data "template_file" "start_script" {
     SCRIPT_SPINGO        = "${base64encode(data.template_file.spingo.rendered)}"
     SCRIPT_K8SSL         = "${base64encode(data.template_file.k8ssl.rendered)}"
     SCRIPT_RESETGCP      = "${base64encode(data.template_file.resetgcp.rendered)}"
-    SCRIPT_SWTICH        = "${base64encode(data.template_file.halswitch.rendered)}"
+    SCRIPT_SWITCH        = "${base64encode(data.template_file.halswitch.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
 }
@@ -210,6 +211,14 @@ data "template_file" "setupSAML" {
   }
 }
 
+data "template_file" "setupSlack" {
+  template = "${file("./halScripts/setupSlack.sh")}"
+
+  vars {
+    TOKEN_FROM_SLACK = "${data.vault_generic_secret.slack-token.data["value"]}"
+  }
+}
+
 data "template_file" "setupHalyard" {
   template = "${file("./halScripts/setupHalyard.sh")}"
 
@@ -254,6 +263,10 @@ data "vault_generic_secret" "db-migrate-user-password" {
 
 data "vault_generic_secret" "halyard-external-ip" {
   path = "secret/${var.gcp_project}/halyard"
+}
+
+data "vault_generic_secret" "slack-token" {
+  path = "secret/${var.gcp_project}/slack-token"
 }
 
 #This is manually put into vault and created manually

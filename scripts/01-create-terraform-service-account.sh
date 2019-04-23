@@ -29,13 +29,29 @@ gcloud services enable iam.googleapis.com
 echo "enabling sqladmin.googleapis.com service"
 gcloud services enable sqladmin.googleapis.com
 
-# can also run "gcloud config list --format 'value(core.project)' 2>/dev/null" to get the project name dynamically
-PROJECT="np-platforms-cd-thd"
+echo "-----------------------------------------------------------------------------"
+CURR_PROJ=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
+echo "Current gcloud project is : $CURR_PROJ"
+echo "-----------------------------------------------------------------------------"
+PS3="Enter the number for the Google Cloud Project to setup Spinnaker on (ctrl-c to exit) : ";
+select projs in $(gcloud config list --format 'value(core.project)' 2>/dev/null)
+do
+    if [ "$projs" == "" ]; then
+        echo "You must select a Google Cloud Project"
+    else
+        echo "-----------------------------------------------------------------------------"
+        echo "Google Cloud Project $projs selected"
+        PROJECT="$projs"
+        break;
+    fi
+done
+DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 TERRAFORM_REMOTE_GCS_LOCATION="us-east1"
 TERRAFORM_REMOTE_GCS_STORAGE_CLASS="regional"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
+ONBOARDING_BUCKET="$PROJECT-spinnaker-onboarding"
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
 gcloud iam service-accounts create \
@@ -89,6 +105,12 @@ vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCO
 
 echo "create the bucket that will store the Terraform State"
 gsutil mb -p "$PROJECT" -c "$TERRAFORM_REMOTE_GCS_STORAGE_CLASS" -l "$TERRAFORM_REMOTE_GCS_LOCATION" gs://"$TERRAFORM_REMOTE_GCS_NAME"/
+
+echo "create the bucket that will store the onboarding information from teams"
+gsutil mb -p "$PROJECT" gs://"$ONBOARDING_BUCKET"/
+
+echo "set permissions of onboarding bucket to be creator for domain of $DOMAIN"
+gsutil iam ch "domain:$DOMAIN:objectCreator" gs://"$ONBOARDING_BUCKET"
 
 vault read -field "value"  secret/"$PROJECT"/keystore_pass
 

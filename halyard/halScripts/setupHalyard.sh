@@ -70,6 +70,19 @@ ORCA_PATCH
 
 yq write -i -s /tmp/halconfig-orca-patch.yml /${USER}/.hal/config && rm /tmp/halconfig-orca-patch.yml
 
+# set-up replica patch
+tee /tmp/halconfig-replica-patch.yml << REPLICA_PATCH
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-front50.replicas: 2
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-clouddriver.replicas: 2
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-deck.replicas: 2
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-gate.replicas: 2
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-rosco.replicas: 2
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-fiat.replicas: 2
+deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-orca.replicas: 2
+REPLICA_PATCH
+
+yq write -i -s /tmp/halconfig-replica-patch.yml /${USER}/.hal/config && rm /tmp/halconfig-replica-patch.yml
+
 tee /${USER}/.hal/default/profiles/orca-local.yml << ORCA_LOCAL
 sql:
   enabled: true

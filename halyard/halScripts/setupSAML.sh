@@ -13,7 +13,7 @@
 #REMEMBER memberOf is needed in saml response from security. 
 
 KEYSTORE_PATH="/${USER}/saml/saml-np.jks"
-KEYSTORE_PASSWORD="nosecrets"
+KEYSTORE_PASSWORD="${KEYSTORE_PASS}"
 METADATA_PATH="/${USER}/saml/ssosecure_SSO_idpMetadata.xml"
 SERVICE_ADDR_URL="${API_URL}"
 ISSUER_ID="spinnaker.np"

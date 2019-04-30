@@ -1,5 +1,9 @@
 #!/bin/bash
-set -x
+
+if [ ! -d /${USER}/.hal ]; then
+  mkdir /${USER}/.hal
+fi
+
 GCS_SA_DEST="${ACCOUNT_PATH}"
 
 hal config storage gcs edit \
@@ -29,6 +33,7 @@ hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}"
 
 hal config edit --timezone America/New_York
 
+hal config generate
 
 # set-up admin groups for fiat:
 tee /${USER}/.hal/default/profiles/fiat-local.yml << FIAT_LOCAL

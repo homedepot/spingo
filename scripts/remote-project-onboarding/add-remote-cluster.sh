@@ -8,6 +8,21 @@ shopt -s extglob
 KUBE_FILE=""
 GROUP=""
 
+####################################################
+########             Dependencies           ######## 
+####################################################
+
+# ensure that the required commands are present needed to run this script
+die() { echo "$*" 1>&2 ; exit 1; }
+
+need() {
+    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+}
+
+need "gsutil"
+need "hal"
+need "curl"
+
 KUBE_FILE_PATH="/spinnaker/accounts"
 
 if [[ -z "$KUBE_FILE" ]]; then

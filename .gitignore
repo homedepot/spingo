@@ -27,3 +27,5 @@ override.tf.json
 *.json
 terraform-account.json
 .history
+*.auto.tfvars
+*.auto.tfvars.json

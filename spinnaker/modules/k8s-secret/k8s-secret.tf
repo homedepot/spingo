@@ -7,12 +7,10 @@ resource "kubernetes_namespace" "spinnaker" {
 resource "kubernetes_secret" "secret" {
   metadata {
     name      = "${var.name}"
-    namespace = "${var.namespace}"
+    namespace = "${kubernetes_namespace.spinnaker.metadata.0.name}"
   }
 
   data {
     "secret" = "${base64decode(var.secret-contents)}"
   }
-
-  depends_on = ["kubernetes_namespace.spinnaker"]
 }

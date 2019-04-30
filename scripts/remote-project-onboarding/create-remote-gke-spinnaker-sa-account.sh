@@ -17,14 +17,17 @@ echo -e "#######################################################################
 ####################################################
 
 # ensure that the required commands are present needed to run this script
-commands="jq base64 gsutil kubectl gcloud"
-for i in $commands
-do
-  if ! [ -x "$(command -v "$i")" ]; then
-    echo "Error: $i is not installed." >&2
-    exit 1
-  fi
-done
+die() { echo "$*" 1>&2 ; exit 1; }
+
+need() {
+    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+}
+
+need "jq"
+need "base64"
+need "gsutil"
+need "kubectl"
+need "gcloud"
 
 # make sure that a ~/.kube/config file exists or $KUBECONFIG is set before moving forward
 if ! { [ -n "$KUBECONFIG" ] || [ -f ~/.kube/config ]; } ; then

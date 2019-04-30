@@ -9,6 +9,21 @@ JSON_FILE=""
 GROUP=""
 PROJECT=""
 
+####################################################
+########             Dependencies           ######## 
+####################################################
+
+# ensure that the required commands are present needed to run this script
+die() { echo "$*" 1>&2 ; exit 1; }
+
+need() {
+    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+}
+
+need "gsutil"
+need "hal"
+need "curl"
+
 JSON_FILE_PATH="/spinnaker/accounts"
 
 if [[ -z "$JSON_FILE" ]]; then

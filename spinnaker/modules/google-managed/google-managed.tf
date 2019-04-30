@@ -1,11 +1,19 @@
 resource "google_compute_address" "ui" {
-  count = "${length(var.cluster_config)}"
-  name  = "${var.cluster_config[count.index]}-ui"
+  count  = "${length(var.cluster_config)}"
+  name   = "${var.cluster_config[count.index]}-ui"
+  region = "${var.cluster_region}"
 }
 
 resource "google_compute_address" "api" {
-  count = "${length(var.cluster_config)}"
-  name  = "${var.cluster_config[count.index]}-api"
+  count  = "${length(var.cluster_config)}"
+  name   = "${var.cluster_config[count.index]}-api"
+  region = "${var.cluster_region}"
+}
+
+# The static IP address for Halyard is being provisioned here so that the Halyard VM can be destroyed without loosing the IP which has to be added to k8s master whitelist
+resource "google_compute_address" "halyard" {
+  name   = "halyard-external-ip"
+  region = "${var.cluster_region}"
 }
 
 resource "vault_generic_secret" "vault-api" {
@@ -125,6 +133,7 @@ resource "google_sql_database" "orca" {
 resource "google_sql_user" "spinnaker-service-user" {
   count    = "${length(var.cluster_config)}"
   name     = "orca_service"
+  host     = "%"                                                                         # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = "${google_sql_database_instance.spinnaker-mysql.*.name[count.index]}"
   password = "${random_string.spinnaker-db-service-user-password.*.result[count.index]}"
 }
@@ -132,6 +141,7 @@ resource "google_sql_user" "spinnaker-service-user" {
 resource "google_sql_user" "spinnaker-migrate-user" {
   count    = "${length(var.cluster_config)}"
   name     = "orca_migrate"
+  host     = "%"                                                                         # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = "${google_sql_database_instance.spinnaker-mysql.*.name[count.index]}"
   password = "${random_string.spinnaker-db-migrate-user-password.*.result[count.index]}"
 }
@@ -164,10 +174,7 @@ resource "google_redis_instance" "cache" {
   display_name       = "${var.cluster_config[count.index]} memorystore redis cache"
   redis_configs      = "${var.redis_config}"
   authorized_network = "${element(var.authorized_networks_redis, count.index)}"
-}
-
-resource "google_compute_address" "halyard" {
-  name = "halyard-external-ip"
+  region             = "${var.cluster_region}"
 }
 
 resource "vault_generic_secret" "halyard-ip" {

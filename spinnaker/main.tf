@@ -1,6 +1,8 @@
-provider "vault" {
-  address = "${var.vault_address}"
+terraform {
+  backend "gcs" {}
 }
+
+provider "vault" {}
 
 data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
@@ -11,7 +13,7 @@ provider "google" {
 
   # credentials = "${file("terraform-account.json")}" //! swtich to this if you need to import stuff from GCP
   project = "${var.gcp_project}"
-  region  = "${var.gcp_region}"
+  region  = "${var.cluster_region}"
 }
 
 provider "google" {
@@ -20,6 +22,7 @@ provider "google" {
 
   # credentials = "${file("terraform-account-dns.json")}" //! swtich to this if you need to import stuff from GCP
   project = "${var.managed_dns_gcp_project}"
+  region  = "${var.cluster_region}"
 }
 
 provider "google-beta" {
@@ -28,19 +31,11 @@ provider "google-beta" {
   # credentials = "${file("terraform-account.json")}" //! swtich to this if you need to import stuff from GCP
   version = "~> 1.19"
   project = "${var.gcp_project}"
-  region  = "${var.gcp_region}"
+  region  = "${var.cluster_region}"
 }
 
 # Query the terraform service account from GCP
 data "google_client_config" "current" {}
-
-terraform {
-  backend "gcs" {
-    bucket      = "np-platforms-cd-thd-tf"
-    prefix      = "np"
-    credentials = "terraform-account.json"
-  }
-}
 
 data "google_project" "project" {}
 
@@ -205,7 +200,7 @@ module "spinnaker-dns" {
   source           = "./modules/dns"
   gcp_project      = "${var.managed_dns_gcp_project}"
   cluster_config   = "${var.cluster_config}"
-  dns_name         = "${var.gcp_project}${var.cloud_dns_hostname}."
+  dns_name         = "${var.cloud_dns_hostname}."
   ui_ip_addresses  = "${module.google-managed.ui_ip_addresses}"
   api_ip_addresses = "${module.google-managed.api_ip_addresses}"
 

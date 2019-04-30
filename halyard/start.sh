@@ -13,8 +13,7 @@ exec > $logfile 2>&1
 #################################
 
 echo "Setting up alias for sudo action."
-runuser -l root -c 'echo "${SCRIPT_SPINGO}" | base64 -d > /etc/profile.d/spingo.sh'
-runuser -l root -c 'echo "alias showlog=\"tail -f /tmp/install.log | sed '/^startup complete$/ q'\"" > /etc/profile.d/showlog.sh'
+runuser -l root -c 'echo "${PROFILE_ALIASES}" | base64 -d > /etc/profile.d/aliases.sh'
 
 #CREATE USER
 echo "Creating user"
@@ -66,6 +65,6 @@ runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/res
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 
+echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"
-
 #Use sudo -H -u spinnaker bash at log in or use spingo alias

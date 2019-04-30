@@ -1,11 +1,14 @@
-variable "gcp_region" {
-  description = "GCP region, e.g. us-east1"
-  default     = "us-east1"
+terraform {
+  backend "gcs" {}
 }
 
 variable "gcp_project" {
   description = "GCP project name"
-  default     = "np-platforms-cd-thd"
+}
+
+variable "gcp_zone" {
+  description = "GCP zone to create the halyard VM in"
+  type        = "string"
 }
 
 variable "bucket_name" {
@@ -18,26 +21,24 @@ variable "service_account_name" {
   default     = "spinnaker"
 }
 
-variable vault_address {
-  type    = "string"
-  default = "https://vault.ioq1.homedepot.com:10231"
-}
-
 variable terraform_account {
   type    = "string"
   default = "terraform-account"
 }
 
-provider "vault" {
-  address = "${var.vault_address}"
+variable "cloud_dns_hostname" {
+  description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
+  type        = "string"
 }
+
+provider "vault" {}
 
 data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
-data "vault_generic_secret" "keystore_pass" {
-  path = "secret/${var.gcp_project}/keystore_pass"
+data "vault_generic_secret" "keystore-pass" {
+  path = "secret/${var.gcp_project}/keystore-pass"
 }
 
 resource "google_service_account" "service_account" {
@@ -82,7 +83,7 @@ resource "google_project_iam_member" "serviceAccountUser" {
 provider "google" {
   credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
   project     = "${var.gcp_project}"
-  region      = "${var.gcp_region}"
+  zone        = "${var.gcp_zone}"
 }
 
 resource "google_storage_bucket_object" "service_account_key_storage" {
@@ -100,8 +101,8 @@ data "template_file" "aliases" {
   }
 }
 
-data "template_file" "spingo" {
-  template = "${file("./halScripts/spingo.sh")}"
+data "template_file" "profile_aliases" {
+  template = "${file("./halScripts/profile-aliases.sh")}"
 
   vars {
     USER = "${var.service_account_name}"
@@ -114,7 +115,6 @@ data "template_file" "start_script" {
   vars {
     USER                 = "${var.service_account_name}"
     BUCKET               = "${var.gcp_project}${var.bucket_name}"
-    REGION               = "${var.gcp_region}"
     PROJECT              = "${var.gcp_project}"
     REPLACE              = "${google_service_account_key.svc_key.private_key}"
     SCRIPT_SSL           = "${base64encode(data.template_file.setupSSL.rendered)}"
@@ -125,10 +125,10 @@ data "template_file" "start_script" {
     SCRIPT_HALGET        = "${base64encode(data.template_file.halget.rendered)}"
     SCRIPT_HALDIFF       = "${base64encode(data.template_file.haldiff.rendered)}"
     SCRIPT_ALIASES       = "${base64encode(data.template_file.aliases.rendered)}"
-    SCRIPT_SPINGO        = "${base64encode(data.template_file.spingo.rendered)}"
     SCRIPT_K8SSL         = "${base64encode(data.template_file.k8ssl.rendered)}"
     SCRIPT_RESETGCP      = "${base64encode(data.template_file.resetgcp.rendered)}"
     SCRIPT_SWITCH        = "${base64encode(data.template_file.halswitch.rendered)}"
+    PROFILE_ALIASES      = "${base64encode(data.template_file.profile_aliases.rendered)}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
 }
@@ -138,7 +138,7 @@ data "template_file" "resetgcp" {
 
   vars {
     USER                 = "${var.service_account_name}"
-    REGION               = "${var.gcp_region}"
+    BUCKET               = "${var.gcp_project}${var.bucket_name}"
     PROJECT              = "${var.gcp_project}"
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
@@ -183,13 +183,13 @@ data "template_file" "setupSSL" {
   template = "${file("./halScripts/setupSSL.sh")}"
 
   vars {
-    USER    = "${var.service_account_name}"
-    UI_URL  = "https://${var.service_account_name}.${var.gcp_project}.gcp.homedepot.com"
-    API_URL = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
-
+    USER          = "${var.service_account_name}"
+    UI_URL        = "https://${var.service_account_name}.${var.gcp_project}.gcp.homedepot.com"
+    API_URL       = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
+    DNS           = "${var.cloud_dns_hostname}"
     SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
     SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
-    KEYSTORE_PASS = "${data.vault_generic_secret.keystore_pass.data["value"]}"
+    KEYSTORE_PASS = "${data.vault_generic_secret.keystore-pass.data["value"]}"
   }
 }
 
@@ -206,8 +206,9 @@ data "template_file" "setupSAML" {
   template = "${file("./halScripts/setupSAML.sh")}"
 
   vars {
-    USER    = "${var.service_account_name}"
-    API_URL = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
+    USER          = "${var.service_account_name}"
+    API_URL       = "https://${var.service_account_name}-api.${var.gcp_project}.gcp.homedepot.com"
+    KEYSTORE_PASS = "${data.vault_generic_secret.keystore-pass.data["value"]}"
   }
 }
 
@@ -275,19 +276,10 @@ data "vault_generic_secret" "gcp-oauth" {
   path = "secret/${var.gcp_project}/gcp-oauth"
 }
 
-terraform {
-  backend "gcs" {
-    bucket      = "np-platforms-cd-thd-tf"
-    prefix      = "np-hal-vm"
-    credentials = "terraform-account.json"
-  }
-}
-
-resource "google_compute_instance" "halyard-spin-vm-grueld" {
+resource "google_compute_instance" "halyard-spin-vm" {
   count                     = 1                       // Adjust as desired
   name                      = "halyard-thd-spinnaker"
-  machine_type              = "n1-standard-4"         // smallest (CPU &amp; RAM) available instance
-  zone                      = "${var.gcp_region}-c"
+  machine_type              = "n1-standard-4"
   allow_stopping_for_update = true
 
   boot_disk {

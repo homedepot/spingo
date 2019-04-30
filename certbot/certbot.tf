@@ -1,10 +1,14 @@
-variable "gcp_region" {
-  description = "GCP region, e.g. us-east1"
-  type        = "string"
+terraform {
+  backend "gcs" {}
 }
 
 variable "gcp_project" {
   description = "GCP project name"
+  type        = "string"
+}
+
+variable "gcp_zone" {
+  description = "GCP zone to create the certbot VM in"
   type        = "string"
 }
 
@@ -22,11 +26,6 @@ variable "bucket_name" {
   type = "string"
 }
 
-resource "google_storage_bucket" "bucket-config" {
-  name          = "${var.gcp_project}-${var.bucket_name}-bucket"
-  storage_class = "MULTI_REGIONAL"
-}
-
 resource "google_storage_bucket_object" "service_account_key_storage" {
   name         = ".gcp/${var.service_account_name}.json"
   content      = "${base64decode(google_service_account_key.svc_key.private_key)}"
@@ -36,15 +35,14 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
 
 variable terraform_account {
   type    = "string"
-  default = "terraform-account"
 }
 
 data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
-data "vault_generic_secret" "keystore_pass" {
-  path = "secret/${var.gcp_project}/keystore_pass"
+data "vault_generic_secret" "keystore-pass" {
+  path = "secret/${var.gcp_project}/keystore-pass"
 }
 
 resource "google_service_account" "service_account" {
@@ -90,7 +88,7 @@ resource "google_project_iam_member" "rolesbrowser" {
 provider "google" {
   credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
   project     = "${var.gcp_project}"
-  region      = "${var.gcp_region}"
+  zone        = "${var.gcp_zone}"
 }
 
 data "template_file" "start_script" {
@@ -101,11 +99,12 @@ data "template_file" "start_script" {
     REPLACE                     = "${jsonencode(replace(base64decode(google_service_account_key.svc_key.private_key),"\n"," "))}"
     USER                        = "${var.service_account_name}"
     BUCKET                      = "${var.bucket_name}"
-    REGION                      = "${var.gcp_region}"
     PROJECT                     = "${var.gcp_project}"
     DNS                         = "${var.wildcard_dns_name}"
     LINKER_SCRIPT               = "${base64encode(data.template_file.linker_script.rendered)}"
     MAKE_UPDATE_KEYSTORE_SCRIPT = "${base64encode(data.template_file.make_update_keystore_script.rendered)}"
+    PROFILE_ALIASES             = "${base64encode(data.template_file.profile_aliases.rendered)}"
+    USER_ALIASES                = "${base64encode(data.template_file.user_aliases.rendered)}"
   }
 }
 
@@ -118,15 +117,32 @@ data "template_file" "make_update_keystore_script" {
 
   vars {
     DNS           = "${var.wildcard_dns_name}"
-    KEYSTORE_PASS = "${data.vault_generic_secret.keystore_pass.data["value"]}"
+    KEYSTORE_PASS = "${data.vault_generic_secret.keystore-pass.data["value"]}"
+  }
+}
+
+data "template_file" "profile_aliases" {
+  template = "${file("${path.module}/profile-aliases.sh")}"
+
+  vars {
+    USER   = "${var.service_account_name}"
+    BUCKET = "${var.bucket_name}"
+  }
+}
+
+data "template_file" "user_aliases" {
+  template = "${file("${path.module}/user-aliases.sh")}"
+
+  vars {
+    USER   = "${var.service_account_name}"
+    BUCKET = "${var.bucket_name}"
   }
 }
 
 resource "google_compute_instance" "certbot-spinnaker" {
-  count                     = 1                     // Adjust as desired
+  count                     = 1                   // Adjust as desired
   name                      = "certbot-spinnaker"
-  machine_type              = "n1-standard-4"       // smallest (CPU &amp; RAM) available instance
-  zone                      = "${var.gcp_region}-c"
+  machine_type              = "n1-standard-4"     // smallest (CPU &amp; RAM) available instance
   allow_stopping_for_update = true
 
   boot_disk {

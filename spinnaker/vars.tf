@@ -2,23 +2,13 @@
 # Required parameters
 ######################################################################################
 
-variable vault_address {
-  type = "string"
-}
-
 variable terraform_account {
   type = "string"
-}
-
-variable "gcp_region" {
-  description = "GCP region, e.g. us-east1"
-  default     = "us-east1"
 }
 
 variable "cluster_region" {
   type        = "string"
   description = "GCP region, e.g. us-east1"
-  default     = "us-east1"
 }
 
 variable "gcp_project" {
@@ -27,12 +17,10 @@ variable "gcp_project" {
 
 variable "managed_dns_gcp_project" {
   description = "GCP project name where the DNS managed zone lives"
-  default     = "np-platforms-cd-thd"
 }
 
 variable "cloud_dns_hostname" {
   description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
-  default     = ".gcp.homedepot.com"
 }
 
 variable "default_node_options" {
@@ -87,33 +75,47 @@ variable "default_networks_that_can_access_k8s_api" {
   default = [{
     cidr_blocks = [{
       cidr_block = "151.140.0.0/16"
-    }, {
-      cidr_block = "165.130.0.0/16"
-    }, {
-      cidr_block = "207.11.0.0/17"
-    }, {
-      cidr_block = "50.207.27.182/32"
-    }, {
-      cidr_block = "98.6.11.8/29"
-    }, {
-      cidr_block = "50.207.28.9/32"
-    }, {
-      cidr_block = "50.207.28.10/32"
-    }, {
-      cidr_block = "50.207.28.11/32"
-    }, {
-      cidr_block = "50.207.28.12/32"
-    }, {
-      cidr_block = "50.207.28.13/32"
-    }, {
-      cidr_block = "50.207.28.14/32"
-    }, {
-      cidr_block = "35.237.189.247/32" # hard coded halyard vm external ip until terraform v0.12
-    }, {
-      cidr_block = "35.227.120.4/32" # hard coded cloud nat value until terraform v0.12
-    }, {
-      cidr_block = "35.227.117.42/32" # hard coded cloud nat value until terraform v0.12
-    }]
+    },
+      {
+        cidr_block = "165.130.0.0/16"
+      },
+      {
+        cidr_block = "207.11.0.0/17"
+      },
+      {
+        cidr_block = "50.207.27.182/32"
+      },
+      {
+        cidr_block = "98.6.11.8/29"
+      },
+      {
+        cidr_block = "50.207.28.9/32"
+      },
+      {
+        cidr_block = "50.207.28.10/32"
+      },
+      {
+        cidr_block = "50.207.28.11/32"
+      },
+      {
+        cidr_block = "50.207.28.12/32"
+      },
+      {
+        cidr_block = "50.207.28.13/32"
+      },
+      {
+        cidr_block = "50.207.28.14/32"
+      },
+      {
+        cidr_block = "35.196.12.235/32" # hard coded halyard vm external ip until terraform v0.12
+      },
+      {
+        cidr_block = "104.196.29.21/32" # hard coded spinnaker cloud nat value until terraform v0.12
+      },
+      {
+        cidr_block = "35.229.27.114/32" # hard coded sandbox cloud nat value until terraform v0.12
+      },
+    ]
   }]
 }
 

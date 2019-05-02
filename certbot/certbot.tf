@@ -34,7 +34,7 @@ resource "google_storage_bucket_object" "service_account_key_storage" {
 }
 
 variable terraform_account {
-  type    = "string"
+  type = "string"
 }
 
 data "vault_generic_secret" "terraform-account" {
@@ -87,6 +87,7 @@ resource "google_project_iam_member" "rolesbrowser" {
 
 provider "google" {
   credentials = "${data.vault_generic_secret.terraform-account.data[var.gcp_project]}"
+  # credentials = "${file("terraform-account.json")}" //! swtich to this if you need to import stuff from GCP
   project     = "${var.gcp_project}"
   zone        = "${var.gcp_zone}"
 }

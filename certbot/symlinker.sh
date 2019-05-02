@@ -7,7 +7,7 @@ check_pem_file() {
         echo "$2/$1.pem appears to already be a symlink so nothing to do"
     else
         if [ -d ../archive/"$2" ]; then
-            rm "$2/$1.pem" && ln -s $(ls -t ../archive/"$2"/"$1"* | head -n1) "$2/$1.pem"
+            rm "$2/$1.pem" && ln -s ../$(ls -t ../archive/"$2"/"$1"* | head -n1) "$2/$1.pem"
             echo "removed $1.pem file and symlinked to latest archive file for domain $2"
         else
             echo "There seems to be a $1 file in the live directory for the domain but not in the archive directory so something is very worng for domain $2"

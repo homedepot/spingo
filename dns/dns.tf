@@ -1,10 +1,8 @@
 terraform {
-  backend "gcs" {
-  }
+  backend "gcs" {}
 }
 
-provider "vault" {
-}
+provider "vault" {}
 
 data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
@@ -18,6 +16,6 @@ provider "google" {
 }
 
 resource "google_dns_managed_zone" "project_zone" {
-  name     = "${var.gcp_project}"
+  name     = "spinnaker-wildcard-domain"
   dns_name = "${var.cloud_dns_hostname}."
 }

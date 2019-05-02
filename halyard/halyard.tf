@@ -21,6 +21,11 @@ variable "service_account_name" {
   default     = "spinnaker"
 }
 
+variable "hostname_prefix" {
+  description = "hostname prefix to use for spinnaker"
+  default     = "np"
+}
+
 variable terraform_account {
   type    = "string"
   default = "terraform-account"
@@ -184,8 +189,8 @@ data "template_file" "setupSSL" {
 
   vars {
     USER          = "${var.service_account_name}"
-    UI_URL        = "https://${var.service_account_name}.${var.cloud_dns_hostname}"
-    API_URL       = "https://${var.service_account_name}-api.${var.cloud_dns_hostname}"
+    UI_URL        = "https://${var.hostname_prefix}.${var.cloud_dns_hostname}"
+    API_URL       = "https://${var.hostname_prefix}-api.${var.cloud_dns_hostname}"
     DNS           = "${var.cloud_dns_hostname}"
     SPIN_UI_IP    = "${data.vault_generic_secret.vault-ui.data["address"]}"
     SPIN_API_IP   = "${data.vault_generic_secret.vault-api.data["address"]}"
@@ -207,7 +212,7 @@ data "template_file" "setupSAML" {
 
   vars {
     USER          = "${var.service_account_name}"
-    API_URL       = "https://${var.service_account_name}-api.${var.cloud_dns_hostname}"
+    API_URL       = "https://${var.hostname_prefix}-api.${var.cloud_dns_hostname}"
     KEYSTORE_PASS = "${data.vault_generic_secret.keystore-pass.data["value"]}"
   }
 }

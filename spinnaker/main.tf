@@ -48,6 +48,15 @@ variable "cluster_config" {
   }
 }
 
+variable "hostname_config" {
+  description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
+
+  default = {
+    "0" = "np"
+    "1" = "sandbox"
+  }
+}
+
 module "google-managed" {
   source                    = "./modules/google-managed"
   cluster_region            = "${var.cluster_region}"
@@ -199,7 +208,7 @@ module "spinnaker-gcp-cloudsql-service-account" {
 module "spinnaker-dns" {
   source           = "./modules/dns"
   gcp_project      = "${var.managed_dns_gcp_project}"
-  cluster_config   = "${var.cluster_config}"
+  cluster_config   = "${var.hostname_config}"
   dns_name         = "${var.cloud_dns_hostname}."
   ui_ip_addresses  = "${module.google-managed.ui_ip_addresses}"
   api_ip_addresses = "${module.google-managed.api_ip_addresses}"

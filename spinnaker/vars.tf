@@ -107,13 +107,13 @@ variable "default_networks_that_can_access_k8s_api" {
         cidr_block = "50.207.28.14/32"
       },
       {
-        cidr_block = "35.196.12.235/32" # hard coded halyard vm external ip until terraform v0.12
+        cidr_block = "35.237.189.247/32" # hard coded halyard vm external ip until terraform v0.12
       },
       {
-        cidr_block = "104.196.29.21/32" # hard coded spinnaker cloud nat value until terraform v0.12
+        cidr_block = "35.227.120.4/32" # hard coded spinnaker cloud nat value until terraform v0.12
       },
       {
-        cidr_block = "35.229.27.114/32" # hard coded sandbox cloud nat value until terraform v0.12
+        cidr_block = "35.227.117.42/32" # hard coded sandbox cloud nat value until terraform v0.12
       },
     ]
   }]

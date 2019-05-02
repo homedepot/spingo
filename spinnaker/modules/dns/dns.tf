@@ -12,7 +12,7 @@ resource "google_dns_record_set" "spinnaker-ui" {
   name         = "${var.cluster_config[count.index]}.${var.dns_name}"
   type         = "A"
   ttl          = 300
-  managed_zone = "${var.gcp_project}"
+  managed_zone = "spinnaker-wildcard-domain"
   rrdatas      = ["${var.ui_ip_addresses[count.index]}"]
 }
 
@@ -22,6 +22,6 @@ resource "google_dns_record_set" "spinnaker-api" {
   name         = "${var.cluster_config[count.index]}-api.${var.dns_name}"
   type         = "A"
   ttl          = 300
-  managed_zone = "${var.gcp_project}"
+  managed_zone = "spinnaker-wildcard-domain"
   rrdatas      = ["${var.api_ip_addresses[count.index]}"]
 }

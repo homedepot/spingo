@@ -141,7 +141,7 @@ module "k8s-spinnaker-service-account" {
   cluster_region            = var.cluster_region
   host                      = module.k8s.endpoint
   cluster_ca_certificate    = module.k8s.cluster_ca_certificate
-  enable                    = length(var.cluster_config) >= 1 ? 1 : 0
+  enable                    = true
   cluster_list_index        = 0
 
   providers = {
@@ -160,7 +160,7 @@ module "k8s-spinnaker-service-account-sandbox" {
   cluster_region            = var.cluster_region
   host                      = module.k8s-sandbox.endpoint
   cluster_ca_certificate    = module.k8s-sandbox.cluster_ca_certificate
-  enable                    = length(var.cluster_config) >= 2 ? 1 : 0
+  enable                    = true
   cluster_list_index        = 1
 
   providers = {

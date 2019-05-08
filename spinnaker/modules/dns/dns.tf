@@ -13,7 +13,7 @@ resource "google_dns_record_set" "spinnaker-ui" {
   type         = "A"
   ttl          = 300
   managed_zone = "spinnaker-wildcard-domain"
-  rrdatas = var.ui_ip_addresses[count.index]
+  rrdatas = [var.ui_ip_addresses[count.index]]
 }
 
 resource "google_dns_record_set" "spinnaker-api" {
@@ -23,5 +23,5 @@ resource "google_dns_record_set" "spinnaker-api" {
   type         = "A"
   ttl          = 300
   managed_zone = "spinnaker-wildcard-domain"
-  rrdatas = var.api_ip_addresses[count.index]
+  rrdatas = [var.api_ip_addresses[count.index]]
 }

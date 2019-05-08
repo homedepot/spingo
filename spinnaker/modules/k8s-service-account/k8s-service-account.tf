@@ -1,5 +1,5 @@
 resource "kubernetes_service_account" "service_account" {
-  count = var.enable
+  count = var.enable ? 1 : 0
 
   metadata {
     name      = var.service_account_name
@@ -8,7 +8,7 @@ resource "kubernetes_service_account" "service_account" {
 }
 
 resource "kubernetes_cluster_role_binding" "cluster_role_binding" {
-  count = var.enable
+  count = var.enable ? 1 : 0
 
   metadata {
     name = "${var.service_account_name}-cluster-role"
@@ -31,7 +31,7 @@ resource "kubernetes_cluster_role_binding" "cluster_role_binding" {
 }
 
 data "kubernetes_secret" "service_account_data" {
-  count = var.enable
+  count = var.enable ? 1 : 0
 
   metadata {
     name      = kubernetes_service_account.service_account[0].default_secret_name
@@ -40,7 +40,7 @@ data "kubernetes_secret" "service_account_data" {
 }
 
 data "template_file" "kubeconfig" {
-  count    = var.enable
+  count    = var.enable ? 1 : 0
   template = file("${path.module}/kubeconfig.template")
 
   vars = {
@@ -56,10 +56,9 @@ data "template_file" "kubeconfig" {
 }
 
 resource "google_storage_bucket_object" "spinnaker_kubeconfig_file" {
-  count        = var.enable
+  count        = var.enable ? 1 : 0
   name         = var.cluster_list_index == 0 ? ".kube/config" : ".kube/${var.cluster_name}.config"
   content      = data.template_file.kubeconfig[0].rendered
   bucket       = var.bucket_name
   content_type = "application/text"
 }
-

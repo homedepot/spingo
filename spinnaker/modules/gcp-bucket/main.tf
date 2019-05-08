@@ -1,8 +1,11 @@
 variable "gcp_project" {
+  type        = string
   description = "GCP project name"
 }
 
-variable "bucket_name" {}
+variable "bucket_name" {
+  type = string
+}
 
 resource "google_storage_bucket" "bucket-config" {
   name          = "${var.gcp_project}-${var.bucket_name}-bucket"
@@ -18,15 +21,10 @@ output "bucket_name" {
 # had acccess to the created bucket. When we attempted to do this, the bucket
 # appeared to get created with the regular default permissions.
 # Keeping this below for future reference in case we want to re-visit
-
-
 # resource "google_storage_bucket_acl" "halyard-config-acl" {
 #   bucket = "${google_storage_bucket.halyard-config.name}"
-
-
 #   role_entity = [
 #     "OWNER:project-owners-${data.google_project.project.number}",
 #     "OWNER:project-editors-${data.google_project.project.number}"
 #   ]
 # }
-

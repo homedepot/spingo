@@ -194,8 +194,8 @@ data "template_file" "setupSSL" {
     UI_URL        = "https://${var.hostname_prefix}.${var.cloud_dns_hostname}"
     API_URL       = "https://${var.hostname_prefix}-api.${var.cloud_dns_hostname}"
     DNS           = var.cloud_dns_hostname
-    SPIN_UI_IP    = data.vault_generic_secret.vault-ui.data["address"]
-    SPIN_API_IP   = data.vault_generic_secret.vault-api.data["address"]
+    SPIN_UI_IP    = data.google_compute_address.spinnaker-ui.address
+    SPIN_API_IP   = data.google_compute_address.spinnaker-api.address
     KEYSTORE_PASS = data.vault_generic_secret.keystore-pass.data["value"]
   }
 }
@@ -204,8 +204,8 @@ data "template_file" "k8ssl" {
   template = file("./halScripts/setupK8SSL.sh")
 
   vars = {
-    SPIN_UI_IP  = data.vault_generic_secret.vault-ui.data["address"]
-    SPIN_API_IP = data.vault_generic_secret.vault-api.data["address"]
+    SPIN_UI_IP  = data.google_compute_address.spinnaker-ui.address
+    SPIN_API_IP = data.google_compute_address.spinnaker-api.address
   }
 }
 
@@ -235,8 +235,8 @@ data "template_file" "setupHalyard" {
     ACCOUNT_PATH             = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
     DOCKER                   = "docker-registry"
     ACCOUNT_NAME             = "spin-cluster-account"
-    SPIN_UI_IP               = data.vault_generic_secret.vault-ui.data["address"]
-    SPIN_API_IP              = data.vault_generic_secret.vault-api.data["address"]
+    SPIN_UI_IP               = data.google_compute_address.spinnaker-ui.address
+    SPIN_API_IP              = data.google_compute_address.spinnaker-api.address
     SPIN_REDIS_ADDR          = data.vault_generic_secret.vault-redis.data["address"]
     DB_CONNECTION_NAME       = data.vault_generic_secret.db-address.data["address"]
     DB_SERVICE_USER_PASSWORD = data.vault_generic_secret.db-service-user-password.data["password"]
@@ -245,12 +245,13 @@ data "template_file" "setupHalyard" {
 }
 
 #Get urls
-data "vault_generic_secret" "vault-ui" {
-  path = "secret/${var.gcp_project}/vault-ui/0"
+
+data "google_compute_address" "spinnaker-ui" {
+  name = "spinnaker-ui"
 }
 
-data "vault_generic_secret" "vault-api" {
-  path = "secret/${var.gcp_project}/vault-api/0"
+data "google_compute_address" "spinnaker-api" {
+  name = "spinnaker-api"
 }
 
 data "vault_generic_secret" "vault-redis" {
@@ -269,8 +270,8 @@ data "vault_generic_secret" "db-migrate-user-password" {
   path = "secret/${var.gcp_project}/db-migrate-user-password/0"
 }
 
-data "vault_generic_secret" "halyard-external-ip" {
-  path = "secret/${var.gcp_project}/halyard"
+data "google_compute_address" "halyard-external-ip" {
+  name = "halyard-external-ip"
 }
 
 data "vault_generic_secret" "slack-token" {
@@ -287,7 +288,10 @@ resource "google_compute_instance" "halyard-spin-vm" {
   count                     = 1 // Adjust as desired
   name                      = "halyard-thd-spinnaker"
   machine_type              = "n1-standard-4"
-  allow_stopping_for_update = true
+  
+  scheduling {
+    automatic_restart = true
+  }
 
   boot_disk {
     initialize_params {
@@ -303,7 +307,7 @@ resource "google_compute_instance" "halyard-spin-vm" {
     network = "default"
 
     access_config {
-      nat_ip = data.vault_generic_secret.halyard-external-ip.data["address"]
+      nat_ip = data.google_compute_address.halyard-external-ip.address
     }
   }
 

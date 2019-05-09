@@ -167,11 +167,13 @@ cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
 cp "$SERVICE_ACCOUNT_DEST" ./halyard
 cp "$SERVICE_ACCOUNT_DEST" ./certbot
 cp "$SERVICE_ACCOUNT_DEST" ./dns
+cp "$SERVICE_ACCOUNT_DEST" ./static_ips
 rm "$SERVICE_ACCOUNT_DEST"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np" "$GIT_ROOT_DIR" "spinnaker"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "halyard"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-certbot" "$GIT_ROOT_DIR" "certbot"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips"
 
 PROJECT_AUTO_VARS_FILE="var-project.auto.tfvars"
 MAIN_PROJECT_AUTO_VARS="$GIT_ROOT_DIR/$PROJECT_AUTO_VARS_FILE"
@@ -179,6 +181,7 @@ echo "gcp_project = \"$PROJECT\"" > "$MAIN_PROJECT_AUTO_VARS"
 cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/spinnaker/$PROJECT_AUTO_VARS_FILE"
 cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/halyard/$PROJECT_AUTO_VARS_FILE"
 cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/certbot/$PROJECT_AUTO_VARS_FILE"
+cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/static_ips/$PROJECT_AUTO_VARS_FILE"
 rm "$MAIN_PROJECT_AUTO_VARS"
 echo "bucket_name = \"$PROJECT-halyard-bucket\"" > "$GIT_ROOT_DIR/certbot/var-bucket_name.auto.tfvars"
 
@@ -226,6 +229,7 @@ do
         echo "-----------------------------------------------------------------------------"
         echo "Google Cloud Project Region $region selected"
         echo "cluster_region = \"$region\"" > "$GIT_ROOT_DIR/spinnaker/var-cluster_region.auto.tfvars"
+        echo "region = \"$region\"" > "$GIT_ROOT_DIR/static_ips/var-region.auto.tfvars"
         break;
     fi
 done

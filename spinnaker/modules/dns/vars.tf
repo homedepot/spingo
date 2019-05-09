@@ -1,5 +1,5 @@
 variable "gcp_project" {
-  type = string
+  type        = string
   description = "GCP project name"
 }
 
@@ -8,7 +8,7 @@ variable "cluster_config" {
 }
 
 variable "dns_name" {
-  type = string
+  type        = string
   description = "description"
 }
 

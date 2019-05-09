@@ -22,7 +22,7 @@ provider "google" {
   alias       = "dns-zone"
   credentials = data.vault_generic_secret.terraform-account.data[var.managed_dns_gcp_project]
 
-  # credentials = file("terraform-account-dns.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
   project = var.managed_dns_gcp_project
   region  = var.cluster_region
 }
@@ -75,17 +75,15 @@ module "k8s" {
   region          = var.cluster_region
   private_cluster = true # This will disable public IPs from the nodes
 
-  networks_that_can_access_k8s_api = var.default_networks_that_can_access_k8s_api # Need to hardcode this until terraform v0.12
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
   node_options              = var.default_node_options
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
+  cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
 
-  providers = {
-    google = google-beta
-  }
 }
 
 module "k8s-sandbox" {
@@ -95,17 +93,15 @@ module "k8s-sandbox" {
   region          = var.cluster_region
   private_cluster = true # This will disable public IPs from the nodes
 
-  networks_that_can_access_k8s_api = var.default_networks_that_can_access_k8s_api # Need to hardcode this until terraform v0.12
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
   node_options              = var.default_node_options
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
+  cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
 
-  providers = {
-    google = google-beta
-  }
 }
 
 module "halyard-storage" {
@@ -168,26 +164,50 @@ module "k8s-spinnaker-service-account-sandbox" {
   }
 }
 
-module "k8s-cloudsql-service-account-secret" {
-  source          = "./modules/k8s-secret"
-  name            = "cloudsql-instance-credentials"
-  namespace       = "spinnaker"
-  secret-contents = module.spinnaker-gcp-cloudsql-service-account.service-account-json
-
-  providers = {
-    kubernetes = kubernetes.main
+resource "kubernetes_namespace" "spinnaker" {
+  provider = kubernetes.main
+  metadata {
+    name = "spinnaker"
   }
 }
 
-module "k8s-cloudsql-service-account-secret-sandbox" {
-  source          = "./modules/k8s-secret"
-  name            = "cloudsql-instance-credentials"
-  namespace       = "spinnaker"
-  secret-contents = module.spinnaker-gcp-cloudsql-service-account.service-account-json
-
-  providers = {
-    kubernetes = kubernetes.sandbox
+resource "kubernetes_secret" "secret" {
+  provider = kubernetes.main
+  metadata {
+    name      = "cloudsql-instance-credentials"
+    namespace = "spinnaker"
   }
+
+  data = {
+    secret = base64decode(module.spinnaker-gcp-cloudsql-service-account.service-account-json)
+  }
+
+  depends_on = [
+    kubernetes_namespace.spinnaker
+  ]
+}
+
+resource "kubernetes_namespace" "spinnaker_sandbox" {
+  provider = kubernetes.sandbox
+  metadata {
+    name = "spinnaker"
+  }
+}
+
+resource "kubernetes_secret" "secret_sandbox" {
+  provider = kubernetes.sandbox
+  metadata {
+    name      = "cloudsql-instance-credentials"
+    namespace = "spinnaker"
+  }
+
+  data = {
+    secret = base64decode(module.spinnaker-gcp-cloudsql-service-account.service-account-json)
+  }
+
+  depends_on = [
+    kubernetes_namespace.spinnaker_sandbox
+  ]
 }
 
 # to retrieve the keys for this for use outside of terraform, run 
@@ -208,13 +228,33 @@ module "spinnaker-gcp-cloudsql-service-account" {
   roles                = ["roles/cloudsql.client"]
 }
 
+data "google_compute_address" "halyard_ip_address" {
+  name = "halyard-external-ip"
+}
+
+data "google_compute_address" "ui_ip_address" {
+  name = "spinnaker-ui"
+}
+
+data "google_compute_address" "api_ip_address" {
+  name = "spinnaker-api"
+}
+
+data "google_compute_address" "sandbox_ui_ip_address" {
+  name = "sandbox-ui"
+}
+
+data "google_compute_address" "sandbox_api_ip_address" {
+  name = "sandbox-api"
+}
+
 module "spinnaker-dns" {
   source           = "./modules/dns"
   gcp_project      = var.managed_dns_gcp_project
   cluster_config   = var.hostname_config
   dns_name         = "${var.cloud_dns_hostname}."
-  ui_ip_addresses  = module.google-managed.ui_ip_addresses
-  api_ip_addresses = module.google-managed.api_ip_addresses
+  ui_ip_addresses  = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
+  api_ip_addresses = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
 
   providers = {
     google = google.dns-zone

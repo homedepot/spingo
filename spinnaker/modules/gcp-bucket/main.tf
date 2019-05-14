@@ -10,6 +10,9 @@ variable "bucket_name" {
 resource "google_storage_bucket" "bucket-config" {
   name          = "${var.gcp_project}-${var.bucket_name}-bucket"
   storage_class = "MULTI_REGIONAL"
+  versioning {
+    enabled = true
+  }
 }
 
 output "bucket_name" {

@@ -179,7 +179,7 @@ data "helm_repository" "stable" {
 }
 
 resource "helm_release" "prometheus-operator" {
-  provider = "helm.main"
+  provider   = "helm.main"
   name       = "prometheus-operator"
   repository = data.helm_repository.stable.metadata.0.name
   chart      = "prometheus-operator"
@@ -226,7 +226,7 @@ resource "helm_release" "prometheus-operator" {
   }
 
   depends_on = [
-    kubernetes_cluster_role_binding.tiller, 
+    kubernetes_cluster_role_binding.tiller,
     kubernetes_service_account.tiller
   ]
 
@@ -280,7 +280,7 @@ provider "helm" {
 }
 
 resource "helm_release" "prometheus-operator-sandbox" {
-  provider = "helm.sandbox"
+  provider   = "helm.sandbox"
   name       = "prometheus-operator"
   repository = data.helm_repository.stable.metadata.0.name
   chart      = "prometheus-operator"
@@ -327,7 +327,7 @@ resource "helm_release" "prometheus-operator-sandbox" {
   }
 
   depends_on = [
-    kubernetes_cluster_role_binding.tiller-sandbox, 
+    kubernetes_cluster_role_binding.tiller-sandbox,
     kubernetes_service_account.tiller-sandbox
   ]
 

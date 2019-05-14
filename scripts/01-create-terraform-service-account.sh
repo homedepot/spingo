@@ -140,9 +140,12 @@ vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCO
 
 echo "create the bucket that will store the Terraform State"
 gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/
+gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/
+
 
 echo "create the bucket that will store the onboarding information from teams"
 gsutil mb -p "$PROJECT" gs://"$ONBOARDING_BUCKET"/
+gsutil versioning set on gs://"$ONBOARDING_BUCKET"/
 
 echo "set permissions of onboarding bucket to be creator for domain of $DOMAIN"
 gsutil iam ch "domain:$DOMAIN:objectCreator" gs://"$ONBOARDING_BUCKET"

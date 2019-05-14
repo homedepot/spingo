@@ -1,10 +1,13 @@
 #!/bin/bash
 
+set -x
+
 PROJECT="np-platforms-cd-thd"
 
 SIGNED_WILDCARD_CERTIFICATE="spinnaker.homedepot.com.cer"
-WILDCARD_CERT_PRIVATE_KEY="wildcard.key"
-WILDCARD_KEYSTORE="wildcard.jks"
+INTERMEDIATE_CERT="Entrust_Certification_Authority_L1K.cer"
+WILDCARD_CERT_PRIVATE_KEY="private.key"
+WILDCARD_KEYSTORE="wildcard-all.jks"
 CERT_BUCKET_PATH="gs://${PROJECT}-halyard-bucket/certs"
 
 # TODO: enter the appripriate values here
@@ -20,7 +23,7 @@ else
     -in ${SIGNED_WILDCARD_CERTIFICATE} \
     -inkey ${WILDCARD_CERT_PRIVATE_KEY} \
     -out wildcard.p12 \
-    -name wilcard \
+    -name wildcard \
     -passin pass:${WILDCARD_KEY_PASSWORD} \
     -password pass:${WILDCARD_KEY_PASSWORD}
 
@@ -38,16 +41,22 @@ else
     -srcstorepass ${WILDCARD_KEY_PASSWORD}
 
     keytool \
-    -importcert \
+    -import \
+    -keystore ${WILDCARD_KEYSTORE} \
+    -alias intermediate \
+    -file ${INTERMEDIATE_CERT} \
+    -storepass ${JKS_PASSWORD} \
+    -noprompt
+    keytool \
+    -import \
     -keystore ${WILDCARD_KEYSTORE} \
     -alias ca \
     -file ${SIGNED_WILDCARD_CERTIFICATE} \
     -storepass ${JKS_PASSWORD} \
     -noprompt
 
-    echo "copying certificate files to $CERT_BUCKET_PATH"
-    gsutil cp ${SIGNED_WILDCARD_CERTIFICATE} ${CERT_BUCKET_PATH}
-    gsutil cp ${WILDCARD_CERT_PRIVATE_KEY} ${CERT_BUCKET_PATH}
-    gsutil cp ${WILDCARD_KEYSTORE} ${CERT_BUCKET_PATH}
+#    echo "copying certificate files to $CERT_BUCKET_PATH"
+#    gsutil cp ${SIGNED_WILDCARD_CERTIFICATE} ${CERT_BUCKET_PATH}
+#    gsutil cp ${WILDCARD_CERT_PRIVATE_KEY} ${CERT_BUCKET_PATH}
+#    gsutil cp ${WILDCARD_KEYSTORE} ${CERT_BUCKET_PATH}
 fi
-

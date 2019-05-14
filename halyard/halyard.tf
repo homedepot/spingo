@@ -135,7 +135,9 @@ data "template_file" "start_script" {
     SCRIPT_K8SSL         = base64encode(data.template_file.k8ssl.rendered)
     SCRIPT_RESETGCP      = base64encode(data.template_file.resetgcp.rendered)
     SCRIPT_SWITCH        = base64encode(data.template_file.halswitch.rendered)
+    SCRIPT_MONITORING    = base64encode(data.template_file.setupMonitoring.rendered)
     PROFILE_ALIASES      = base64encode(data.template_file.profile_aliases.rendered)
+
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
 }
@@ -198,6 +200,10 @@ data "template_file" "setupSSL" {
     SPIN_API_IP   = data.google_compute_address.spinnaker-api.address
     KEYSTORE_PASS = data.vault_generic_secret.keystore-pass.data["value"]
   }
+}
+
+data "template_file" "setupMonitoring" {
+  template = "${file("./halScripts/setupMonitoring.sh")}"
 }
 
 data "template_file" "k8ssl" {

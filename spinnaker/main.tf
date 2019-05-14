@@ -126,6 +126,213 @@ provider "kubernetes" {
   alias                  = "sandbox"
 }
 
+resource "kubernetes_service_account" "tiller" {
+  provider = "kubernetes.main"
+
+  metadata {
+    name      = "tiller"
+    namespace = "kube-system"
+  }
+
+  automount_service_account_token = true
+}
+
+resource "kubernetes_cluster_role_binding" "tiller" {
+  provider = "kubernetes.main"
+
+  metadata {
+    name = "tiller"
+  }
+
+  role_ref {
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+    api_group = "rbac.authorization.k8s.io"
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = "tiller"
+    api_group = ""
+    namespace = "kube-system"
+  }
+}
+
+provider "helm" {
+  alias           = "main"
+  install_tiller  = true
+  debug           = true
+  service_account = kubernetes_service_account.tiller.metadata.0.name
+  namespace       = kubernetes_service_account.tiller.metadata.0.namespace
+
+  kubernetes {
+    host                   = module.k8s.endpoint
+    cluster_ca_certificate = base64decode(module.k8s.cluster_ca_certificate)
+    token                  = data.google_client_config.current.access_token
+    load_config_file       = false
+  }
+}
+
+data "helm_repository" "stable" {
+  name = "stable"
+  url  = "https://kubernetes-charts.storage.googleapis.com"
+}
+
+resource "helm_release" "prometheus-operator" {
+  provider = "helm.main"
+  name       = "prometheus-operator"
+  repository = data.helm_repository.stable.metadata.0.name
+  chart      = "prometheus-operator"
+  namespace  = "monitoring"
+
+  set {
+    name  = "coreDns.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "kubeDns.enabled"
+    value = "true"
+  }
+
+  set_string {
+    name  = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName"
+    value = "standard"
+  }
+
+  set_string {
+    name  = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage"
+    value = "50Gi"
+  }
+
+  set_string {
+    name  = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName"
+    value = "standard"
+  }
+
+  set_string {
+    name  = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage"
+    value = "50Gi"
+  }
+
+  set_string {
+    name  = "grafana.adminPassword"
+    value = "admin"
+  }
+
+  set {
+    name  = "grafana.persistence.enabled"
+    value = "true"
+  }
+
+  depends_on = [
+    kubernetes_cluster_role_binding.tiller, 
+    kubernetes_service_account.tiller
+  ]
+
+}
+
+resource "kubernetes_service_account" "tiller-sandbox" {
+  provider = "kubernetes.sandbox"
+
+  metadata {
+    name      = "tiller"
+    namespace = "kube-system"
+  }
+
+  automount_service_account_token = true
+}
+
+resource "kubernetes_cluster_role_binding" "tiller-sandbox" {
+  provider = "kubernetes.sandbox"
+
+  metadata {
+    name = "tiller"
+  }
+
+  role_ref {
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+    api_group = "rbac.authorization.k8s.io"
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = "tiller"
+    api_group = ""
+    namespace = "kube-system"
+  }
+}
+
+provider "helm" {
+  alias           = "sandbox"
+  install_tiller  = true
+  debug           = true
+  service_account = kubernetes_service_account.tiller-sandbox.metadata.0.name
+  namespace       = kubernetes_service_account.tiller-sandbox.metadata.0.namespace
+
+  kubernetes {
+    host                   = module.k8s-sandbox.endpoint
+    cluster_ca_certificate = base64decode(module.k8s-sandbox.cluster_ca_certificate)
+    token                  = data.google_client_config.current.access_token
+    load_config_file       = false
+  }
+}
+
+resource "helm_release" "prometheus-operator-sandbox" {
+  provider = "helm.sandbox"
+  name       = "prometheus-operator"
+  repository = data.helm_repository.stable.metadata.0.name
+  chart      = "prometheus-operator"
+  namespace  = "monitoring"
+
+  set {
+    name  = "coreDns.enabled"
+    value = "false"
+  }
+
+  set {
+    name  = "kubeDns.enabled"
+    value = "true"
+  }
+
+  set_string {
+    name  = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.storageClassName"
+    value = "standard"
+  }
+
+  set_string {
+    name  = "prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage"
+    value = "50Gi"
+  }
+
+  set_string {
+    name  = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.storageClassName"
+    value = "standard"
+  }
+
+  set_string {
+    name  = "alertmanager.alertmanagerSpec.storage.volumeClaimTemplate.spec.resources.requests.storage"
+    value = "50Gi"
+  }
+
+  set_string {
+    name  = "grafana.adminPassword"
+    value = "admin"
+  }
+
+  set {
+    name  = "grafana.persistence.enabled"
+    value = "true"
+  }
+
+  depends_on = [
+    kubernetes_cluster_role_binding.tiller-sandbox, 
+    kubernetes_service_account.tiller-sandbox
+  ]
+
+}
+
 module "k8s-spinnaker-service-account" {
   source                    = "./modules/k8s-service-account"
   service_account_name      = "spinnaker"

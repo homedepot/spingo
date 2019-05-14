@@ -61,6 +61,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/hald
 runuser -l ${USER} -c 'echo "${SCRIPT_SWITCH}" | base64 -d > /home/${USER}/halswitch.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL}" | base64 -d > /home/${USER}/setupK8SSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/resetgcp.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_MONITORING}" | base64 -d > /home/${USER}/setupMonitoring.sh'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

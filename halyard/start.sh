@@ -65,6 +65,11 @@ runuser -l ${USER} -c 'echo "${SCRIPT_MONITORING}" | base64 -d > /home/${USER}/s
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
+# Install micro editor because it's awesome
+runuser -l ${USER}  -c 'cd /usr/local/bin; curl https://getmic.ro | sudo bash'
+# format the json bindings file as this will probably be pulled intoa file later
+runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:setlocal filetype yaml\"}" | jq -r \".\" - > ~/.config/micro/bindings.json'
+
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"

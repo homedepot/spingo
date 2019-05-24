@@ -120,23 +120,23 @@ data "template_file" "start_script" {
   template = file("./start.sh")
 
   vars = {
-    USER                 = var.service_account_name
-    BUCKET               = "${var.gcp_project}${var.bucket_name}"
-    PROJECT              = var.gcp_project
-    REPLACE              = google_service_account_key.svc_key.private_key
-    SCRIPT_SSL           = base64encode(data.template_file.setupSSL.rendered)
-    SCRIPT_SAML          = base64encode(data.template_file.setupSAML.rendered)
-    SCRIPT_SLACK         = base64encode(data.template_file.setupSlack.rendered)
-    SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyard.rendered)
-    SCRIPT_HALPUSH       = base64encode(data.template_file.halpush.rendered)
-    SCRIPT_HALGET        = base64encode(data.template_file.halget.rendered)
-    SCRIPT_HALDIFF       = base64encode(data.template_file.haldiff.rendered)
-    SCRIPT_ALIASES       = base64encode(data.template_file.aliases.rendered)
-    SCRIPT_K8SSL         = base64encode(data.template_file.k8ssl.rendered)
-    SCRIPT_RESETGCP      = base64encode(data.template_file.resetgcp.rendered)
-    SCRIPT_SWITCH        = base64encode(data.template_file.halswitch.rendered)
-    SCRIPT_MONITORING    = base64encode(data.template_file.setupMonitoring.rendered)
-    PROFILE_ALIASES      = base64encode(data.template_file.profile_aliases.rendered)
+    USER              = var.service_account_name
+    BUCKET            = "${var.gcp_project}${var.bucket_name}"
+    PROJECT           = var.gcp_project
+    REPLACE           = google_service_account_key.svc_key.private_key
+    SCRIPT_SSL        = base64encode(data.template_file.setupSSL.rendered)
+    SCRIPT_SAML       = base64encode(data.template_file.setupSAML.rendered)
+    SCRIPT_SLACK      = base64encode(data.template_file.setupSlack.rendered)
+    SCRIPT_HALYARD    = base64encode(data.template_file.setupHalyard.rendered)
+    SCRIPT_HALPUSH    = base64encode(data.template_file.halpush.rendered)
+    SCRIPT_HALGET     = base64encode(data.template_file.halget.rendered)
+    SCRIPT_HALDIFF    = base64encode(data.template_file.haldiff.rendered)
+    SCRIPT_ALIASES    = base64encode(data.template_file.aliases.rendered)
+    SCRIPT_K8SSL      = base64encode(data.template_file.k8ssl.rendered)
+    SCRIPT_RESETGCP   = base64encode(data.template_file.resetgcp.rendered)
+    SCRIPT_SWITCH     = base64encode(data.template_file.halswitch.rendered)
+    SCRIPT_MONITORING = base64encode(data.template_file.setupMonitoring.rendered)
+    PROFILE_ALIASES   = base64encode(data.template_file.profile_aliases.rendered)
 
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
@@ -237,16 +237,18 @@ data "template_file" "setupHalyard" {
   template = file("./halScripts/setupHalyard.sh")
 
   vars = {
-    USER                     = var.service_account_name
-    ACCOUNT_PATH             = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
-    DOCKER                   = "docker-registry"
-    ACCOUNT_NAME             = "spin-cluster-account"
-    SPIN_UI_IP               = data.google_compute_address.spinnaker-ui.address
-    SPIN_API_IP              = data.google_compute_address.spinnaker-api.address
-    SPIN_REDIS_ADDR          = data.vault_generic_secret.vault-redis.data["address"]
-    DB_CONNECTION_NAME       = data.vault_generic_secret.db-address.data["address"]
-    DB_SERVICE_USER_PASSWORD = data.vault_generic_secret.db-service-user-password.data["password"]
-    DB_MIGRATE_USER_PASSWORD = data.vault_generic_secret.db-migrate-user-password.data["password"]
+    USER                            = var.service_account_name
+    ACCOUNT_PATH                    = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
+    DOCKER                          = "docker-registry"
+    ACCOUNT_NAME                    = "spin-cluster-account"
+    SPIN_UI_IP                      = data.google_compute_address.spinnaker-ui.address
+    SPIN_API_IP                     = data.google_compute_address.spinnaker-api.address
+    SPIN_REDIS_ADDR                 = data.vault_generic_secret.vault-redis.data["address"]
+    DB_CONNECTION_NAME              = data.vault_generic_secret.db-address.data["address"]
+    DB_SERVICE_USER_PASSWORD        = data.vault_generic_secret.db-service-user-password.data["password"]
+    DB_MIGRATE_USER_PASSWORD        = data.vault_generic_secret.db-migrate-user-password.data["password"]
+    DB_CLOUDDRIVER_SVC_PASSWORD     = data.vault_generic_secret.clouddriver-db-service-user-password.data["password"]
+    DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password.data["password"]
   }
 }
 
@@ -276,6 +278,14 @@ data "vault_generic_secret" "db-migrate-user-password" {
   path = "secret/${var.gcp_project}/db-migrate-user-password/0"
 }
 
+data "vault_generic_secret" "clouddriver-db-service-user-password" {
+  path = "secret/${var.gcp_project}/clouddriver-db-service-user-password/0"
+}
+
+data "vault_generic_secret" "clouddriver-db-migrate-user-password" {
+  path = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/0"
+}
+
 data "google_compute_address" "halyard-external-ip" {
   name = "halyard-external-ip"
 }
@@ -291,10 +301,10 @@ data "vault_generic_secret" "gcp-oauth" {
 }
 
 resource "google_compute_instance" "halyard-spin-vm" {
-  count                     = 1 // Adjust as desired
-  name                      = "halyard-thd-spinnaker"
-  machine_type              = "n1-standard-4"
-  
+  count        = 1 // Adjust as desired
+  name         = "halyard-thd-spinnaker"
+  machine_type = "n1-standard-4"
+
   scheduling {
     automatic_restart = true
   }

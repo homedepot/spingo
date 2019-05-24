@@ -28,6 +28,26 @@ EOF
 
 }
 
+resource "vault_generic_secret" "clouddriver-db-service-user-password" {
+  count = length(var.cluster_config)
+  path = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${count.index}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.clouddriver-db-service-user-password[count.index].result}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "clouddriver-db-migrate-user-password" {
+  count = length(var.cluster_config)
+  path  = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/${count.index}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.clouddriver-db-migrate-user-password[count.index].result}"}
+EOF
+
+}
+
 resource "vault_generic_secret" "spinnaker-db-address" {
   count = length(var.cluster_config)
   path = "secret/${var.gcp_project}/db-address/${count.index}"
@@ -96,12 +116,28 @@ resource "google_sql_database" "orca" {
   collation = "utf8mb4_unicode_ci"
 }
 
+resource "google_sql_database" "clouddriver" {
+  count     = length(var.cluster_config)
+  name      = "clouddriver"
+  instance  = google_sql_database_instance.spinnaker-mysql[count.index].name
+  charset   = "utf8mb4"
+  collation = "utf8mb4_unicode_ci"
+}
+
 resource "google_sql_user" "spinnaker-service-user" {
   count    = length(var.cluster_config)
   name     = "orca_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.spinnaker-mysql[count.index].name
   password = random_string.spinnaker-db-service-user-password[count.index].result
+}
+
+resource "google_sql_user" "clouddriver-service-user" {
+  count    = length(var.cluster_config)
+  name     = "clouddriver_service"
+  host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
+  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
+  password = random_string.clouddriver-db-service-user-password[count.index].result
 }
 
 resource "google_sql_user" "spinnaker-migrate-user" {
@@ -112,13 +148,33 @@ resource "google_sql_user" "spinnaker-migrate-user" {
   password = random_string.spinnaker-db-migrate-user-password[count.index].result
 }
 
+resource "google_sql_user" "clouddriver-migrate-user" {
+  count    = length(var.cluster_config)
+  name     = "clouddriver_migrate"
+  host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
+  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
+  password = random_string.clouddriver-db-migrate-user-password[count.index].result
+}
+
 resource "random_string" "spinnaker-db-service-user-password" {
   count   = length(var.cluster_config)
   length  = 12
   special = false
 }
 
+resource "random_string" "clouddriver-db-service-user-password" {
+  count   = length(var.cluster_config)
+  length  = 12
+  special = false
+}
+
 resource "random_string" "spinnaker-db-migrate-user-password" {
+  count   = length(var.cluster_config)
+  length  = 12
+  special = false
+}
+
+resource "random_string" "clouddriver-db-migrate-user-password" {
   count   = length(var.cluster_config)
   length  = 12
   special = false

@@ -30,6 +30,13 @@ cd dns
 # Initialize Terraform against newly created bucket
 terraform init
 terraform apply
+```
+
+After the managed DNS is setup you now need to direct the DNS hostname to the proper nameservers. First, navigate to [the managed DNS zone that was just setup](https://console.cloud.google.com/net-services/dns/zones/spinnaker-wildcard-domain) and note the name servers listed under the data for the NS type record (it should look like ns-cloud-c1.googledomains.com and ns-cloud-c2.googledomains.com etc. and there should be 4 of them). You then need to log into your domain hosting provider and direct the owned domain to these name servers so that traffic can be routed to your project and SSL certificates can be requested through the Let's Encrypt Google domain authentication plugin which adds a TXT record to the domain to prove that it is owned by you.
+
+Once Google Cloud DNS is properly getting traffic you will be able to complete the Let's Encrypt SSL configuration.
+
+```sh
 cd ..
 ```
 
@@ -110,7 +117,6 @@ terraform apply
 - Enter this command to make sure the setup is complete `showlog`
 - Once completed log into the user account by entering this command `spingo`
 - Setup Halyard for the first time by executing `./setupHalyard.sh`
-- We need to replace the IP addresses in the `default_networks_that_can_access_k8s_api` variable of the `vars.tfvars` file in the root directory to be the correct values that were previously created. They are marked with comments on where to change them and which should go where. Then we need to do a `terraform apply` in the `spinnaker` directory to make the changes take effect. (This will almost certainly get automated in the future but for now...)
 - Before we deploy we should make sure we can reach the cluster by trying this command `kubectl get nodes` and you should see the nodes of the cluster listed
 - Now we need to deploy Spinnaker with the `hda` command which behind the scenes runs `hal deploy apply --wait-for-completion`
 - Once the deployment is successful the next step is to setup SSL by executing `./setupSSL.sh`

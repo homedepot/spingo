@@ -1,5 +1,8 @@
 #!/bin/bash
 
+## Uncomment the line below if things go weird so you can see where it went awry
+# set -x
+
 # PREREQUISITES
 # logged-in to gcloud: `gcloud auth login --project np-platforms-cd-thd`
 # logged into vault
@@ -26,7 +29,7 @@ need "git"
 need "cut"
 
 terraform_override() {
-    echo "terraform { backend \"gcs\" { bucket = \"$1\" credentials = \"terraform-account.json\" prefix = \"$2\" } }" | terraform fmt - > "$3/$4/override.tf"
+    echo -e "terraform {\n backend \"gcs\" {\n bucket = \"$1\" \ncredentials = \"terraform-account.json\" \nprefix = \"$2\" \n} \n}" | terraform fmt - > "$3/$4/override.tf"
     if [ "$?" -ne 0 ]; then
         die "Unable to write terraform backend override file for $4"
     fi

@@ -37,6 +37,12 @@ variable "cloud_dns_hostname" {
   type        = string
 }
 
+variable "gcp_admin_email" {
+  description = "This is the email of an administrator of the Google Cloud Project Organization. Possibly the one who granted the directory group read-only policy to the spinnaker-fiat service account"
+  type = string
+}
+
+
 provider "vault" {
 }
 
@@ -46,6 +52,14 @@ data "vault_generic_secret" "terraform-account" {
 
 data "vault_generic_secret" "keystore-pass" {
   path = "secret/${var.gcp_project}/keystore-pass"
+}
+
+data "vault_generic_secret" "spinnaker_ui_address" {
+  path = "secret/${var.gcp_project}/spinnaker_ui_url/0"
+}
+
+data "vault_generic_secret" "spinnaker_api_address" {
+  path = "secret/${var.gcp_project}/spinnaker_api_url/0"
 }
 
 resource "google_service_account" "service_account" {
@@ -125,7 +139,7 @@ data "template_file" "start_script" {
     PROJECT           = var.gcp_project
     REPLACE           = google_service_account_key.svc_key.private_key
     SCRIPT_SSL        = base64encode(data.template_file.setupSSL.rendered)
-    SCRIPT_SAML       = base64encode(data.template_file.setupSAML.rendered)
+    SCRIPT_OAUTH      = base64encode(data.template_file.setupOAuth.rendered)
     SCRIPT_SLACK      = base64encode(data.template_file.setupSlack.rendered)
     SCRIPT_HALYARD    = base64encode(data.template_file.setupHalyard.rendered)
     SCRIPT_HALPUSH    = base64encode(data.template_file.halpush.rendered)
@@ -193,8 +207,8 @@ data "template_file" "setupSSL" {
 
   vars = {
     USER          = var.service_account_name
-    UI_URL        = "https://${var.hostname_prefix}.${var.cloud_dns_hostname}"
-    API_URL       = "https://${var.hostname_prefix}-api.${var.cloud_dns_hostname}"
+    UI_URL        = "https://${data.vault_generic_secret.spinnaker_ui_address.data["url"]}"
+    API_URL       = "https://${data.vault_generic_secret.spinnaker_api_address.data["url"]}"
     DNS           = var.cloud_dns_hostname
     SPIN_UI_IP    = data.google_compute_address.spinnaker-ui.address
     SPIN_API_IP   = data.google_compute_address.spinnaker-api.address
@@ -203,7 +217,7 @@ data "template_file" "setupSSL" {
 }
 
 data "template_file" "setupMonitoring" {
-  template = "${file("./halScripts/setupMonitoring.sh")}"
+  template = file("./halScripts/setupMonitoring.sh")
 }
 
 data "template_file" "k8ssl" {
@@ -215,13 +229,16 @@ data "template_file" "k8ssl" {
   }
 }
 
-data "template_file" "setupSAML" {
-  template = file("./halScripts/setupSAML.sh")
+data "template_file" "setupOAuth" {
+  template = file("./halScripts/setupOAuth.sh")
 
   vars = {
-    USER          = var.service_account_name
-    API_URL       = "https://${var.hostname_prefix}-api.${var.cloud_dns_hostname}"
-    KEYSTORE_PASS = data.vault_generic_secret.keystore-pass.data["value"]
+    USER                = var.service_account_name
+    API_URL             = "https://${data.vault_generic_secret.spinnaker_api_address.data["url"]}"
+    OAUTH_CLIENT_ID     = data.vault_generic_secret.gcp-oauth["client-id"]
+    OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp-oauth["client-secret"]
+    DOMAIN              = var.cloud_dns_hostname
+    ADMIN_EMAIL         = var.gcp_admin_email
   }
 }
 

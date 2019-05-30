@@ -53,7 +53,7 @@ runuser -l ${USER} -c 'ln -s /${USER}/.kube /home/${USER}/'
 
 echo "Setting up helper scripts"
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_SAML}" | base64 -d > /home/${USER}/setupSAML.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_OAUTH}" | base64 -d > /home/${USER}/setupOAuth.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setupHalyard.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/halget.sh'

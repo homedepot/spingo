@@ -435,6 +435,27 @@ module "spinnaker-gcp-cloudsql-service-account" {
   roles                = ["roles/cloudsql.client"]
 }
 
+resource "google_service_account" "spinnaker_oauth_fiat" {
+  display_name = "spinnaker-fiat"
+  account_id   = "spinnaker-fiat"
+}
+
+resource "google_service_account_key" "fiat_svc_key" {
+  service_account_id = google_service_account.spinnaker_oauth_fiat.name
+}
+
+resource "vault_generic_secret" "fiat-service-account-key" {
+  path      = "secret/${var.gcp_project}/spinnaker_fiat"
+  data_json = base64decode(google_service_account_key.fiat_svc_key.private_key)
+}
+
+resource "google_storage_bucket_object" "fiat_service_account_key_storage" {
+  name         = ".gcp/spinnaker-fiat.json"
+  content      = base64decode(google_service_account_key.fiat_svc_key.private_key)
+  bucket       = module.halyard-storage.bucket_name
+  content_type = "application/json"
+}
+
 data "google_compute_address" "halyard_ip_address" {
   name = "halyard-external-ip"
 }
@@ -468,3 +489,6 @@ module "spinnaker-dns" {
   }
 }
 
+output "spinnaker_fiat_account_unique_id" {
+  value = google_service_account.spinnaker_oauth_fiat.unique_id
+}

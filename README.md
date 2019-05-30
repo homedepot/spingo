@@ -59,12 +59,19 @@ cd spinnaker
 # Initialize Terraform against newly created bucket
 terraform init
 terraform apply
+```
+
+#### Google OAuth Authorization Setup
+
+At the very end of the Setup Spinnaker Infrastructure step you will see an output called `spinnaker_fiat_account_unique_id` with a very large number printed out. That number is the unique ID of the Spinnaker service account `spinnaker-fiat` whose ID we need to use as the `Client Name` in step #3 when we follow [these instructions](https://www.spinnaker.io/setup/security/authorization/google-groups/#service-account-setup) to enable read-only permissions to get all the groups that a user has at the organization level. Many large enterprises sync their active directory groups to their Google user accounts and we want to utilize that to enable true Role Based Authentication (RBAC) within Spinnaker to seperate authorizations between different applications and between different deployment targets.
+
+```sh
 cd ..
 ```
 
 ### Setup Halyard VM
 
-#### If you are going to use Google OAuth (skip to next section if not)
+#### Google OAuth Authentication Setup
 
 - Navigate to the [APIs & Services > Credentials](https://console.cloud.google.com/apis/credentials/consent) and set your `Application name` and your `Authorized domains`
 - Naivate to [Create OAuth client ID](https://console.cloud.google.com/apis/credentials/oauthclient) and choose `Web application` then enter the `Name` like `spinnaker client ID` and the `Authorized redirect URIs` to your HTTPS url like this (note the `/login` at the end of each

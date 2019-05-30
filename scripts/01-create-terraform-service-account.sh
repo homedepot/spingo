@@ -261,5 +261,13 @@ done
 echo "setting up default values for user inputted values within vault"
 vault write secret/"$PROJECT"/gcp-oauth "client-id=replace-me" "client-secret=replace-me" >/dev/null 2>&1
 vault write secret/"$PROJECT"/slack-token "value=replace-me" >/dev/null 2>&1
+echo "-----------------------------------------------------------------------------"
+echo " *****   Google Cloud Platform Organization Email Address   *****"
+echo "-----------------------------------------------------------------------------"
+while [ -z $gcp_admin_email ]; do
+    echo -n "Enter an email address of an administrator for your Google Cloud Platform Organization (someone with group administration access):  "
+    read gcp_admin_email
+done
+echo "gcp_admin_email = \"$gcp_admin_email\"" > "$GIT_ROOT_DIR/halyard/var-gcp_admin_email.auto.tfvars"
 echo "setup complete"
 cd "$CWD"

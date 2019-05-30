@@ -11,9 +11,9 @@ data "vault_generic_secret" "terraform-account" {
 }
 
 provider "google" {
-  # credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
+  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
 
-  credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
   project     = var.gcp_project
   region      = var.region
 }

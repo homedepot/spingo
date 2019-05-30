@@ -25,3 +25,23 @@ resource "google_dns_record_set" "spinnaker-api" {
   managed_zone = "spinnaker-wildcard-domain"
   rrdatas      = [var.api_ip_addresses[count.index]]
 }
+
+resource "vault_generic_secret" "spinnaker_ui_address" {
+  count = length(var.cluster_config)
+  path  = "secret/${var.gcp_project}/spinnaker_ui_url/${count.index}"
+
+  data_json = <<-EOF
+              {"url":"${google_dns_record_set.spinnaker-ui[count.index].name}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "spinnaker_api_address" {
+  count = length(var.cluster_config)
+  path = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
+
+  data_json = <<-EOF
+              {"url":"${google_dns_record_set.spinnaker-api[count.index].name}"}
+EOF
+
+}

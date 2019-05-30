@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Inspired by: https://stackoverflow.com/questions/42170380/how-to-add-users-to-kubernetes-kubectl
 # this script creates a service account (spinnaker-user) on a Kubernetes cluster (tested with AWS EKS 1.9)
@@ -11,9 +11,37 @@ echo    "permissions and upload the credentials to a bucket for use by spinnaker
 echo -e "########################################################################\n\n"
 
 
+# Optionally namespace name can be provided as input with options -n|--namespace
+# If not, service account will be created in default namespace
+NAMESPACE="default"
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo "Usage: $0 [-n|--namespace <name>]"
+      echo '"default" namespace will be used if no arguments given'
+      exit
+      ;;
+    -n|--namespace)
+      test ! -z $2 && NAMESPACE=$2
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+# Limit the access to namespace level if provided
+if [ $NAMESPACE == "default" ]; then
+  ROLEBINDING="ClusterRoleBinding"
+else
+  ROLEBINDING="RoleBinding"
+fi
+
+echo "Using the namespace \"$NAMESPACE\""
 
 ####################################################
-########             Dependencies           ######## 
+########             Dependencies           ########
 ####################################################
 
 # ensure that the required commands are present needed to run this script
@@ -45,30 +73,37 @@ fi
 
 
 ####################################################
-########           Create an account        ######## 
+########           Create an account        ########
 ####################################################
+# Checking the existence of namespace
+kubectl get namespace $NAMESPACE &> /dev/null || die "namespace \"$NAMESPACE\" does not exist"
 # Create service account for user spinnaker-user
-kubectl create sa spinnaker-user --namespace default
+kubectl create sa spinnaker-user --namespace $NAMESPACE
 # Get related secret
-secret=$(kubectl get sa spinnaker-user --namespace default -o json | jq -r '.secrets[].name')
-# Get ca.crt from secret 
-kubectl get secret "$secret" --namespace default -o json | jq -r '.data["ca.crt"]' | base64 "$BASE64_DECODE" > ca.crt
+secret=$(kubectl get sa spinnaker-user --namespace $NAMESPACE -o json | jq -r '.secrets[].name')
+# Get ca.crt from secret
+kubectl get secret "$secret" --namespace $NAMESPACE -o json | jq -r '.data["ca.crt"]' | base64 "$BASE64_DECODE" > ca.crt
 # Get service account token from secret
-user_token=$(kubectl get secret "$secret" --namespace default -o json | jq -r '.data["token"]' | base64 "$BASE64_DECODE")
+user_token=$(kubectl get secret "$secret" --namespace $NAMESPACE -o json | jq -r '.data["token"]' | base64 "$BASE64_DECODE")
 # Get information from your kubectl config (current-context, server..)
 # get current context
 c=$(kubectl config current-context)
 # get cluster name of context
 name=$(kubectl config get-contexts "$c" | awk '{print $3}' | tail -n 1)
-# get endpoint of current context 
+# get endpoint of current context
 endpoint=$(kubectl config view -o jsonpath="{.clusters[?(@.name == \"$name\")].cluster.server}")
 
 # Create the yaml to bind the cluster admin role to spinnaker-user
+# cluster-admin role:
+# When used in a ClusterRoleBinding, it gives full control over every resource in the cluster and in all namespaces.
+# When used in a RoleBinding, it gives full control over every resource in the rolebinding's namespace, including the namespace itself
+# Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
 cat <<EOF >> rbac-config-spinnaker-user.yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: $ROLEBINDING
 metadata:
   name: spinnaker-user
+  namespace: $NAMESPACE
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -76,7 +111,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: spinnaker-user
-    namespace: default
+    namespace: $NAMESPACE
 EOF
 
 # Apply the policy to spinnaker-user
@@ -85,7 +120,7 @@ kubectl apply -f rbac-config-spinnaker-user.yaml && rm rbac-config-spinnaker-use
 
 
 ####################################################
-########         Consume the account        ######## 
+########         Consume the account        ########
 ####################################################
 
 
@@ -105,13 +140,13 @@ CLUSTER_NAME=$(gcloud container clusters list --filter="endpoint:$CLUSTER_ENDPOI
 CLUSTER_ID="gke_${PROJECT}_${CLUSTER_LOCATION}_${CLUSTER_NAME}"
 CONFIG_FILE="$CLUSTER_ID.config"
 
-# Set cluster 
+# Set cluster
 kubectl config set-cluster "$CLUSTER_ID" --embed-certs=true --server="$endpoint" --certificate-authority=./ca.crt --kubeconfig="$CONFIG_FILE" && rm ca.crt
-# Set user credentials 
+# Set user credentials
 kubectl config set-credentials "spinnaker-user-$CLUSTER_ID" --token="$user_token" --kubeconfig="$CONFIG_FILE"
 
 # Define the combination of spinnaker-user user with the EKS cluster
-kubectl config set-context "$CLUSTER_ID" --cluster="$CLUSTER_ID" --user="spinnaker-user-$CLUSTER_ID" --namespace=default --kubeconfig="$CONFIG_FILE"
+kubectl config set-context "$CLUSTER_ID" --cluster="$CLUSTER_ID" --user="spinnaker-user-$CLUSTER_ID" --namespace=$NAMESPACE --kubeconfig="$CONFIG_FILE"
 kubectl config use-context "$CLUSTER_ID" --kubeconfig="$CONFIG_FILE"
 
 # Append metadata

@@ -18,8 +18,8 @@ need() {
 need "vault"
 
 # can also run "gcloud config list --format 'value(core.project)' 2>/dev/null" to get the project name dynamically
-PROJECT="np-platforms-cd-thd"
-DNS_PROJECT="np-platforms-cd-thd"
+PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
+DNS_PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
 SERVICE_ACCOUNT_NAME="terraform-account"
 DNS_SERVICE_ACCOUNT_NAME="terraform-account-dns"
 

@@ -4,9 +4,9 @@
 # set -x
 
 # PREREQUISITES
-# logged-in to gcloud: `gcloud auth login --project np-platforms-cd-thd`
+# logged-in to gcloud: `gcloud auth login`
 # logged into vault
-# `export VAULT_ADDR=https://vault.ioq1.homedepot.com:10231`
+# `export VAULT_ADDR=https://vault.example.com:10231`
 # `vault login <some token>`
 
 # if you need to delete the service account, see 00-delete-terraform-account.sh
@@ -59,7 +59,7 @@ done
 vault auth list >/dev/null 2>&1
 if [[ "$?" -ne 0 ]]; then
   echo "not logged into vault!"
-  echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.ioq1.homedepot.com:10231')"
+  echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.example.com:10231')"
   echo "2. login: (e.g. 'vault login <some token>')"
   exit 1
 fi

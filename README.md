@@ -129,3 +129,12 @@ terraform apply
 - Once the deployment is successful the next step is to setup SSL by executing `./setupSSL.sh`
 - Last step is to do a `hda` to send the full configuration up to the Spinnaker deployment
 - Navigate to your new Spinnaker by going to `https://spinnaker.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
+
+
+## Contributing 
+
+Check out the [contributing](CONTRIBUTING.md) readme for information on how to contribute to the project. 
+
+## License 
+
+This project is released under the Apache2 free software license. More information can be found in the [LICENSE](LICENSE) file.

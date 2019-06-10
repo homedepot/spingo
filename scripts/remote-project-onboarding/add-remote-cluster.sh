@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# set -x
 shopt -s extglob
 
 # Change this to match the specific onboarding bucket name for your project
@@ -122,27 +123,25 @@ do
     echo "status code of adding group $selgroup to account $?"
 done
 
-#close down connection to Fiat & Front50 if they already exists
-fuser -k 7003/tcp; fuser -k 8080/tcp  >/dev/null 2>&1
+#close down connection to fiat & front50 if they already exists
+fuser -k 7003/tcp >/dev/null 2>&1; fuser -k 8080/tcp  >/dev/null 2>&1
  
 echo "patching fiat to add serice account for groups"
 kubectl port-forward service/spin-front50 8080:8080 -n spinnaker >/dev/null 2>&1 &
-F50_PID="$!"
-while [ -z $FRONT50_UP_PID ]; do
-  echo "waiting for connection to Front50..."
+while [ -z "$FRONT50_UP_PID" ]; do
+  echo "waiting for connection to front50..."
   sleep 1
   FRONT50_UP_PID=$(fuser 8080/tcp)
 done
-echo "Connection to Front50 obtained"
+echo "Connection to front50 obtained"
 
 kubectl port-forward service/spin-fiat 7003:7003 -n spinnaker >/dev/null 2>&1 &
-FIAT_PID="$!"
-while [ -z $FIAT_UP_PID ]; do
-  echo "waiting for connection to Fiat..."
+while [ -z "$FIAT_UP_PID" ]; do
+  echo "waiting for connection to fiat..."
   sleep 1
   FIAT_UP_PID=$(fuser 7003/tcp)
 done
-echo "Connection to Front50 obtained"
+echo "Connection to fiat obtained"
 
 FRONT50="http://localhost:8080"
 FIAT="http://localhost:7003"
@@ -158,7 +157,7 @@ done
 # force fiat to sync the change
 curl -X POST "$FIAT"/roles/sync
 
-fuser -k 8080/tcp; fuser -k 7003/tcp >/dev/null 2>&1
+fuser -k 8080/tcp >/dev/null 2>&1; fuser -k 7003/tcp >/dev/null 2>&1
 
 gsutil mv "${ONBOARDING_BUCKET}${KUBE_FILE}" "${ONBOARDING_BUCKET_COMPLETE}${KUBE_FILE}"
 

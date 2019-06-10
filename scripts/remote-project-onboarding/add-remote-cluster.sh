@@ -1,7 +1,9 @@
 #!/bin/bash
 
-#set -x
 shopt -s extglob
+
+# Change this to match the specific onboarding bucket name for your project
+ONBOARDING_BUCKET_NAME="np-platforms-cd-thd-spinnaker-onboarding"
 
 ####################################################
 ########             Dependencies           ######## 
@@ -17,7 +19,8 @@ need() {
 need "gsutil"
 need "hal"
 need "curl"
-ONBOARDING_BUCKET_BASE="gs://np-platforms-cd-thd-spinnaker-onboarding/"
+
+ONBOARDING_BUCKET_BASE="gs://$ONBOARDING_BUCKET_NAME/"
 ONBOARDING_BUCKET="${ONBOARDING_BUCKET_BASE}gke/"
 ONBOARDING_BUCKET_COMPLETE="${ONBOARDING_BUCKET_BASE}processed/gke/"
 

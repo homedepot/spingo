@@ -1,6 +1,8 @@
 #!/bin/bash 
 
-# set -x
+# Change this to match the specific onboarding bucket name for your project
+ONBOARDING_BUCKET_NAME="np-platforms-cd-thd-spinnaker-onboarding"
+
 
 # Inspired by: https://stackoverflow.com/questions/42170380/how-to-add-users-to-kubernetes-kubectl
 # this script creates a service account (spinnaker-user) on a Kubernetes cluster (tested with AWS EKS 1.9)
@@ -89,7 +91,7 @@ default_api_version = 2
 EOF
 export BOTO_CONFIG=boto
 
-gsutil cp "$SERVICE_ACCOUNT_FILE" gs://np-platforms-cd-thd-spinnaker-onboarding && rm "$SERVICE_ACCOUNT_FILE"
+gsutil cp "$SERVICE_ACCOUNT_FILE" gs://"$ONBOARDING_BUCKET_NAME" && rm "$SERVICE_ACCOUNT_FILE"
 
 # Cleanup boto config
 rm -f boto

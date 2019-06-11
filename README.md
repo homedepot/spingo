@@ -42,7 +42,7 @@ cd ..
 
 ### Setup Static IP addresses
 
-Just like with DNS Managed Zones, we are seprating the generation of static IPs out from the 'spinnaker/' tree to it's own self-contained area. This is necessary in order to allow for a terraform destroy of the spinnaker resources and not lose static IPs because they persist in external things like firewall rules and it's non-trivial to update those.
+Just like with DNS Managed Zones, we are separating the generation of static IPs out from the 'spinnaker/' tree to it's own self-contained area. This is necessary in order to allow for a terraform destroy of the spinnaker resources and not lose static IPs because they persist in external things like firewall rules and it's non-trivial to update those.
 
 ```sh
 cd static_ips

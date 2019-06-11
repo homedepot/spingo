@@ -1,6 +1,10 @@
 # Spingo
 A collection of Terraform and bash scripts to setup an enterprise-grade Spinnaker deployment on Google Cloud Platform
 
+## Architecture
+
+![diagram](images/spingo-picture.png)
+
 ## Prerequisites
 
 - [Vault](https://www.vaultproject.io/downloads.html) needs to be setup and authenticated

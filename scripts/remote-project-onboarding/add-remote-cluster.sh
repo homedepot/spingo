@@ -44,6 +44,7 @@ do
         echo "You must select a Project to onboard"
     else
         SELECTED_PROJECT_ONBOARDING_BUCKET="$ONBOARDING_BUCKET""$project"
+        break;
     fi
 done
 

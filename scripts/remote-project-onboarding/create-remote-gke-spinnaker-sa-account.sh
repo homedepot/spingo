@@ -119,7 +119,14 @@ EOF
 
 # Apply the policy to spinnaker-user
 ## nota bene: this command is running against the GKE admin account (defaulting to a reference in ~/.kube/config)
-kubectl apply -f rbac-config-spinnaker-user.yaml && rm rbac-config-spinnaker-user.yaml
+kubectl apply -f rbac-config-spinnaker-user.yaml
+if [[ "$?" -eq 0 ]]; then
+  rm rbac-config-spinnaker-user.yaml
+else
+  echo "There was an error applying the $ROLEBINDING"
+  rm rbac-config-spinnaker-user.yaml
+  exit 1
+fi
 
 
 ####################################################

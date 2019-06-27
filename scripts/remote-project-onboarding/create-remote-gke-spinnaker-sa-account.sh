@@ -119,7 +119,14 @@ EOF
 
 # Apply the policy to spinnaker-user
 ## nota bene: this command is running against the GKE admin account (defaulting to a reference in ~/.kube/config)
-kubectl apply -f rbac-config-spinnaker-user.yaml && rm rbac-config-spinnaker-user.yaml
+kubectl apply -f rbac-config-spinnaker-user.yaml
+if [[ "$?" -eq 0 ]]; then
+  rm rbac-config-spinnaker-user.yaml
+else
+  echo "There was an error applying the $ROLEBINDING"
+  rm rbac-config-spinnaker-user.yaml
+  exit 1
+fi
 
 
 ####################################################
@@ -131,7 +138,7 @@ echo -e "Getting current gcloud project configured\n"
 PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
 echo -e "Current project is : $PROJECT \n"
 echo -e "Getting current roles that have GKE Cluster Admin Access \n"
-CLUSTER_ADMIN_GROUPS=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.role:roles/container.clusterAdmin" 2>/dev/null | jq -r '.[].bindings.members' - | grep 'group:' | awk -F '[@:]' '{print $2}')
+CLUSTER_ADMIN_GROUPS=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" 2>/dev/null | jq -r '.[].bindings.members' - | grep 'group:' | awk -F '[@:]' '{print $2}' | sort -u)
 INDENTED_CLUSTER_ADMIN_GROUPS=$(echo "$CLUSTER_ADMIN_GROUPS" | sed 's/^/    - /')
 echo -e "Getting current user \n"
 CURRENT_USER_ACCOUNT=$(gcloud config list account --format "value(core.account)" 2>/dev/null)
@@ -171,10 +178,59 @@ default_api_version = 2
 EOF
 export BOTO_CONFIG=boto
 
-gsutil cp "$CONFIG_FILE" gs://"$ONBOARDING_BUCKET_NAME" && rm "$CONFIG_FILE"
+ONBOARDING_FULL_DESTINATION="$ONBOARDING_BUCKET_NAME/gke/$PROJECT/"
+SERVICE_ACCOUNT_DEST="sa.json"
+
+HAS_GCR_REGISTRY=$(gcloud container images list --format=json 2>&1)
+HAS_US_GCR_REGISTRY=$(gcloud container images list --format=json --repository=us.gcr.io/"$PROJECT" 2>&1)
+
+if [[ "$HAS_GCR_REGISTRY" != "[]" ]] || [[ "$HAS_US_GCR_REGISTRY" != "[]" ]]; then
+
+  echo "There is one or more supported Google container registries in this project so creating a service account so Spinnaker can read from the registries"
+
+  SERVICE_ACCOUNT_NAME="spinnaker-gcr"
+
+  echo "creating $SERVICE_ACCOUNT_NAME service account"
+  gcloud iam service-accounts create \
+      "$SERVICE_ACCOUNT_NAME" \
+      --display-name "$SERVICE_ACCOUNT_NAME"
+
+  if [[ "$?" -eq 0 ]]; then
+    while [ -z $SA_EMAIL ]; do
+      echo "waiting for service account to be fully created..."
+      sleep 1
+      SA_EMAIL=$(gcloud iam service-accounts list \
+          --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+          --format='value(email)')
+    done
+
+    if [ "$HAS_GCR_REGISTRY" != "[]" ]; then
+      echo "Adding object viewer access to Spinnaker's service account to the default registry gcr.io/$PROJECT"
+      gsutil iam ch "serviceAccount:$SA_EMAIL:objectViewer" gs://"artifacts.$PROJECT.appspot.com"
+    else
+      echo "Unable to find any default gcr regestries within the project"
+    fi
+
+    if [ "$HAS_US_GCR_REGISTRY" != "[]" ]; then
+      echo "Adding object viewer access to Spinnaker's service account to the US registry gcr.io/$PROJECT"
+      gsutil iam ch "serviceAccount:$SA_EMAIL:objectViewer" gs://"us.artifacts.$PROJECT.appspot.com"
+    else
+      echo "Unable to find any US regional specific regestries within the project"
+    fi
+
+    gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
+      --iam-account "$SA_EMAIL"
+    
+    gsutil cp "$SERVICE_ACCOUNT_DEST" gs://"$ONBOARDING_FULL_DESTINATION""$SERVICE_ACCOUNT_DEST" && rm "$SERVICE_ACCOUNT_DEST"
+  else
+    echo "Unable to create service account for the google container registries within project: $PROJECT "
+  fi
+fi
+
+gsutil cp "$CONFIG_FILE" gs://"$ONBOARDING_FULL_DESTINATION""$CONFIG_FILE" && rm "$CONFIG_FILE"
 
 # Cleanup boto config
 rm -f boto
 unset BOTO_CONFIG
 
-echo -e "\n\nThe creation of the service account is complete"
+echo -e "\n\nThe creation of the service account is complete. Please alert the Spinnaker Admin team that you have completed on-boarding so they can finalize the on-boarding process."

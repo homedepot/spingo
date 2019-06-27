@@ -29,11 +29,33 @@ KUBE_FILE_PATH="/spinnaker/accounts"
 echo "-----------------------------------------------------------------------------"
 echo " *****   GKE Cluster Onboarding Target   ***** "
 
-targets=()
-for value in $(gsutil ls "$ONBOARDING_BUCKET" 2>/dev/null)
+projects=()
+for proj in $(gsutil ls "$ONBOARDING_BUCKET" 2>/dev/null)
 do
-    if [[ $value != "$ONBOARDING_BUCKET" ]]; then
-        targets+=(${value/$ONBOARDING_BUCKET/})
+    if [[ $proj != "$ONBOARDING_BUCKET" ]]; then
+        projects+=(${value/$ONBOARDING_BUCKET/})
+    fi
+done
+
+PS3="-----------------------------------------------------------------------------"$'\n'"Enter the number for the project to setup within Spinnaker : ";
+select project in "${projects[@]}"
+do
+    if [ "$project" == "" ]; then
+        echo "You must select a Project to onboard"
+    else
+        SELECTED_PROJECT_ONBOARDING_BUCKET="$ONBOARDING_BUCKET""$project"
+        break;
+    fi
+done
+
+targets=()
+for value in $(gsutil ls "$SELECTED_PROJECT_ONBOARDING_BUCKET" 2>/dev/null)
+do
+    if [[ $value != "$SELECTED_PROJECT_ONBOARDING_BUCKET" ]]; then
+        file=${value/$SELECTED_PROJECT_ONBOARDING_BUCKET/}
+        if [[ "$file" != "sa.json" ]]; then
+            targets+=(${file})
+        fi
     fi
 done
 PS3="-----------------------------------------------------------------------------"$'\n'"Enter the number for the cluster to setup within Spinnaker : ";

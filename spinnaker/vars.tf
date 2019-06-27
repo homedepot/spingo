@@ -68,6 +68,8 @@ variable "default_oauth_scopes" {
     "https://www.googleapis.com/auth/servicecontrol",
     "https://www.googleapis.com/auth/trace.append",
     "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/cloudkms",
+    "https://www.googleapis.com/auth/devstorage.read_write"
   ]
 }
 

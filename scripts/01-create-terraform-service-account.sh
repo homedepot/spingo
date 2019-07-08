@@ -152,7 +152,7 @@ gsutil versioning set on gs://"$ONBOARDING_BUCKET"/
 echo "create custom onboarding bucket IAM role"
 gcloud iam roles create onboarding_bucket_role --project "$PROJECT" \
 --title "Onboarding Submitter" --description "List and create access for storage objects for use in spinnaker onboarding" \
---permissions storage.objects.list,storage.objects.create  --stage ALPHA
+--permissions storage.objects.list,storage.objects.create  --stage GA
 
 echo "set permissions of onboarding bucket to be creator for domain of $DOMAIN"
 gsutil iam ch "domain:$DOMAIN:projects/$PROJECT/roles/onboarding_bucket_role" gs://"$ONBOARDING_BUCKET"

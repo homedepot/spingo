@@ -145,13 +145,17 @@ echo "create the bucket that will store the Terraform State"
 gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/
 gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/
 
-
 echo "create the bucket that will store the onboarding information from teams"
 gsutil mb -p "$PROJECT" gs://"$ONBOARDING_BUCKET"/
 gsutil versioning set on gs://"$ONBOARDING_BUCKET"/
 
+echo "create custom onboarding bucket IAM role"
+gcloud iam roles create onboarding_bucket_role --project $PROJECT \
+--title "Onboarding Submitter" --description "List and create access for storage objects for use in spinnaker onboarding" \
+--permissions storage.objects.list,storage.objects.create  --stage ALPHA
+
 echo "set permissions of onboarding bucket to be creator for domain of $DOMAIN"
-gsutil iam ch "domain:$DOMAIN:objectCreator" gs://"$ONBOARDING_BUCKET"
+gsutil iam ch "domain:$DOMAIN:projects/$PROJECT/roles/onboarding_bucket_role" gs://"$ONBOARDING_BUCKET"
 
 vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
 

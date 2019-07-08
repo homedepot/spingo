@@ -33,7 +33,7 @@ projects=()
 for proj in $(gsutil ls "$ONBOARDING_BUCKET" 2>/dev/null)
 do
     if [[ $proj != "$ONBOARDING_BUCKET" ]]; then
-        projects+=(${value/$ONBOARDING_BUCKET/})
+        projects+=(${proj/$ONBOARDING_BUCKET/})
     fi
 done
 
@@ -85,7 +85,8 @@ done
 KUBE_CONFIG_FULL_PATH="$KUBE_FILE_PATH/$KUBE_FILE"
 echo "getting kubeconfig file ($KUBE_FILE) from bucket"
 
-gsutil cp "${ONBOARDING_BUCKET}${KUBE_FILE}" "$KUBE_CONFIG_FULL_PATH"
+# The purpose for this is to copy just the kube config file to the /spinnaker/accounts directory
+gsutil cp "${SELECTED_PROJECT_ONBOARDING_BUCKET}${KUBE_FILE}" "$KUBE_CONFIG_FULL_PATH"
 
 declare -A selected_groups=()
 echo "-----------------------------------------------------------------------------"
@@ -181,7 +182,7 @@ curl -X POST "$FIAT"/roles/sync
 
 fuser -k 8080/tcp >/dev/null 2>&1; fuser -k 7003/tcp >/dev/null 2>&1
 
-gsutil mv "${ONBOARDING_BUCKET}${KUBE_FILE}" "${ONBOARDING_BUCKET_COMPLETE}${KUBE_FILE}"
+gsutil mv "${SELECTED_PROJECT_ONBOARDING_BUCKET}" "${ONBOARDING_BUCKET_COMPLETE}"
 
 echo "You should do a halldiff to make sure everything looks good then do an hda then a halpush"
 echo "setup complete"

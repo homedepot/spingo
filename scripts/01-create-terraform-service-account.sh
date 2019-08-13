@@ -33,6 +33,12 @@ terraform_override() {
     if [ "$?" -ne 0 ]; then
         die "Unable to write terraform backend override file for $4"
     fi
+    #vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+    vault write secret/"$PROJECT"/"local-override-$2" "$2"=@${SERVICE_ACCOUNT_DEST}
+}
+
+terraform_variable() {
+    echo -e "$1 = $2" > "$3/var-$1.auto.tfvars"
 }
 
 CWD=$(pwd)
@@ -180,6 +186,8 @@ terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "hal
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-certbot" "$GIT_ROOT_DIR" "certbot"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips"
+
+
 
 PROJECT_AUTO_VARS_FILE="var-project.auto.tfvars"
 MAIN_PROJECT_AUTO_VARS="$GIT_ROOT_DIR/$PROJECT_AUTO_VARS_FILE"

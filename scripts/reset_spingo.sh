@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Do not run this script unless you have already run 'terraform destoy' in all
+#  of the diretories first and you want to re-run initial_setup.sh
+# This script is designed to remove the service accounts that terraform requires
+
 # PREREQUISITES
 # logged-in to gcloud: `gcloud auth login`
 # logged into vault
@@ -18,6 +22,16 @@ die() { echo "$*" 1>&2 ; exit 1; }
 need() {
     which "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
+
+while [ "$SCRIPT_CONFIRMATION" != "YES" ]; do
+    echo "-----------------------------------------------------------------------------"
+    echo "WARNING: Do not run this script unless you have already run 'terraform destoy' in all"
+    echo " of the diretories first and you want to re-run initial_setup.sh"
+    echo "This script is designed to remove the service accounts that terraform requires"
+    echo "-----------------------------------------------------------------------------"
+    echo -n "Enter YES to continue (ctrl-c to exit) : "
+    read SCRIPT_CONFIRMATION
+done
 
 need "vault"
 need "gcloud"

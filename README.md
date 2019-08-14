@@ -24,7 +24,6 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
 git clone https://github.com/homedepot/spingo.git
 cd spingo
 ./scripts/initial_setup.sh
-cd ..
 ```
 
 ### Setup Managed DNS through Cloud DNS

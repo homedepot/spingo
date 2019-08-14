@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This script will initialize all of the neessary prerequisites for terraform to run
+
 ## Uncomment the line below if things go weird so you can see where it went awry
 # set -x
 
@@ -29,16 +31,28 @@ need "git"
 need "cut"
 
 terraform_override() {
+    # $1 = terraform bucket name
+    # $2 = terraform backend prefix
+    # $3 = git root directory
+    # $4 = terraform sub-project directory
+    # $5 = GCP project name
+
     echo -e "terraform {\n backend \"gcs\" {\n bucket = \"$1\" \ncredentials = \"terraform-account.json\" \nprefix = \"$2\" \n} \n}" | terraform fmt - > "$3/$4/override.tf"
     if [ "$?" -ne 0 ]; then
         die "Unable to write terraform backend override file for $4"
     fi
-    #vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
-    vault write secret/"$PROJECT"/"local-override-$2" "$2"=@${SERVICE_ACCOUNT_DEST}
+    vault write "secret/$5/local-override-$2" "value"=@"$3/$4/override.tf" >/dev/null 2>&1
 }
 
 terraform_variable() {
-    echo -e "$1 = $2" > "$3/var-$1.auto.tfvars"
+    # $1 = terraform variable name
+    # $2 = terraform variable value
+    # $3 = git root directory
+    # $4 = terraform sub-project directory
+    # $5 = GCP project name
+
+    echo -e "$1 = \"$2\"" > "$3/$4/var-$1.auto.tfvars"
+    vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
 CWD=$(pwd)
@@ -185,23 +199,19 @@ cp "$SERVICE_ACCOUNT_DEST" ./certbot
 cp "$SERVICE_ACCOUNT_DEST" ./dns
 cp "$SERVICE_ACCOUNT_DEST" ./static_ips
 rm "$SERVICE_ACCOUNT_DEST"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np" "$GIT_ROOT_DIR" "spinnaker"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "halyard"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-certbot" "$GIT_ROOT_DIR" "certbot"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-certbot" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 
 
+terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
+terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 
-PROJECT_AUTO_VARS_FILE="var-project.auto.tfvars"
-MAIN_PROJECT_AUTO_VARS="$GIT_ROOT_DIR/$PROJECT_AUTO_VARS_FILE"
-echo "gcp_project = \"$PROJECT\"" > "$MAIN_PROJECT_AUTO_VARS"
-cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/spinnaker/$PROJECT_AUTO_VARS_FILE"
-cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/halyard/$PROJECT_AUTO_VARS_FILE"
-cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/certbot/$PROJECT_AUTO_VARS_FILE"
-cp "$MAIN_PROJECT_AUTO_VARS" "$GIT_ROOT_DIR/static_ips/$PROJECT_AUTO_VARS_FILE"
-rm "$MAIN_PROJECT_AUTO_VARS"
-echo "bucket_name = \"$PROJECT-halyard-bucket\"" > "$GIT_ROOT_DIR/certbot/var-bucket_name.auto.tfvars"
+terraform_variable "bucket_name" "$PROJECT-halyard-bucket" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 
 # enter a wildcard domain to be used
 echo "-----------------------------------------------------------------------------"
@@ -211,10 +221,11 @@ while [ -z $DOMAIN_TO_MANAGE ]; do
     echo -n "What is the domain to manage for Cloud DNS? (example *.spinnaker.example.com would be spinnaker.example.com)?  "
     read DOMAIN_TO_MANAGE
 done
-echo "cloud_dns_hostname = \"$DOMAIN_TO_MANAGE\"" > "$GIT_ROOT_DIR/dns/var-cloud_dns_hostname.auto.tfvars"
-echo "wildcard_dns_name = \"$DOMAIN_TO_MANAGE\"" > "$GIT_ROOT_DIR/certbot/var-wildcard_dns_name.auto.tfvars"
-echo "cloud_dns_hostname = \"$DOMAIN_TO_MANAGE\"" > "$GIT_ROOT_DIR/spinnaker/var-cloud_dns_hostname.auto.tfvars"
-echo "cloud_dns_hostname = \"$DOMAIN_TO_MANAGE\"" > "$GIT_ROOT_DIR/halyard/var-cloud_dns_hostname.auto.tfvars"
+
+terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "dns" "$PROJECT"
+terraform_variable "wildcard_dns_name" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
+terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
 # choose a project that will manage the DNS
 echo "-----------------------------------------------------------------------------"
@@ -228,8 +239,9 @@ do
     else
         echo "-----------------------------------------------------------------------------"
         echo "Managed DNS Google Cloud Project $dns_project selected"
-        echo "managed_dns_gcp_project = \"$dns_project\"" > "$GIT_ROOT_DIR/spinnaker/var-managed_dns_gcp_project.auto.tfvars"
-        echo "gcp_project = \"$dns_project\"" > "$GIT_ROOT_DIR/dns/var-gcp_project.auto.tfvars"
+        terraform_variable "managed_dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+        terraform_variable "gcp_project" "$dns_project" "$GIT_ROOT_DIR" "dns" "$PROJECT"
+        vault write "secret/$PROJECT/dns_project_name" "value=$dns_project" >/dev/null 2>&1
         break;
     fi
 done
@@ -246,8 +258,8 @@ do
     else
         echo "-----------------------------------------------------------------------------"
         echo "Google Cloud Project Region $region selected"
-        echo "cluster_region = \"$region\"" > "$GIT_ROOT_DIR/spinnaker/var-cluster_region.auto.tfvars"
-        echo "region = \"$region\"" > "$GIT_ROOT_DIR/static_ips/var-region.auto.tfvars"
+        terraform_variable "cluster_region" "$region" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+        terraform_variable "region" "$region" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
         break;
     fi
 done
@@ -264,8 +276,8 @@ do
     else
         echo "-----------------------------------------------------------------------------"
         echo "Google Cloud Project Region $zone selected"
-        echo "gcp_zone = \"$zone\"" > "$GIT_ROOT_DIR/certbot/var-gcp_zone.auto.tfvars"
-        echo "gcp_zone = \"$zone\"" > "$GIT_ROOT_DIR/halyard/var-gcp_zone.auto.tfvars"
+        terraform_variable "gcp_zone" "$zone" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
+        terraform_variable "gcp_zone" "$zone" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
         break;
     fi
 done
@@ -280,6 +292,6 @@ while [ -z $gcp_admin_email ]; do
     echo -n "Enter an email address of an administrator for your Google Cloud Platform Organization (someone with group administration access):  "
     read gcp_admin_email
 done
-echo "gcp_admin_email = \"$gcp_admin_email\"" > "$GIT_ROOT_DIR/halyard/var-gcp_admin_email.auto.tfvars"
+terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 echo "setup complete"
 cd "$CWD"

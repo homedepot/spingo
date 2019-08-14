@@ -23,7 +23,7 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
 ```sh
 git clone https://github.com/homedepot/spingo.git
 cd spingo
-./scripts/01-create-terraform-service-account.sh
+./scripts/initial_setup.sh
 cd ..
 ```
 
@@ -134,11 +134,27 @@ terraform apply
 - Last step is to do a `hda` to send the full configuration up to the Spinnaker deployment
 - Navigate to your new Spinnaker by going to `https://spinnaker.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
 
+## Restore saved values from vault
 
-## Contributing 
+If you have previously run `scripts/initial_setup.sh`, and are in a situation where this is a new machine or otherwise a fresh clone of the repo, you can restore the saved values from vault by running:
 
-Check out the [contributing](CONTRIBUTING.md) readme for information on how to contribute to the project. 
+```sh
+scripts/restore_saved_config_from_vault.sh
+```
 
-## License 
+## Teardown
+
+If you want to completely destroy the installation:
+
+1. `terraform destroy` all of the subdirectories in the reverse-order that you ran `terraform apply`
+1. execute `scripts/reset_spingo.sh`
+
+`scripts/reset_spingo.sh` is designed to remove the service accounts that terraform requires.
+
+## Contributing
+
+Check out the [contributing](CONTRIBUTING.md) readme for information on how to contribute to the project.
+
+## License
 
 This project is released under the Apache2 free software license. More information can be found in the [LICENSE](LICENSE) file.

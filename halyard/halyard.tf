@@ -235,8 +235,8 @@ data "template_file" "setupOAuth" {
   vars = {
     USER                = var.service_account_name
     API_URL             = "https://${data.vault_generic_secret.spinnaker_api_address.data["url"]}"
-    OAUTH_CLIENT_ID     = data.vault_generic_secret.gcp-oauth["client-id"]
-    OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp-oauth["client-secret"]
+    OAUTH_CLIENT_ID     = data.vault_generic_secret.gcp-oauth.data["client-id"]
+    OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp-oauth.data["client-secret"]
     DOMAIN              = var.cloud_dns_hostname
     ADMIN_EMAIL         = var.gcp_admin_email
   }

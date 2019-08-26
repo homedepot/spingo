@@ -79,7 +79,10 @@ gcloud --no-user-output-enabled \
 # echo "  groups:" >> "$CONFIG_FILE"
 # echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
 
+USER_EMAIL=$(gcloud config list account --format "value(core.account)")
 
+# Append metadata object into service account credentials file.
+cat $SERVICE_ACCOUNT_FILE | jq '. += {"metadata":{"requester_email":"'$USER_EMAIL'","project":"'$PROJECT'","groups":["TODO"]}}' > $SERVICE_ACCOUNT_FILE
 
 # Create boto file and set path to ensure reliable gsutil operations if the user already has gsutil configurations
 cat <<EOF >> boto

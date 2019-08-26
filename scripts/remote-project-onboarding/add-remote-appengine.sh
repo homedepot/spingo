@@ -7,7 +7,7 @@ shopt -s extglob
 # Change this to match the specific onboarding bucket name for your project
 ONBOARDING_BUCKET_NAME="np-platforms-cd-thd-spinnaker-onboarding"
 ## TODO: what can we do to automate the gathering of these variables?
-GROUP="gg_cloud_gcp_np-platforms-cd_dev"
+GROUP=""
 declare -A selected_groups=()
 selected_groups[$GROUP]="$GROUP"
 

@@ -49,10 +49,13 @@ SA_EMAIL=$(gcloud iam service-accounts list \
     --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
     --format='value(email)')
 
-if [[ -z "$SA_EMAIL" ]]; then
-    echo -e "Unable to retreive service account email, cannot continue\n"
-    exit 1
-fi
+while [ -z $SA_EMAIL ]; do
+  echo "waiting for service account to be fully created..."
+  sleep 1
+  SA_EMAIL=$(gcloud iam service-accounts list \
+      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+      --format='value(email)')
+done
 
 gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \

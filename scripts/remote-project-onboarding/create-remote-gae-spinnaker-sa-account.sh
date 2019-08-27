@@ -33,6 +33,7 @@ need() {
 
 need "gsutil"
 need "gcloud"
+need "tput"
 
 ####################################################
 ########           Create an account        ######## 
@@ -46,22 +47,23 @@ SERVICE_ACCOUNT_NAME="spinnaker-gae-sa"
 SERVICE_ACCOUNT_FILE="${PROJECT}-${SERVICE_ACCOUNT_NAME}.json"
 
 
-SA_EMAIL=$(gcloud iam service-accounts --project $PROJECT list \
+SA_EMAIL=$(gcloud iam service-accounts --project "$PROJECT" list \
   --filter="displayName:$SERVICE_ACCOUNT_NAME" \
   --format='value(email)')
 
 if [ -z "$SA_EMAIL" ]; then
   bold "Creating service account $SERVICE_ACCOUNT_NAME..."
 
-  gcloud iam service-accounts --project $PROJECT create \
-    $SERVICE_ACCOUNT_NAME \
-    --display-name $SERVICE_ACCOUNT_NAME
+  gcloud iam service-accounts --project "$PROJECT" create \
+    "$SERVICE_ACCOUNT_NAME" \
+    --display-name "$SERVICE_ACCOUNT_NAME"
 
   while [ -z "$SA_EMAIL" ]; do
-    SA_EMAIL=$(gcloud iam service-accounts --project $PROJECT list \
+    echo "waiting for service account to be fully created..."
+    sleep 1
+    SA_EMAIL=$(gcloud iam service-accounts --project "$PROJECT" list \
       --filter="displayName:$SERVICE_ACCOUNT_NAME" \
       --format='value(email)')
-    sleep 5
   done
 else
   bold "Using existing service account $SERVICE_ACCOUNT_NAME..."

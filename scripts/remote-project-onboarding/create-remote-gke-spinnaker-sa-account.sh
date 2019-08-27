@@ -196,7 +196,7 @@ if [[ "$HAS_GCR_REGISTRY" != "[]" ]] || [[ "$HAS_US_GCR_REGISTRY" != "[]" ]]; th
       --display-name "$SERVICE_ACCOUNT_NAME"
 
   if [[ "$?" -eq 0 ]]; then
-    while [ -z $SA_EMAIL ]; do
+    while [ -z "$SA_EMAIL" ]; do
       echo "waiting for service account to be fully created..."
       sleep 1
       SA_EMAIL=$(gcloud iam service-accounts list \

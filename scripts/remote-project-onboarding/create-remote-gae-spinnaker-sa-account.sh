@@ -74,19 +74,19 @@ gcloud --no-user-output-enabled \
     --iam-account "$SA_EMAIL"
 
 
-# TODO: check proper permissions for appengine
-# echo -e "Getting current roles that have GKE Cluster Admin Access \n"
-# CLUSTER_ADMIN_GROUPS=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.role:roles/container.clusterAdmin" 2>/dev/null | jq -r '.[].bindings.members' - | grep 'group:' | awk -F '[@:]' '{print $2}')
-# INDENTED_CLUSTER_ADMIN_GROUPS=$(echo "$CLUSTER_ADMIN_GROUPS" | sed 's/^/    - /')
+echo -e "Getting current roles that have App Engine Admin access \n"
+APPENGINE_ADMIN_GROUPS=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.role:roles/appengine.appAdmin" 2>/dev/null | jq -r '.[].bindings.members' - | grep 'group:' | awk -F '[@:]' 'BEGIN { ORS=" " }; {print $2}')
+USER_EMAIL=$(gcloud config list account --format "value(core.account)")
 
-# Append metadata
-# echo "spinnaker-metadata:" >> "$CONFIG_FILE"
-# echo "  project: $PROJECT" >> "$CONFIG_FILE"
-# echo "  requestor: $CURRENT_USER_ACCOUNT" >> "$CONFIG_FILE"
-# echo "  groups:" >> "$CONFIG_FILE"
-# echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
+# Append metadata object into service account credentials file.
+jq '. += {"metadata":{"requester_email":"'$USER_EMAIL'","project":"'$PROJECT'","groups":[]}}' $SERVICE_ACCOUNT_FILE > "credentials.tmp" && mv "credentials.tmp" $SERVICE_ACCOUNT_FILE
 
-
+# Append each group in the role binding to the credentials metadata > groups array.
+# There might be a more elegant way to do this. Editing json and writing to a file in bash is not very friendly.
+for group in $APPENGINE_ADMIN_GROUPS
+do
+  jq '.metadata.groups += ["'$group'"]' $SERVICE_ACCOUNT_FILE > "credentials.tmp" && mv "credentials.tmp" $SERVICE_ACCOUNT_FILE
+done
 
 # Create boto file and set path to ensure reliable gsutil operations if the user already has gsutil configurations
 cat <<EOF >> boto

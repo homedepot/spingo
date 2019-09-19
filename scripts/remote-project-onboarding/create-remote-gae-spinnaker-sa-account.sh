@@ -34,6 +34,7 @@ need() {
 need "gsutil"
 need "gcloud"
 need "tput"
+need "jq"
 
 ####################################################
 ########           Create an account        ######## 

@@ -198,3 +198,7 @@ resource "google_redis_instance" "cache" {
   authorized_network = element(var.authorized_networks_redis, count.index)
   region             = var.cluster_region
 }
+
+output "redis_instance_link" {
+  value = google_redis_instance.cache.*.name
+}

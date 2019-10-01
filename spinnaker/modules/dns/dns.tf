@@ -45,3 +45,11 @@ resource "vault_generic_secret" "spinnaker_api_address" {
 EOF
 
 }
+
+output "spinnaker-ui_hosts" {
+  value = google_dns_record_set.spinnaker-ui.*.name
+}
+
+output "spinnaker-api_hosts" {
+  value = google_dns_record_set.spinnaker-api.*.name
+}

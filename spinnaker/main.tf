@@ -287,3 +287,27 @@ module "spinnaker-dns" {
 output "spinnaker_fiat_account_unique_id" {
   value = google_service_account.spinnaker_oauth_fiat.unique_id
 }
+
+output "redis_instance_links" {
+  value = module.google-managed.redis_instance_link
+}
+
+output "cluster_config_values" {
+  value = values(var.cluster_config)
+}
+
+output "hostname_config_values" {
+  value = values(var.hostname_config)
+}
+
+output "the_gcp_project" {
+  value = var.gcp_project
+}
+
+output "spinnaker-ui_hosts" {
+  value = module.spinnaker-dns.spinnaker-ui_hosts
+}
+
+output "spinnaker-api_hosts" {
+  value = module.spinnaker-dns.spinnaker-api_hosts
+}

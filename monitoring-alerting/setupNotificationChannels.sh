@@ -37,7 +37,7 @@ PS3="---------------------------------------------------------------------------
 select channel in $(gcloud alpha monitoring channels list --format="value(name)") Finished Cancel
 do
     if [[ $channel == "" ]]; then
-        echo "You must select"
+        echo "You must choose a notification channel"
     elif [ "$channel" == "Finished" ]; then
         echo "Excellent selections!"
         break;

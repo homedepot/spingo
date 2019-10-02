@@ -10,7 +10,7 @@ variable "gcp_project" {
 
 variable "notification_channels" {
   type        = list(string)
-  description = "The list of notification channels that the policy alerts should be configured to send to"
+  description = "The list of notification channels that the policy alerts should be configured to send to SHOULD BE ADDED BY setupNotificationChannels script"
 }
 
 provider "vault" {

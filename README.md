@@ -133,6 +133,10 @@ terraform apply
 - Last step is to do a `hda` to send the full configuration up to the Spinnaker deployment
 - Navigate to your new Spinnaker by going to `https://spinnaker.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
 
+#### Setup Monitoring and Alerting
+
+Follow the instructions [here](monitoring-alerting/README.md) to setup basic monitoring and alerting of the Spinnaker deployments
+
 ## Restore saved values from vault
 
 If you have previously run `scripts/initial_setup.sh`, and are in a situation where this is a new machine or otherwise a fresh clone of the repo, you can restore the saved values from vault by running:

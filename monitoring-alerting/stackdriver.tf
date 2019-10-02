@@ -31,7 +31,7 @@ data "terraform_remote_state" "np" {
   backend = "gcs"
 
   config = {
-    bucket      = "np-platforms-cd-thd-tf"
+    bucket      = "${var.gcp_project}-tf"
     credentials = "terraform-account.json"
     prefix      = "np"
   }

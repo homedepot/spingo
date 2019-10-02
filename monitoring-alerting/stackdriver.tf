@@ -63,7 +63,7 @@ resource "google_monitoring_uptime_check_config" "gate" {
   }
 }
 
-resource "google_monitoring_alert_policy" "alert_policy" {
+resource "google_monitoring_alert_policy" "uptime_alert_policy" {
   count        = length(data.terraform_remote_state.np.outputs.hostname_config_values)
   display_name = "Uptime ${title(data.terraform_remote_state.np.outputs.hostname_config_values[count.index])} Gate Policy"
   combiner     = "OR"
@@ -93,10 +93,60 @@ resource "google_monitoring_alert_policy" "alert_policy" {
   }
 }
 
-output "redis" {
-  value = data.terraform_remote_state.np.outputs.redis_instance_links
+resource "google_monitoring_alert_policy" "cloudsql_alert_policy" {
+  count        = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  display_name = "CloudSQL ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} Queries Happening Policy"
+  combiner     = "OR"
+  conditions {
+    display_name = "Cloud SQL Database - Queries for ${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_instance_names[count.index]} [SUM]"
+    condition_threshold {
+      filter     = "metric.type=\"cloudsql.googleapis.com/database/mysql/queries\" resource.type=\"cloudsql_database\" resource.label.\"database_id\"=\"${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_instance_names[count.index]}\""
+      comparison = "COMPARISON_LT"
+      duration   = "180s"
+      trigger {
+        count = 1
+      }
+      threshold_value = 20
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_RATE"
+        cross_series_reducer = "REDUCE_SUM"
+      }
+    }
+  }
+
+  notification_channels = var.notification_channels
+
+  user_labels = {
+    created_by = "terraform"
+  }
 }
 
-output "api_hosts" {
-  value = substr(data.terraform_remote_state.np.outputs.spinnaker-api_hosts[0], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_hosts[0]) - 1)
+resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
+  count        = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  display_name = "Memorystore ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} Redis Calls Policy"
+  combiner     = "OR"
+  conditions {
+    display_name = "Memorystore - Calls for ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} [SUM]"
+    condition_threshold {
+      filter     = "metric.type=\"redis.googleapis.com/commands/calls\" resource.type=\"redis_instance\" resource.label.\"instance_id\"=\"projects/${var.gcp_project}/locations/${data.terraform_remote_state.np.outputs.cluster_region}/instances/${data.terraform_remote_state.np.outputs.redis_instance_links[count.index]}\""
+      comparison = "COMPARISON_LT"
+      duration   = "180s"
+      trigger {
+        count = 1
+      }
+      threshold_value = 200
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_RATE"
+        cross_series_reducer = "REDUCE_SUM"
+      }
+    }
+  }
+
+  notification_channels = var.notification_channels
+
+  user_labels = {
+    created_by = "terraform"
+  }
 }

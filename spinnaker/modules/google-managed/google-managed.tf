@@ -202,3 +202,7 @@ resource "google_redis_instance" "cache" {
 output "redis_instance_link" {
   value = google_redis_instance.cache.*.name
 }
+
+output "google_sql_database_instance_names" {
+  value = google_sql_database_instance.spinnaker-mysql.*.name
+}

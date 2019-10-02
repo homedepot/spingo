@@ -311,3 +311,11 @@ output "spinnaker-ui_hosts" {
 output "spinnaker-api_hosts" {
   value = module.spinnaker-dns.spinnaker-api_hosts
 }
+
+output "google_sql_database_instance_names" {
+  value = module.google-managed.google_sql_database_instance_names
+}
+
+output "cluster_region" {
+  value = var.cluster_region
+}

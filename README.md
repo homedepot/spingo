@@ -135,7 +135,7 @@ terraform apply
 
 #### Setup Monitoring and Alerting
 
-Follow the instructions [here](monitoring-alerting/README.md) to setup basic monitoring and alerting of the Spinnaker deployments
+Follow the instructions [here](monitoring-alerting) to setup basic monitoring and alerting of the Spinnaker deployments
 
 ## Restore saved values from vault
 

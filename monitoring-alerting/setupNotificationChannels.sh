@@ -7,10 +7,11 @@ need() {
 }
 
 exists() {
-    list="$1"
+    list=$1[@]
     name="$2"
     RESULT="false"
-    for item in ${list[@]}
+    arr=("${!list}")
+    for item in ${arr[@]}
     do
         if [ "$item" == "$name" ]; then
             RESULT="true"
@@ -44,7 +45,7 @@ do
         echo "Cancelling at user request"
         exit 1
     else
-        do_exist=$(exists ${selected_channels[@]} "$channel")
+        do_exist=$(exists selected_channels "$channel")
         if [[ "$do_exist" == "true" ]] ; then
             echo "Channel already selected"
         else

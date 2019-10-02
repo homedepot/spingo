@@ -151,6 +151,9 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
 gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/cloudsql.admin'
+gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/monitoring.admin'
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
@@ -210,6 +213,7 @@ terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "spinnaker" "$PROJEC
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
+terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
 terraform_variable "bucket_name" "$PROJECT-halyard-bucket" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 

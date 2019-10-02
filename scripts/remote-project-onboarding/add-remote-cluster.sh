@@ -102,7 +102,7 @@ do
         echo "all done"
         break;
     elif [ "$group" == "Cancel" ]; then
-        echo "Cancelling at user reuqest"
+        echo "Cancelling at user request"
         exit 1
     else
         if [[ -v selected_groups[$group] ]] ; then

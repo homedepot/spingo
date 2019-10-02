@@ -56,6 +56,7 @@ vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_project > halya
 vault read -field value secret/"$PROJECT"/local-vars-certbot-gcp_project > certbot/var-gcp_project.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-static_ips-gcp_project > static_ips/var-gcp_project.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-certbot-bucket_name > certbot/var-bucket_name.auto.tfvars
+vault read -field value secret/"$PROJECT"/local-vars-monitoring-alerting-gcp_project > monitoring-alerting/var-gcp_project.auto.tfvars
 
 # For DNS domain to manage
 vault read -field value secret/"$PROJECT"/local-vars-dns-cloud_dns_hostname > dns/var-cloud_dns_hostname.auto.tfvars

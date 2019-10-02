@@ -207,7 +207,7 @@ terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "hal
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-certbot" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
-
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-monitoring" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "halyard" "$PROJECT"

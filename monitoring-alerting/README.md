@@ -23,3 +23,12 @@ After you have setup all the notification channels you want alerted during outag
 
 Currently, every notification channel will be triggered by any alert simultaniously.
 
+## Initialize and Apply Terraform
+
+```sh
+# Initialize Terraform against newly created bucket
+terraform init
+terraform apply
+```
+
+Spingo will retrieve information about the CloudSQL and Memorystore instances from the Terraform remote backend state storage and create the appropriate uptime checks and policy alerts

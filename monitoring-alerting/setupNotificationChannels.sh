@@ -30,7 +30,7 @@ if [ "$?" -ne 0 ]; then
     die "Unable to install gcloud alpha components required to manage notification channels"
 fi
 
-gcloud alpha monitoring channels list --format='table[box](type,labels.number,labels.channel_name,name)'
+gcloud alpha monitoring channels list --format='table[box](name, type,labels.number,labels.channel_name,labels.email_address)'
 
 selected_channels=()
 PS3="-----------------------------------------------------------------------------"$'\n'"Enter the number for the notification channel to setup (Enter the number for Finished when done) : ";

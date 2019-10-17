@@ -62,3 +62,16 @@ resource "google_storage_bucket_object" "spinnaker_kubeconfig_file" {
   bucket       = var.bucket_name
   content_type = "application/text"
 }
+
+resource "kubernetes_secret" "secret" {
+  count       = var.enable ? 1 : 0
+
+  metadata {
+    name      = "cloudsql-instance-credentials"
+    namespace = var.spinnaker_namespace
+  }
+
+  data = {
+    secret = base64decode(var.cloudsql_credentials)
+  }
+}

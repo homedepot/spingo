@@ -49,3 +49,12 @@ variable "enable" {
   default     = false
 }
 
+variable "spinnaker_namespace" {
+  type         = "string"
+  description  = "namespace where spinnaker lives"
+}
+
+variable "cloudsql_credentials" {
+  type         = string
+  description  = "cloudsql instance service account credentials in json format"
+}

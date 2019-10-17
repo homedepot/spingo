@@ -114,6 +114,13 @@ variable "default_client_certificate_config" {
   ]
 }
 
+variable "default_create_namespace" {
+  description = "The default namespace in which to create spinnaker kubernetes resources"
+  type        = string
+  
+  default     = "spinnaker"
+}
+
 variable "extras" {
   type        = map(string)
   description = "Extra options to configure K8s. These are options that are unlikely to change from deployment to deployment. All options must be specified when passed as a map variable input to this module."

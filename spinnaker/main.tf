@@ -83,8 +83,8 @@ module "k8s" {
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
   cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
+  create_namespace          = var.default_create_namespace
   extras                    = var.extras
-
 }
 
 module "k8s-sandbox" {
@@ -102,8 +102,8 @@ module "k8s-sandbox" {
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
   cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
+  create_namespace          = var.default_create_namespace
   extras                    = var.extras
-
 }
 
 module "halyard-storage" {
@@ -141,6 +141,8 @@ module "k8s-spinnaker-service-account" {
   cluster_ca_certificate    = module.k8s.cluster_ca_certificate
   enable                    = true
   cluster_list_index        = 0
+  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
+  spinnaker_namespace       = length(module.k8s.created_namespace) > 0 ? module.k8s.created_namespace.0.metadata.0.name : var.default_create_namespace
 
   providers = {
     kubernetes = kubernetes.main
@@ -160,56 +162,12 @@ module "k8s-spinnaker-service-account-sandbox" {
   cluster_ca_certificate    = module.k8s-sandbox.cluster_ca_certificate
   enable                    = true
   cluster_list_index        = 1
+  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
+  spinnaker_namespace       = length(module.k8s-sandbox.created_namespace) > 0 ? module.k8s-sandbox.created_namespace.0.metadata.0.name : var.default_create_namespace
 
   providers = {
     kubernetes = kubernetes.sandbox
   }
-}
-
-resource "kubernetes_namespace" "spinnaker" {
-  provider = kubernetes.main
-  metadata {
-    name = "spinnaker"
-  }
-}
-
-resource "kubernetes_secret" "secret" {
-  provider = kubernetes.main
-  metadata {
-    name      = "cloudsql-instance-credentials"
-    namespace = "spinnaker"
-  }
-
-  data = {
-    secret = base64decode(module.spinnaker-gcp-cloudsql-service-account.service-account-json)
-  }
-
-  depends_on = [
-    kubernetes_namespace.spinnaker
-  ]
-}
-
-resource "kubernetes_namespace" "spinnaker_sandbox" {
-  provider = kubernetes.sandbox
-  metadata {
-    name = "spinnaker"
-  }
-}
-
-resource "kubernetes_secret" "secret_sandbox" {
-  provider = kubernetes.sandbox
-  metadata {
-    name      = "cloudsql-instance-credentials"
-    namespace = "spinnaker"
-  }
-
-  data = {
-    secret = base64decode(module.spinnaker-gcp-cloudsql-service-account.service-account-json)
-  }
-
-  depends_on = [
-    kubernetes_namespace.spinnaker_sandbox
-  ]
 }
 
 # to retrieve the keys for this for use outside of terraform, run 

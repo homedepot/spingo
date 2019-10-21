@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -e
 vaultdir="$HOME/vault"
+if [ "$VAULT_ADDR" != "http://127.0.0.1:8200" ]; then
+	export VAULT_ADDR_NOT_SET="true"
+	export VAULT_ADDR="http://127.0.0.1:8200"
+fi
+
 mkdir -p $vaultdir
+
+#if vault not installed, install vault
 if [ ! "$(command -v vault)" ]; then
 	echo "downloading Vault for Linux"
 	wget -O "$vaultdir/vault.zip" "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
@@ -9,6 +16,7 @@ if [ ! "$(command -v vault)" ]; then
 	sudo ln -s "$vaultdir/vault" "/usr/bin/vault"
 fi
 
+#if no config, make config
 if [ ! -f $vaultdir/config.hcl ]; then
 	echo "generating config.hcl file"
 
@@ -23,19 +31,25 @@ listener "tcp" {
 	tls_disable = 1
 }
 CONFIGURATION
-
+fi
+#if not running, run
+if [ $(vault status 2>&1 | grep "connection refused") ]; then
+	vault server --config "$vaultdir/config.hcl" >/dev/null &
 fi
 
-vault server --config "$vaultdir/config.hcl" >/dev/null &
-
-if [ "$VAULT_ADDR" != "http://127.0.0.1:8200" ]; then
-	export VAULT_ADDR_NOT_SET="true"
+# if no initinfo, initialize and write to file
+if [ ! -f $vaultdir/initinfo ]; then
+	vault operator init -n 1 -t 1 > "$vaultdir/initinfo"
 fi
 
-export VAULT_ADDR="http://127.0.0.1:8200"
-vault operator init -n 1 -t 1 > "$vaultdir/initinfo"
-cat $vaultdir/initinfo | sed -n -e 's/Unseal Key 1: \(.*\)$/\1/p' | xargs vault operator unseal
+# if sealed, unseal
+if [ $(vault status | grep "^Sealed.*true$") ]; then
+	cat $vaultdir/initinfo | sed -n -e 's/Unseal Key 1: \(.*\)$/\1/p' | xargs vault operator unseal
+fi
+
+# login
 cat $vaultdir/initinfo | sed -n -e 's/Initial Root Token: \(.*\)$/\1/p' | vault login -
+
 vault status
 echo "vault should be set up now"
 

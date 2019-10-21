@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 vaultdir="$HOME/vault"
 mkdir $vaultdir
 if [ ! "$(command -v vault)" ]; then

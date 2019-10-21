@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 vaultdir="$HOME/vault"
-mkdir $vaultdir
+mkdir -p $vaultdir
 if [ ! "$(command -v vault)" ]; then
 echo "downloading Vault for Linux"
 wget -O "$vaultdir/vault.zip" "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"

@@ -11,18 +11,25 @@ fi
 
 if [ ! -f $vaultdir/config.hcl ]; then
 echo "generating config.hcl file"
-echo "storage \"file\" {
-address = \"127.0.0.1:8500\"
-path = \"$vaultdir/secrets\"
+
+tee $vaultdir/config.hcl << CONFIGURATION
+storage "file" {
+	address = "127.0.0.1:8500"
+	path = "$vaultdir/secrets"
 }
 disable_mlock = true
-listener \"tcp\" {
-address = \"127.0.0.1:8200\"
-tls_disable = 1
-}" > $vaultdir/config.hcl
+listener "tcp" {
+	address = "127.0.0.1:8200"
+	tls_disable = 1
+}
+CONFIGURATION
 fi
 
 vault server --config "$vaultdir/config.hcl" >/dev/null &
+
+if [ "$VAULT_ADDR" != "http://127.0.0.1:8200" ]; then
+	export VAULT_ADDR_NOT_SET="true"
+fi
 
 export VAULT_ADDR="http://127.0.0.1:8200"
 vault operator init -n 1 -t 1 > "$vaultdir/initinfo"
@@ -30,3 +37,8 @@ cat $vaultdir/initinfo | sed -n -e 's/Unseal Key 1: \(.*\)$/\1/p' | xargs vault 
 cat $vaultdir/initinfo | sed -n -e 's/Initial Root Token: \(.*\)$/\1/p' | vault login -
 
 echo "vault should be set up now"
+
+if [ -n $VAULT_ADDR_NOT_SET ]; then
+	echo "please set \$VAULT_ADDR to \"http://127.0.0.1:8200\""
+fi
+

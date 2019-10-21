@@ -150,3 +150,34 @@ resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
     created_by = "terraform"
   }
 }
+
+resource "google_monitoring_alert_policy" "cloudsql_failover_replica_lag_alert_policy" {
+  count        = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  display_name = "CloudSQL ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} Failover Replica Lag Policy"
+  combiner     = "OR"
+  conditions {
+    display_name = "Cloud SQL Database - Replica Lag for ${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_instance_names[count.index]}"
+    condition_threshold {
+      filter     = "metric.type=\"cloudsql.googleapis.com/database/mysql/replication/seconds_behind_master\" resource.type=\"cloudsql_database\" resource.label.\"database_id\"=\"${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_failover_instance_names[count.index]}\""
+      comparison = "COMPARISON_GT"
+      duration   = "60s"
+      trigger {
+        count = 1
+      }
+      threshold_value = 60
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_MEAN"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["resource.label.database_id"]
+      }
+    }
+  }
+
+  notification_channels = var.notification_channels
+
+  user_labels = {
+    created_by = "terraform"
+  }
+}
+

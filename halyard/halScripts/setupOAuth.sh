@@ -1,4 +1,5 @@
-#!/bin/bash
+
+hal config --set-current-deployment ${DEPLOYMENT_NAME}
 
 CLIENT_ID="${OAUTH_CLIENT_ID}"
 CLIENT_SECRET="${OAUTH_CLIENT_SECRET}"
@@ -13,7 +14,6 @@ hal config security authn oauth2 edit \
 hal config security authn oauth2 enable
 
 hal config security authn oauth2 edit --pre-established-redirect-uri ${API_URL}/login
-
 
 ADMIN="${ADMIN_EMAIL}"              # An administrator's email address
 CREDENTIALS=/${USER}/.gcp/spinnaker-fiat.json   # The downloaded service account credentials

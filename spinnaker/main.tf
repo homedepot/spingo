@@ -274,6 +274,10 @@ output "google_sql_database_instance_names" {
   value = module.google-managed.google_sql_database_instance_names
 }
 
+output "google_sql_database_failover_instance_names" {
+  value = module.google-managed.google_sql_database_failover_instance_names
+}
+
 output "cluster_region" {
   value = var.cluster_region
 }

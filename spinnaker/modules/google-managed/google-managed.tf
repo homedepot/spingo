@@ -206,3 +206,7 @@ output "redis_instance_link" {
 output "google_sql_database_instance_names" {
   value = google_sql_database_instance.spinnaker-mysql.*.name
 }
+
+output "google_sql_database_failover_instance_names" {
+  value = google_sql_database_instance.spinnaker-mysql-failover.*.name
+}

@@ -10,6 +10,7 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
 - [Vault](https://www.vaultproject.io/downloads.html) needs to be setup and authenticated
 	- VAULT_ADDR environment variable should be setup pointing to the vault server
 	- Or on OSX with homebrew it's `brew install vault`
+	- A local vault initialization can be done by from scripts/local_vault_setup.sh
 - [Google Cloud SDK](https://cloud.google.com/sdk/install) should be setup and authenticated
 	- Be sure to run both `gcloud auth login` and `gcloud config set project <YOUR_PROJECT_ID>`
 	- You will need to be an owner of the GCP project to grant all the permissions required for Terraform to create all the resources needed

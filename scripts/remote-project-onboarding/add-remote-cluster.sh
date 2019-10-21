@@ -184,5 +184,5 @@ fuser -k 8080/tcp >/dev/null 2>&1; fuser -k 7003/tcp >/dev/null 2>&1
 
 gsutil mv "${SELECTED_PROJECT_ONBOARDING_BUCKET}" "${ONBOARDING_BUCKET_COMPLETE}"
 
-echo "You should do a halldiff to make sure everything looks good then do an hda then a halpush"
+echo "You should do a haldiff to make sure everything looks good then do an hda then a halpush"
 echo "setup complete"

@@ -1,6 +1,7 @@
-#!/bin/bash
 
-./setupK8SSL.sh
+hal config --set-current-deployment ${DEPLOYMENT_NAME}
+
+${KUBE_COMMANDS}
 
 hal config security ui edit \
     --override-base-url ${UI_URL}

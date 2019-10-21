@@ -1,8 +1,9 @@
-#!/bin/bash
 
 if [ ! -d /${USER}/.hal ]; then
   mkdir /${USER}/.hal
 fi
+
+hal config --set-current-deployment ${DEPLOYMENT_NAME}
 
 GCS_SA_DEST="${ACCOUNT_PATH}"
 
@@ -36,7 +37,7 @@ hal config edit --timezone America/New_York
 hal config generate
 
 # set-up admin groups for fiat:
-tee /${USER}/.hal/default/profiles/fiat-local.yml << FIAT_LOCAL
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/fiat-local.yml << FIAT_LOCAL
 fiat:
   admin:
     roles:
@@ -44,62 +45,62 @@ fiat:
 FIAT_LOCAL
 
 # set-up redis (memorystore):
-tee /${USER}/.hal/default/profiles/gate-local.yml << GATE_LOCAL
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/gate-local.yml << GATE_LOCAL
 redis:
   configuration:
     secure: true
 GATE_LOCAL
 
-tee /${USER}/.hal/default/service-settings/redis.yml << REDIS
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/redis.yml << REDIS
 overrideBaseUrl: redis://${SPIN_REDIS_ADDR}
 REDIS
 
 # set-up orca to use cloudsql proxy
-tee /tmp/halconfig-orca-patch.yml << ORCA_PATCH
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.name: cloudsql-proxy
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.port: 3306
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.dockerImage: "gcr.io/cloudsql-docker/gce-proxy:1.13"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.command.0: "'/cloud_sql_proxy'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.command.1: "'--dir=/cloudsql'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.command.2: "'-instances=${DB_CONNECTION_NAME}=tcp:3306'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.command.3: "'-credential_file=/secrets/cloudsql/secret'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.mountPath: /cloudsql
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-orca.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
+tee /tmp/halconfig-orca-patch-${DEPLOYMENT_INDEX}.yml << ORCA_PATCH
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.name: cloudsql-proxy
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.port: 3306
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.dockerImage: "gcr.io/cloudsql-docker/gce-proxy:1.13"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.command.0: "'/cloud_sql_proxy'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.command.1: "'--dir=/cloudsql'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.command.2: "'-instances=${DB_CONNECTION_NAME}=tcp:3306'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.command.3: "'-credential_file=/secrets/cloudsql/secret'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.mountPath: /cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
 ORCA_PATCH
 
-yq write -i -s /tmp/halconfig-orca-patch.yml /${USER}/.hal/config && rm /tmp/halconfig-orca-patch.yml
+yq write -i -s /tmp/halconfig-orca-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-orca-patch-${DEPLOYMENT_INDEX}.yml
 
 # set-up clouddriver to use cloudsql proxy
-tee /tmp/halconfig-clouddriver-patch.yml << CLOUDDRIVER_PATCH
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.name: cloudsql-proxy
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.port: 3306
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.dockerImage: "gcr.io/cloudsql-docker/gce-proxy:1.13"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.command.0: "'/cloud_sql_proxy'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.command.1: "'--dir=/cloudsql'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.command.2: "'-instances=${DB_CONNECTION_NAME}=tcp:3306'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.command.3: "'-credential_file=/secrets/cloudsql/secret'"
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.mountPath: /cloudsql
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
-deploymentConfigurations.0.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
+tee /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml << CLOUDDRIVER_PATCH
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.name: cloudsql-proxy
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.port: 3306
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.dockerImage: "gcr.io/cloudsql-docker/gce-proxy:1.13"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.command.0: "'/cloud_sql_proxy'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.command.1: "'--dir=/cloudsql'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.command.2: "'-instances=${DB_CONNECTION_NAME}=tcp:3306'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.command.3: "'-credential_file=/secrets/cloudsql/secret'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.mountPath: /cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
 CLOUDDRIVER_PATCH
 
-yq write -i -s /tmp/halconfig-clouddriver-patch.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch.yml
+yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
 
 # set-up replica patch
-tee /tmp/halconfig-replica-patch.yml << REPLICA_PATCH
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-front50.replicas: 2
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-clouddriver.replicas: 2
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-deck.replicas: 2
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-gate.replicas: 2
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-rosco.replicas: 2
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-fiat.replicas: 2
-deploymentConfigurations.0.deploymentEnvironment.customSizing.spin-orca.replicas: 2
+tee /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml << REPLICA_PATCH
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-front50.replicas: 2
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-clouddriver.replicas: 2
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-deck.replicas: 2
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-gate.replicas: 2
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-rosco.replicas: 2
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-fiat.replicas: 2
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-orca.replicas: 2
 REPLICA_PATCH
 
-yq write -i -s /tmp/halconfig-replica-patch.yml /${USER}/.hal/config && rm /tmp/halconfig-replica-patch.yml
+yq write -i -s /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml
 
-tee /${USER}/.hal/default/profiles/orca-local.yml << ORCA_LOCAL
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/orca-local.yml << ORCA_LOCAL
 sql:
   enabled: true
   connectionPool:
@@ -128,7 +129,7 @@ monitor:
     redis: false
 ORCA_LOCAL
 
-tee /${USER}/.hal/default/profiles/clouddriver-local.yml << CLOUDDRIVER_LOCAL
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/clouddriver-local.yml << CLOUDDRIVER_LOCAL
 sql:
   enabled: true
   taskRepository:

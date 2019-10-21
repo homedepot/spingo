@@ -147,7 +147,7 @@ CLUSTER_ENDPOINT_IP=$(echo "$endpoint" | sed 's/https:\/\///')
 CLUSTER_LOCATION=$(gcloud container clusters list --filter="endpoint:$CLUSTER_ENDPOINT_IP" --format="value(location)" 2>/dev/null)
 CLUSTER_NAME=$(gcloud container clusters list --filter="endpoint:$CLUSTER_ENDPOINT_IP" --format="value(name)" 2>/dev/null)
 
-CLUSTER_ID="gke_${PROJECT}_${CLUSTER_LOCATION}_${CLUSTER_NAME}"
+CLUSTER_ID="gke_${PROJECT}_${CLUSTER_LOCATION}_${CLUSTER_NAME}_${NAMESPACE}"
 CONFIG_FILE="$CLUSTER_ID.config"
 
 # Set cluster

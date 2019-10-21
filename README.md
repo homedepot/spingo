@@ -133,7 +133,7 @@ terraform apply
 - Last step is to do a `hda` to send the full configuration up to the Spinnaker deployment
 - Navigate to your new Spinnaker by going to `https://spinnaker.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
 
-#### Setup Monitoring and Alerting
+### Setup Monitoring and Alerting
 
 Follow the instructions [here](monitoring-alerting) to setup basic monitoring and alerting of the Spinnaker deployments
 

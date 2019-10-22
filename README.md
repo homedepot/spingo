@@ -127,11 +127,8 @@ terraform apply
 - SSH into the [halyard VM](https://console.cloud.google.com/compute/instances)
 - Enter this command to make sure the setup is complete `showlog`
 - Once completed log into the user account by entering this command `spingo`
-- Setup Halyard for the first time by executing `./setupHalyard.sh`
-- Before we deploy we should make sure we can reach the cluster by trying this command `kubectl get nodes` and you should see the nodes of the cluster listed
-- Now we need to deploy Spinnaker with the `hda` command which behind the scenes runs `hal deploy apply --wait-for-completion`
-- Once the deployment is successful the next step is to setup SSL by executing `./setupSSL.sh`
-- Last step is to do a `hda` to send the full configuration up to the Spinnaker deployment
+- Setup Halyard and deploy Spinnaker for the first time by executing `./setupHalyard.sh` which will setup all clusters
+- Once the deployment(s) is/are successful the next step is to setup SSL by executing `./setupSSL.sh`
 - Navigate to your new Spinnaker by going to `https://spinnaker.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
 
 ### Setup Monitoring and Alerting

@@ -23,4 +23,5 @@ expect -c "spawn hal config security api ssl edit --key-alias spinnaker --keysto
 hal config security api ssl enable
 hal config security ui ssl enable
 
-echo "You will need to do a hal deploy apply"
+echo "Configuring initial Spinnaker SSL deployment for deployment named ${DEPLOYMENT_NAME}"
+hal deploy apply

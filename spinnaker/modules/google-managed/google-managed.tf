@@ -192,7 +192,7 @@ resource "google_redis_instance" "cache" {
   name               = "${var.cluster_config[count.index]}-ha-memory-cache"
   tier               = "STANDARD_HA"
   memory_size_gb     = 1
-  redis_version      = "REDIS_3_2"
+  redis_version      = "REDIS_4_0"
   display_name       = "${var.cluster_config[count.index]} memorystore redis cache"
   redis_configs      = var.redis_config
   authorized_network = element(var.authorized_networks_redis, count.index)

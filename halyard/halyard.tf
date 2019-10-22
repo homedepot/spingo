@@ -241,7 +241,7 @@ data "template_file" "k8ssl" {
   vars = {
     SPIN_UI_IP  = data.google_compute_address.ui[count.index].address
     SPIN_API_IP = data.google_compute_address.api[count.index].address
-    KUBE_CONFIG = count.index == 0 ? "~/.kube/config" : "~/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    KUBE_CONFIG = count.index == 0 ? "/${var.service_account_name}/.kube/config" : "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }
 

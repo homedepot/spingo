@@ -129,17 +129,14 @@ echo "deleting the bucket that holds the Terraform state"
 gsutil rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
 
 echo "deleting the local Terraform directories pointing to the old bucket"
-rm -fdr ./certbot/.terraform/
 rm -fdr ./dns/.terraform/
 rm -fdr ./halyard/.terraform/
 rm -fdr ./spinnaker/.terraform/
 echo "deleting dynamic terraform variables"
-rm ./certbot/var*.auto.tfvars
 rm ./dns/var*.auto.tfvars
 rm ./halyard/var*.auto.tfvars
 rm ./spinnaker/var*.auto.tfvars
 echo "deleting dynamic terraform backend configs"
-rm ./certbot/override.tf
 rm ./dns/override.tf
 rm ./halyard/override.tf
 rm ./spinnaker/override.tf

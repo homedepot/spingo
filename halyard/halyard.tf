@@ -22,6 +22,11 @@ variable "service_account_name" {
   default     = "spinnaker"
 }
 
+variable "certbot_email" {
+  description = "email account to be informed when certificates from certbot expire"
+  type = string
+}
+
 variable "hostname_prefix" {
   description = "hostname prefix to use for spinnaker"
   default     = "np"
@@ -139,6 +144,9 @@ data "template_file" "make_update_keystore_script" {
   vars = {
     DNS           = var.cloud_dns_hostname
     KEYSTORE_PASS = data.vault_generic_secret.keystore-pass.data["value"]
+    PROJECT       = var.gcp_project
+    USER          = var.service_account_name
+    CERTBOT_EMAIL = var.certbot_email
   }
 }
 

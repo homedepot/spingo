@@ -1,7 +1,13 @@
 #!/bin/bash
 
-# cwd=$(pwd)
-# cd /certbot/certbot/live/${DNS}
+if [ -f "/certstore/certificates/_.${DNS}.json" ] 
+then
+    echo "===== OPERATION: RENEW ====="
+    LEGO_CMD="renew --days 45 "
+else
+    echo "===== OPERATION: INITIAL REQUEST ====="
+    LEGO_CMD="run"
+fi
 
 CERBOT_PATH="/${USER}/certbot/"
 CERTSTORE_PATH="/${USER}/certstore/certificates/"
@@ -17,28 +23,16 @@ docker run \
       --accept-tos \
       --dns=gcloud \
       --pem \
-      --email="jeffrey_k_billimek@demo.homedepot.com" \
-      --domains="*.demo3.spinnaker.homedepot.com" \
-      run
+      --email="${CERTBOT_EMAIL}" \
+      --domains="*.${DNS}" \
+      $LEGO_CMD
 
-# cd "$cwd"
-echo "setup complete"
+openssl pkcs12 -export -out "$CERTSTORE_PATH"/wildcard.pkcs12 -in "$CERTSTORE_PATH"/_. ${DNS}.pem -name spinnaker -password pass:"nosecrets"
+keytool -v -importkeystore -srckeystore "$CERTSTORE_PATH"/wildcard.pkcs12 -destkeystore "$CERTSTORE_PATH"/wildcard.jks -deststoretype JKS -storepass "nosecrets" -srcstorepass "nosecrets" -noprompt
+keytool -trustcacerts -keystore "$CERTSTORE_PATH"/wildcard.jks -importcert -file "$CERTSTORE_PATH"/_. ${DNS}.crt -storepass "nosecrets" -noprompt # this will fail if certificate renewal instead of new cert but that is ok
 
+cp "$CERTSTORE_PATH"/_.${DNS}.key "$CERBOT_PATH"/${DNS}_wildcard.key
+cp "$CERTSTORE_PATH"/_.${DNS}.crt "$CERBOT_PATH"/${DNS}_wildcard.crt
+cp "$CERTSTORE_PATH"/wildcard.jks "$CERBOT_PATH"/${DNS}_wildcard.jks
 
-#!/bin/bash
-
-#cwd=$(pwd)
-#cd /certbot/certbot/live/ ${DNS}
-
-#cat fullchain.pem privkey.pem > wildcard.pem
-openssl pkcs12 -export -out /spinnaker/certstore/certificates/wildcard.pkcs12 -in /spinnaker/certstore/certificates/_. ${DNS}.pem -name spinnaker -password pass:"nosecrets"
-keytool -v -importkeystore -srckeystore /spinnaker/certstore/certificates/wildcard.pkcs12 -destkeystore /spinnaker/certstore/certificates/wildcard.jks -deststoretype JKS -storepass "nosecrets" -srcstorepass "nosecrets" -noprompt
-#keytool -trustcacerts -keystore wildcard.jks -importcert -file chain.pem -storepass "nosecrets" # this will fail if certificate renewal instead of new cert but that is ok
-keytool -trustcacerts -keystore /spinnaker/certstore/certificates/wildcard.jks -importcert -file /spinnaker/certstore/certificates/_. ${DNS}.crt -storepass "nosecrets" -alias # this will fail if certificate renewal instead of new cert but that is ok
-#cp privkey.pem wildcard.key
-#cp fullchain.pem wildcard.crt
-cp /spinnaker/certstore/certificates/_. ${DNS}.key /spinnaker/certbot/ ${DNS}_wildcard.key
-cp /spinnaker/certstore/certificates/_. ${DNS}.crt /spinnaker/certbot/ ${DNS}_wildcard.crt
-cp /spinnaker/certstore/certificates/wildcard.jks /spinnaker/certbot/ ${DNS}_wildcard.jks
-#cd "$cwd"
 echo "setup complete"

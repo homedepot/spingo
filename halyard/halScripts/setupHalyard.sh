@@ -5,6 +5,11 @@ fi
 
 hal config --set-current-deployment ${DEPLOYMENT_NAME}
 
+if [ ${DEPLOYMENT_INDEX} -eq 0 ]; then
+  # remove default deployment that gets automatically created
+  yq d -i ~/.hal/config 'deploymentConfigurations[0]'
+fi
+
 GCS_SA_DEST="${ACCOUNT_PATH}"
 
 hal config storage gcs edit \

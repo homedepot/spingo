@@ -117,8 +117,8 @@ variable "default_client_certificate_config" {
 variable "default_create_namespace" {
   description = "The default namespace in which to create spinnaker kubernetes resources"
   type        = string
-  
-  default     = "spinnaker"
+
+  default = "spinnaker"
 }
 
 variable "extras" {

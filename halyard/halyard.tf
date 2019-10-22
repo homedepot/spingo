@@ -24,7 +24,7 @@ variable "service_account_name" {
 
 variable "certbot_email" {
   description = "email account to be informed when certificates from certbot expire"
-  type = string
+  type        = string
 }
 
 variable "hostname_prefix" {

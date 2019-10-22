@@ -10,7 +10,7 @@ EOF
 
 resource "vault_generic_secret" "spinnaker-db-service-user-password" {
   count = length(var.cluster_config)
-  path = "secret/${var.gcp_project}/db-service-user-password/${count.index}"
+  path  = "secret/${var.gcp_project}/db-service-user-password/${count.index}"
 
   data_json = <<-EOF
               {"password":"${random_string.spinnaker-db-service-user-password[count.index].result}"}
@@ -30,7 +30,7 @@ EOF
 
 resource "vault_generic_secret" "clouddriver-db-service-user-password" {
   count = length(var.cluster_config)
-  path = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${count.index}"
+  path  = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${count.index}"
 
   data_json = <<-EOF
               {"password":"${random_string.clouddriver-db-service-user-password[count.index].result}"}
@@ -50,7 +50,7 @@ EOF
 
 resource "vault_generic_secret" "spinnaker-db-address" {
   count = length(var.cluster_config)
-  path = "secret/${var.gcp_project}/db-address/${count.index}"
+  path  = "secret/${var.gcp_project}/db-address/${count.index}"
 
   data_json = <<-EOF
               {"address":"${google_sql_database_instance.spinnaker-mysql[count.index].connection_name}"}

@@ -38,7 +38,7 @@ EOF
 
 resource "vault_generic_secret" "spinnaker_api_address" {
   count = length(var.cluster_config)
-  path = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
+  path  = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
 
   data_json = <<-EOF
               {"url":"${var.cluster_config[count.index]}-api.${var.dns_name}"}

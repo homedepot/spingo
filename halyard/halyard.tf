@@ -112,6 +112,36 @@ resource "google_project_iam_member" "serviceAccountUser" {
   member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
+resource "google_service_account" "certbot_account" {
+  display_name = "certbot"
+  account_id   = "certbot"
+}
+
+resource "google_service_account_key" "certbot_svc_key" {
+  service_account_id = google_service_account.certbot_account.name
+}
+
+resource "google_project_iam_member" "certbot_dns_admin" {
+  role   = "roles/dns.admin"
+  member = "serviceAccount:${google_service_account.certbot_account.email}"
+}
+
+resource "google_storage_bucket_object" "certbot_svc_key_storage" {
+  name         = ".gcp/certbot.json"
+  content      = base64decode(google_service_account_key.certbot_svc_key.private_key)
+  bucket       = "${var.gcp_project}${var.bucket_name}"
+  content_type = "application/json"
+}
+
+data "template_file" "make_update_keystore_script" {
+  template = file("./halScripts/make_or_update_keystore.sh")
+
+  vars = {
+    DNS           = var.cloud_dns_hostname
+    KEYSTORE_PASS = data.vault_generic_secret.keystore-pass.data["value"]
+  }
+}
+
 provider "google" {
   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
   project     = var.gcp_project
@@ -145,23 +175,24 @@ data "template_file" "start_script" {
   template = file("./start.sh")
 
   vars = {
-    USER              = var.service_account_name
-    BUCKET            = "${var.gcp_project}${var.bucket_name}"
-    PROJECT           = var.gcp_project
-    REPLACE           = google_service_account_key.svc_key.private_key
-    SCRIPT_SSL        = base64encode(data.template_file.setupSSLMultiple.rendered)
-    SCRIPT_OAUTH      = base64encode(data.template_file.setupOAuthMultiple.rendered)
-    SCRIPT_SLACK      = base64encode(data.template_file.setupSlack.rendered)
-    SCRIPT_HALYARD    = base64encode(data.template_file.setupHalyardMultiple.rendered)
-    SCRIPT_HALPUSH    = base64encode(data.template_file.halpush.rendered)
-    SCRIPT_HALGET     = base64encode(data.template_file.halget.rendered)
-    SCRIPT_HALDIFF    = base64encode(data.template_file.haldiff.rendered)
-    SCRIPT_ALIASES    = base64encode(data.template_file.aliases.rendered)
-    SCRIPT_K8SSL      = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
-    SCRIPT_RESETGCP   = base64encode(data.template_file.resetgcp.rendered)
-    SCRIPT_SWITCH     = base64encode(data.template_file.halswitch.rendered)
-    SCRIPT_MONITORING = base64encode(data.template_file.setupMonitoring.rendered)
-    PROFILE_ALIASES   = base64encode(data.template_file.profile_aliases.rendered)
+    USER                = var.service_account_name
+    BUCKET              = "${var.gcp_project}${var.bucket_name}"
+    PROJECT             = var.gcp_project
+    REPLACE             = google_service_account_key.svc_key.private_key
+    SCRIPT_SSL          = base64encode(data.template_file.setupSSLMultiple.rendered)
+    SCRIPT_OAUTH        = base64encode(data.template_file.setupOAuthMultiple.rendered)
+    SCRIPT_SLACK        = base64encode(data.template_file.setupSlack.rendered)
+    SCRIPT_HALYARD      = base64encode(data.template_file.setupHalyardMultiple.rendered)
+    SCRIPT_HALPUSH      = base64encode(data.template_file.halpush.rendered)
+    SCRIPT_HALGET       = base64encode(data.template_file.halget.rendered)
+    SCRIPT_HALDIFF      = base64encode(data.template_file.haldiff.rendered)
+    SCRIPT_ALIASES      = base64encode(data.template_file.aliases.rendered)
+    SCRIPT_K8SSL        = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
+    SCRIPT_RESETGCP     = base64encode(data.template_file.resetgcp.rendered)
+    SCRIPT_SWITCH       = base64encode(data.template_file.halswitch.rendered)
+    SCRIPT_MONITORING   = base64encode(data.template_file.setupMonitoring.rendered)
+    SCRIPT_SSL_KEYSTORE = base64encode(data.template_file.make_update_keystore_script.rendered)
+    PROFILE_ALIASES     = base64encode(data.template_file.profile_aliases.rendered)
 
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }

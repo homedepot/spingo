@@ -92,29 +92,6 @@ cd ..
 	- You can enter the details directly through this command	 `vault write secret/$(gcloud config list --format 'value(core.project)' 2>/dev/null)/slack-token "value=replace-me"`
 	- Alternatively, you may be able to use the vault UI and enter the information to the same location and replace anything where the value is `replace-me`
 
-#### Certbot SSL through [Let's Encrypt](https://letsencrypt.org/)
-
-```sh
-cd certbot
-# Initialize Terraform against newly created bucket
-terraform init
-terraform apply
-```
-
-- SSH into the [certbot VM](https://console.cloud.google.com/compute/instances)
-- Enter this command to make sure the setup is complete `showlog`
-- Once completed, log into the user account by entering this command `spingo`
-- Test create a certificate by executing this script `./execute-test.sh`
-- When you are ready to create the certificate for real then execute this script `./execute-only-if-you-are-sure.sh`
-- When you have successfully recieved certificates you then execute `./make_or_update_keystore.sh`
-- Finally, you run the command `pushcerts` to push the certs back up to the halyard bucket
-- You no longer need the certbot VM anymore so destroy it
-
-```sh
-terraform destroy
-cd ..
-```
-
 #### It's Halyard Time!
 
 ```sh
@@ -127,9 +104,11 @@ terraform apply
 - SSH into the [halyard VM](https://console.cloud.google.com/compute/instances)
 - Enter this command to make sure the setup is complete `showlog`
 - Once completed log into the user account by entering this command `spingo`
+- To generate SSL certificates through [Let's Encrypt](https://letsencrypt.org/) execute the `./setupCertbot.sh` script
 - Setup Halyard and deploy Spinnaker for the first time by executing `./setupHalyard.sh` which will setup all clusters
 - Once the deployment(s) is/are successful the next step is to setup SSL across all clusters by executing `./setupSSL.sh`
-- Navigate to your new Spinnaker by going to `https://spinnaker.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
+- Navigate to your new Spinnaker by going to `https://np.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
+- Be sure to execute the `halpush` command to store all the configurations and certificates back up to the halyard bucket
 
 ### Setup Monitoring and Alerting
 

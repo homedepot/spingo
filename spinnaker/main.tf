@@ -233,7 +233,7 @@ module "spinnaker-dns" {
   source           = "./modules/dns"
   gcp_project      = var.managed_dns_gcp_project
   cluster_config   = var.hostname_config
-  dns_name         = "${var.cloud_dns_hostname}."
+  dns_name         = "${var.cloud_dns_hostname}"
   ui_ip_addresses  = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
   api_ip_addresses = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
 

@@ -9,7 +9,7 @@ reference: https://www.terraform.io/docs/providers/google/r/dns_record_set.html
 resource "google_dns_record_set" "spinnaker-ui" {
   # see the vars file to an explination about this count thing
   count        = length(var.cluster_config)
-  name         = "${var.cluster_config[count.index]}.${var.dns_name}"
+  name         = "${var.cluster_config[count.index]}.${var.dns_name}."
   type         = "A"
   ttl          = 300
   managed_zone = "spinnaker-wildcard-domain"
@@ -19,7 +19,7 @@ resource "google_dns_record_set" "spinnaker-ui" {
 resource "google_dns_record_set" "spinnaker-api" {
   # see the vars file to an explination about this count thing
   count        = length(var.cluster_config)
-  name         = "${var.cluster_config[count.index]}-api.${var.dns_name}"
+  name         = "${var.cluster_config[count.index]}-api.${var.dns_name}."
   type         = "A"
   ttl          = 300
   managed_zone = "spinnaker-wildcard-domain"
@@ -31,7 +31,7 @@ resource "vault_generic_secret" "spinnaker_ui_address" {
   path  = "secret/${var.gcp_project}/spinnaker_ui_url/${count.index}"
 
   data_json = <<-EOF
-              {"url":"${google_dns_record_set.spinnaker-ui[count.index].name}"}
+              {"url":"${var.cluster_config[count.index]}.${var.dns_name}"}
 EOF
 
 }
@@ -41,7 +41,7 @@ resource "vault_generic_secret" "spinnaker_api_address" {
   path = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
 
   data_json = <<-EOF
-              {"url":"${google_dns_record_set.spinnaker-api[count.index].name}"}
+              {"url":"${var.cluster_config[count.index]}-api.${var.dns_name}"}
 EOF
 
 }

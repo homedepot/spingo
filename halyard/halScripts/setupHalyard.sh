@@ -31,7 +31,7 @@ hal config provider kubernetes account add ${ACCOUNT_NAME} \
     --docker-registries "${DOCKER}" \
     --provider-version v2 \
     --only-spinnaker-managed=true \
-    --context $(kubectl config current-context)
+    --kubeconfig-file ${KUBE_CONFIG}
 
 hal config version edit --version $(hal version latest -q)
 

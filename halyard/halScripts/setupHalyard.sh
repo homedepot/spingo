@@ -183,4 +183,5 @@ redis:
     enabled: false
 CLOUDDRIVER_LOCAL
 
-echo "You may want to run 'hal deploy apply'"
+echo "Running initial Spinnaker deployment for deployment named ${DEPLOYMENT_NAME}"
+hal deploy apply

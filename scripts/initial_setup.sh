@@ -101,6 +101,7 @@ echo "enabling redis.googleapis.com"
 gcloud services enable redis.googleapis.com
 
 DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"
+USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
@@ -198,7 +199,6 @@ if [[ "$?" -ne 0 ]]; then
 fi
 cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
 cp "$SERVICE_ACCOUNT_DEST" ./halyard
-cp "$SERVICE_ACCOUNT_DEST" ./certbot
 cp "$SERVICE_ACCOUNT_DEST" ./dns
 cp "$SERVICE_ACCOUNT_DEST" ./static_ips
 cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
@@ -206,17 +206,15 @@ rm "$SERVICE_ACCOUNT_DEST"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-certbot" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-monitoring" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
-terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
-terraform_variable "bucket_name" "$PROJECT-halyard-bucket" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
+terraform_variable "certbot_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
 # enter a wildcard domain to be used
 echo "-----------------------------------------------------------------------------"
@@ -228,7 +226,6 @@ while [ -z $DOMAIN_TO_MANAGE ]; do
 done
 
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "dns" "$PROJECT"
-terraform_variable "wildcard_dns_name" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
@@ -281,7 +278,6 @@ do
     else
         echo "-----------------------------------------------------------------------------"
         echo "Google Cloud Project Region $zone selected"
-        terraform_variable "gcp_zone" "$zone" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
         terraform_variable "gcp_zone" "$zone" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
         break;
     fi

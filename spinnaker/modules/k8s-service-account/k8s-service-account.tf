@@ -64,7 +64,7 @@ resource "google_storage_bucket_object" "spinnaker_kubeconfig_file" {
 }
 
 resource "kubernetes_secret" "secret" {
-  count       = var.enable ? 1 : 0
+  count = var.enable ? 1 : 0
 
   metadata {
     name      = "cloudsql-instance-credentials"

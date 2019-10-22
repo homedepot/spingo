@@ -7,7 +7,7 @@ variable "terraform_account" {
 }
 
 variable "gcp_project" {
-  type = string
+  type        = string
   description = "GCP project name"
 }
 

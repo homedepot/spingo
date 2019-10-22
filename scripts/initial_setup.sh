@@ -101,6 +101,7 @@ echo "enabling redis.googleapis.com"
 gcloud services enable redis.googleapis.com
 
 DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"
+USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
@@ -217,6 +218,7 @@ terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "static_ips" "$PROJE
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
 terraform_variable "bucket_name" "$PROJECT-halyard-bucket" "$GIT_ROOT_DIR" "certbot" "$PROJECT"
+terraform_variable "certbot_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
 # enter a wildcard domain to be used
 echo "-----------------------------------------------------------------------------"

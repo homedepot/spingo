@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-function addIps(INSTANCE){
-  CLUSTERNAME=$INSTANCE-$REGION
+
+
+function addIps{
+  CLUSTERNAME=$1
+  REGION=$2
   list=gcloud container clusters describe $CLUSTERNAME | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock' --region $REGION
   newlist=''
   for line in $list; do
@@ -9,7 +12,3 @@ function addIps(INSTANCE){
   newlist=$newlist,$(curl ifconfig.co)/32
   gcloud container clusters update $CLUSTERNAME --enable-master-authorized-networks --master-authorized-networks $newlist --region $REGION
 }
-
-for instance in 'spinnaker sandbox'; do
-  addIps($instance)
-done

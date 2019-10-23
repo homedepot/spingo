@@ -1,7 +1,7 @@
 #!/bin/bash
 
-CERBOT_PATH="/${USER}/certbot/"
-CERTSTORE_PATH="/${USER}/certstore/certificates/"
+CERBOT_PATH="/${USER}/certbot"
+CERTSTORE_PATH="/${USER}/certstore/certificates"
 
 if [ -f "$CERTSTORE_PATH/_.${DNS}.json" ];then
     echo "===== OPERATION: RENEW ====="
@@ -10,6 +10,9 @@ else
     echo "===== OPERATION: INITIAL REQUEST ====="
     LEGO_CMD="run"
 fi
+
+mkdir -p "$CERTSTORE_PATH"
+mkdir -p "$CERBOT_PATH"
 
 docker run \
   -e GCE_PROJECT="${PROJECT}" \
@@ -25,6 +28,11 @@ docker run \
       --email="${CERTBOT_EMAIL}" \
       --domains="*.${DNS}" \
       $LEGO_CMD
+
+if [ ! -f "$CERTSTORE_PATH/_.${DNS}.json" ];then
+  echo "Unable to find certificate files"
+  exit 1
+fi
 
 openssl pkcs12 -export -out "$CERTSTORE_PATH"/wildcard.pkcs12 -in "$CERTSTORE_PATH"/_.${DNS}.pem -name spinnaker -password pass:"${KEYSTORE_PASS}"
 keytool -v -importkeystore -srckeystore "$CERTSTORE_PATH"/wildcard.pkcs12 -destkeystore "$CERTSTORE_PATH"/wildcard.jks -deststoretype JKS -storepass "${KEYSTORE_PASS}" -srcstorepass "${KEYSTORE_PASS}" -noprompt

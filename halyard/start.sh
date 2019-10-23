@@ -17,7 +17,7 @@ runuser -l root -c 'echo "${PROFILE_ALIASES}" | base64 -d > /etc/profile.d/alias
 
 #CREATE USER
 echo "Creating user"
-useradd -s /bin/bash ${USER}
+useradd -s /bin/bash ${USER} -u 1978
 usermod -g google-sudoers ${USER}
 mkhomedir_helper ${USER}
 

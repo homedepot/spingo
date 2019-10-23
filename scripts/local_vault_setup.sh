@@ -19,7 +19,7 @@ if [[ ! "$(command -v vault)" ]]; then
     "Linux")
       echo "downloading Vault for Linux"
       wget -O "$vaultdir/vault.zip" "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
-      unzip "$vaultdir/vault.zip" -d $vaultdir/vault
+      unzip "$vaultdir/vault.zip" -d $vaultdir
       sudo ln -s "$vaultdir/vault" "/usr/bin/vault"
       ;;
   esac

@@ -26,3 +26,6 @@ hal config security authz google edit \
 hal config security authz edit --type google
    
 hal config security authz enable
+
+echo "Running Spinnaker OAuth deployment for deployment named ${DEPLOYMENT_NAME}"
+hal deploy apply

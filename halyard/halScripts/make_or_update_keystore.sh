@@ -19,7 +19,7 @@ docker run \
   -e GCE_SERVICE_ACCOUNT_FILE="/gcloud-service-account.json" \
   -v /${USER}/.gcp/certbot.json:/gcloud-service-account.json:ro \
   -v /${USER}/certstore:/certstore \
-  -u 1001:1001 \
+  -u 1978:1978 \
     goacme/lego \
       --path="/certstore" \
       --accept-tos \

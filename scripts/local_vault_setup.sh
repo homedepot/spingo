@@ -11,9 +11,14 @@ mkdir -p $vaultdir
 #if vault not installed, install vault
 
 if [[ ! "$(command -v vault)" ]]; then
+  echo "vault not installed. Attempting to install"
   case "$(uname)" in
     "Darwin")
-      echo "attempting to download Vault for macos"
+      echo "attempting to download Vault for macos via brew"
+      if [[ ! "$(command -v brew)" ]]; then
+        echo "Neither vault nor homebrew installed. Please install homebrew from https://brew.sh/ to allow this command to install vault. Otherwise install vault directly from https://www.vaultproject.io/ "
+        exit 1
+      fi
       brew install vault
       ;;
     "Linux")

@@ -9,11 +9,25 @@ fi
 mkdir -p $vaultdir
 
 #if vault not installed, install vault
+
 if [[ ! "$(command -v vault)" ]]; then
-  echo "downloading Vault for Linux"
-  wget -O "$vaultdir/vault.zip" "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
-  unzip "$vaultdir/vault.zip" $vaultdir/vault
-  sudo ln -s "$vaultdir/vault" "/usr/bin/vault"
+  echo "vault not installed. Attempting to install"
+  case "$(uname)" in
+    "Darwin")
+      echo "attempting to download Vault for macos via brew"
+      if [[ ! "$(command -v brew)" ]]; then
+        echo "Neither vault nor homebrew installed. Please install homebrew from https://brew.sh/ to allow this command to install vault. Otherwise install vault directly from https://www.vaultproject.io/ "
+        exit 1
+      fi
+      brew install vault
+      ;;
+    "Linux")
+      echo "downloading Vault for Linux"
+      wget -O "$vaultdir/vault.zip" "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip"
+      unzip "$vaultdir/vault.zip" -d $vaultdir
+      sudo ln -s "$vaultdir/vault" "/usr/bin/vault"
+      ;;
+  esac
 fi
 
 #if no config, make config

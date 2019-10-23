@@ -1,6 +1,30 @@
 # Spingo
 A collection of Terraform and bash scripts to setup an enterprise-grade Spinnaker deployment on Google Cloud Platform
 
+<!-- TOC -->
+
+- [Spingo](#spingo)
+    - [Architecture](#architecture)
+    - [Prerequisites](#prerequisites)
+    - [Setup](#setup)
+        - [Initialize](#initialize)
+        - [Setup Managed DNS through Cloud DNS](#setup-managed-dns-through-cloud-dns)
+        - [Setup Static IP addresses](#setup-static-ip-addresses)
+        - [Setup Spinnaker Infrastructure](#setup-spinnaker-infrastructure)
+            - [Google OAuth Authorization Setup](#google-oauth-authorization-setup)
+        - [Setup Halyard VM](#setup-halyard-vm)
+            - [Google OAuth Authentication Setup](#google-oauth-authentication-setup)
+            - [If you are going to use Slack integration (skip to next section if not)](#if-you-are-going-to-use-slack-integration-skip-to-next-section-if-not)
+            - [It's Halyard Time!](#its-halyard-time)
+        - [Setup Monitoring and Alerting](#setup-monitoring-and-alerting)
+        - [Save Configurations back to Cloud Storage Bucket](#save-configurations-back-to-cloud-storage-bucket)
+    - [Restore saved values from vault](#restore-saved-values-from-vault)
+    - [Teardown](#teardown)
+    - [Contributing](#contributing)
+    - [License](#license)
+
+<!-- /TOC -->
+
 ## Architecture
 
 ![diagram](images/spingo-picture.png)
@@ -78,8 +102,9 @@ cd ..
 #### Google OAuth Authentication Setup
 
 - Navigate to the [APIs & Services > Credentials](https://console.cloud.google.com/apis/credentials/consent) and set your `Application name` and your `Authorized domains`
-- Navigate to [Create OAuth client ID](https://console.cloud.google.com/apis/credentials/oauthclient) and choose `Web application` then enter the `Name` like `spinnaker client ID` and the `Authorized redirect URIs` to your HTTPS url like this (note the `/login` at the end of each
-	- `https://spinnaker-api.demo.example.com/login`
+- Navigate to [Create OAuth client ID](https://console.cloud.google.com/apis/credentials/oauthclient) and choose `Web application` then enter the `Name` like `spinnaker client ID` and the `Authorized redirect URIs` to your HTTPS urls like this (note the `/login` at the end of each
+	- `https://np-api.demo.example.com/login`
+	- `https://sandbox-api.demo.example.com/login`
 - Write your new OAuth client ID and client secret into vault
 	- You can enter the details directly through this command	`vault write secret/$(gcloud config list --format 'value(core.project)' 2>/dev/null)/gcp-oauth "client-id=replace-me" "client-secret=replace-me"`
 	- Alternatively, you may be able to use the vault UI and enter the information to the same location and replace anything where the value is `replace-me`
@@ -108,11 +133,15 @@ terraform apply
 - Setup Halyard and deploy Spinnaker for the first time by executing `./setupHalyard.sh` which will setup all clusters
 - Once the deployment(s) is/are successful the next step is to setup SSL across all clusters by executing `./setupSSL.sh`
 - Navigate to your new Spinnaker by going to `https://np.demo.example.com` and replacing `demo.example.com` with whatever domain you entered into the initialization script
-- Be sure to execute the `halpush` command to store all the configurations and certificates back up to the halyard bucket
+- If you setup Google OAuth above and want to enable authentication and authorization then run `./setupOAuth.sh`
 
 ### Setup Monitoring and Alerting
 
 Follow the instructions [here](monitoring-alerting) to setup basic monitoring and alerting of the Spinnaker deployments
+
+### Save Configurations back to Cloud Storage Bucket
+
+Be sure to execute the `halpush` command on the halyard VM to push all the configurations and certificates back up to the halyard bucket so that the ephemeral halyard vm can be destroyed/rebuilt at any time
 
 ## Restore saved values from vault
 

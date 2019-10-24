@@ -5,6 +5,8 @@ resource "kubernetes_service_account" "service_account" {
     name      = var.service_account_name
     namespace = var.service_account_namespace
   }
+
+  depends_on  = [var.spinnaker_nodepool]
 }
 
 resource "kubernetes_cluster_role_binding" "cluster_role_binding" {

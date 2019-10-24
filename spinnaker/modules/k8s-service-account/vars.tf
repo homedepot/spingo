@@ -49,6 +49,10 @@ variable "enable" {
   default     = false
 }
 
+variable "spinnaker_nodepool" {
+  description = "k8s node pool resource for spinnaker services"
+}
+
 variable "spinnaker_namespace" {
   type        = "string"
   description = "namespace where spinnaker lives"

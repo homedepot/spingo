@@ -75,7 +75,7 @@ module "k8s" {
   region          = var.cluster_region
   private_cluster = true # This will disable public IPs from the nodes
 
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [data.http.local_outgoing_ip_address.body])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
@@ -94,7 +94,7 @@ module "k8s-sandbox" {
   region          = var.cluster_region
   private_cluster = true # This will disable public IPs from the nodes
 
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [data.http.local_outgoing_ip_address.body])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
@@ -143,7 +143,7 @@ module "k8s-spinnaker-service-account" {
   cluster_list_index        = 0
   cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
   spinnaker_namespace       = length(module.k8s.created_namespace) > 0 ? module.k8s.created_namespace.0.metadata.0.name : var.default_create_namespace
-
+  spinnaker_nodepool        = module.k8s.created_nodepool
   providers = {
     kubernetes = kubernetes.main
   }
@@ -164,6 +164,7 @@ module "k8s-spinnaker-service-account-sandbox" {
   cluster_list_index        = 1
   cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
   spinnaker_namespace       = length(module.k8s-sandbox.created_namespace) > 0 ? module.k8s-sandbox.created_namespace.0.metadata.0.name : var.default_create_namespace
+  spinnaker_nodepool        = module.k8s-sandbox.created_nodepool
 
   providers = {
     kubernetes = kubernetes.sandbox

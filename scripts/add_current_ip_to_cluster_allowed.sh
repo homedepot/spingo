@@ -15,38 +15,37 @@ exists() {
     done
     echo "$RESULT"
 }
-selected_channels=()
+selected_clusters=()
 PS3="-----------------------------------------------------------------------------"$'\n'"Enter the number for the Kubernetes Cluster to Add this machine's Ip to (Enter the number for Finished when done) : ";
-select channel in $(gcloud container clusters list --format="value(name)") Finished Cancel
+select cluster in $(gcloud container clusters list --format="value(name)") Finished Cancel
 do
-    if [[ $channel == "" ]]; then
+    if [[ $cluster == "" ]]; then
         echo "You must choose a cluster"
-    elif [ "$channel" == "Finished" ]; then
+    elif [ "$cluster" == "Finished" ]; then
         echo "Excellent selections!"
         break;
-    elif [ "$channel" == "Cancel" ]; then
+    elif [ "$cluster" == "Cancel" ]; then
         echo "Cancelling at user request"
         exit 1
     else
-        do_exist=$(exists selected_channels "$channel")
+        do_exist=$(exists selected_clusters "$cluster")
         if [[ "$do_exist" == "true" ]] ; then
             echo "cluster already selected"
         else
-            selected_channels+=($channel)
-            echo "adding cluster $channel to selected clusters"
+            selected_clusters+=($cluster)
+            echo "adding cluster $cluster to selected clusters"
         fi
     fi
 done
 
-for cluster in ${selected_channels[@]}
+machinecidr="$(curl -s ifconfig.co)/32"
+for cluster in ${selected_clusters[@]}
 do
-  location=$(gcloud beta container clusters list --filter="name:$cluster" --format="value(Location)")
-  for cidr in $(gcloud container clusters describe $cluster --region $location --format="json" | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock'); do
-    cidrlist=$cidrlist,$cidr
-  done
-  cidrlist=$(curl -s ifconfig.co)/32$cidrlist
-  cidrlist=$(echo $cidrlist | sed s/\"//g)
-  gcloud container clusters update $cluster --enable-master-authorized-networks --master-authorized-networks $cidrlist --region $location
-  #the next line clears the variable before the next loop. don't touch it!
-  cidrlist= 
+    location="$(gcloud beta container clusters list --filter="name:$cluster" --format="value(Location)")"
+    cidrlist="$machinecidr"
+    for cidr in $(gcloud container clusters describe $cluster --region $location --format="json" | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock'); do
+        cidrlist=$cidrlist,$cidr
+    done
+    cidrlist=$(echo $cidrlist | sed s/\"//g)
+    gcloud container clusters update $cluster --enable-master-authorized-networks --master-authorized-networks $cidrlist --region $location
 done

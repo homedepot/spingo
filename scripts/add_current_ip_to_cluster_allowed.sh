@@ -47,6 +47,6 @@ do
     do
         cidrlist="$cidrlist,$cidr"
     done
-    cidrlist="$(echo "$cidrlist" | sed s/\"//g)"
+    cidrlist="$(echo "$cidrlist" | sed 's/\"//g')"
     gcloud container clusters update "$cluster" --enable-master-authorized-networks --master-authorized-networks "$cidrlist" --region "$location"
 done

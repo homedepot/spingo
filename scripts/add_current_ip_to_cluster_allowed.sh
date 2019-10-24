@@ -33,7 +33,7 @@ do
             echo "cluster already selected"
         else
             selected_channels+=($channel)
-            echo "adding channel $channel to selected channels"
+            echo "adding cluster $channel to selected clusters"
         fi
     fi
 done

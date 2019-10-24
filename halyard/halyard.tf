@@ -293,7 +293,7 @@ data "template_file" "setupOAuth" {
     API_URL             = "https://${data.vault_generic_secret.spinnaker_api_address[count.index].data["url"]}"
     OAUTH_CLIENT_ID     = data.vault_generic_secret.gcp-oauth.data["client-id"]
     OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp-oauth.data["client-secret"]
-    DOMAIN              = var.cloud_dns_hostname
+    DOMAIN              = replace(var.gcp_admin_email, "/^.*@/", "")
     ADMIN_EMAIL         = var.gcp_admin_email
     DEPLOYMENT_NAME     = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
   }

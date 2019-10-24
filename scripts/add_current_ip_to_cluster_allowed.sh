@@ -17,7 +17,7 @@ exists() {
 }
 selected_clusters=()
 PS3="-----------------------------------------------------------------------------"$'\n'"Enter the number for the Kubernetes Cluster to Add this machine's Ip to (Enter the number for Finished when done) : ";
-select cluster in $(gcloud container clusters list --format="value(name)") Finished Cancel
+select cluster in "$(gcloud container clusters list --format="value(name)")" Finished Cancel
 do
     if [[ $cluster == "" ]]; then
         echo "You must choose a cluster"
@@ -43,9 +43,10 @@ for cluster in ${selected_clusters[@]}
 do
     location="$(gcloud beta container clusters list --filter="name:$cluster" --format="value(Location)")"
     cidrlist="$machinecidr"
-    for cidr in $(gcloud container clusters describe $cluster --region $location --format="json" | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock'); do
-        cidrlist=$cidrlist,$cidr
+    for cidr in "$(gcloud container clusters describe "$cluster" --region "$location" --format="json" | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock')"
+    do
+        cidrlist="$cidrlist,$cidr"
     done
-    cidrlist=$(echo $cidrlist | sed s/\"//g)
-    gcloud container clusters update $cluster --enable-master-authorized-networks --master-authorized-networks $cidrlist --region $location
+    cidrlist="$(echo "$cidrlist" | sed s/\"//g)"
+    gcloud container clusters update "$cluster" --enable-master-authorized-networks --master-authorized-networks "$cidrlist" --region "$location"
 done

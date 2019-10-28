@@ -50,6 +50,10 @@ output "service-account-name" {
   value = google_service_account.service_account.name
 }
 
+output "service-account-display-name" {
+  value = google_service_account.service_account.display_name
+}
+
 output "service-account-email" {
   value = google_service_account.service_account.email
 }

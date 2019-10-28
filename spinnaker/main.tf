@@ -339,5 +339,5 @@ output "created_onboarding_subscription_name" {
 }
 
 output "created_onboarding_service_account_name" {
-  value = module.onboarding-pubsub-service-account.service-account-name
+  value = module.onboarding-pubsub-service-account.service-account-display-name
 }

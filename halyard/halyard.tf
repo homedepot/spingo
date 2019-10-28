@@ -150,6 +150,18 @@ data "template_file" "make_update_keystore_script" {
   }
 }
 
+data "template_file" "setup_onboarding" {
+  template = file("./halScripts/setupOnboarding.sh")
+
+  vars = {
+    PROJECT_NAME            = var.gcp_project
+    ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
+    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${data.terraform_remote_state.np.outputs.created_onboarding_service_account_name}.json"
+    ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+    HALYARD_COMMANDS        = templatefile("./halScripts/onboarding-halyard.sh", { deployments = data.terraform_remote_state.np.outputs.hostname_config_values })
+  }
+}
+
 provider "google" {
   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
   project     = var.gcp_project
@@ -200,6 +212,7 @@ data "template_file" "start_script" {
     SCRIPT_SWITCH       = base64encode(data.template_file.halswitch.rendered)
     SCRIPT_MONITORING   = base64encode(data.template_file.setupMonitoring.rendered)
     SCRIPT_SSL_KEYSTORE = base64encode(data.template_file.make_update_keystore_script.rendered)
+    SCRIPT_ONBOARDING   = base64encode(data.template_file.setup_onboarding.rendered)
     PROFILE_ALIASES     = base64encode(data.template_file.profile_aliases.rendered)
 
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"

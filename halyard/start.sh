@@ -64,6 +64,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_K8SSL}" | base64 -d > /home/${USER}/setupK
 runuser -l ${USER} -c 'echo "${SCRIPT_RESETGCP}" | base64 -d > /home/${USER}/resetgcp.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_MONITORING}" | base64 -d > /home/${USER}/setupMonitoring.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL_KEYSTORE}" | base64 -d > /home/${USER}/setupCertbot.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING}" | base64 -d > /home/${USER}/setupOnboarding.sh'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

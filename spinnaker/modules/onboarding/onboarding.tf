@@ -1,34 +1,40 @@
-provider "google" {
-  #   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
 
-  credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
-  project     = var.gcp_project
+resource "google_pubsub_topic" "onboading_topic" {
+  name = "spingo-onboarding-${var.storage_object_name_prefix}-topic"
 }
 
-resource "google_project_iam_custom_role" "onboarding_role" {
-  role_id     = "onboarding_bucket_role"
-  title       = "Onboarding bucket role"
-  description = "This role will allow a user to upload onboarding information to the onboarding bucket but not be able to read anyone elses"
-  permissions = ["storage.objects.list", "storage.objects.create"]
-}
-
-resource "google_storage_bucket" "onboarding_bucket" {
-  name          = "${var.gcp_project}-spinnaker-onboarding"
-  storage_class = "MULTI_REGIONAL"
-  versioning {
-    enabled = true
-  }
-}
-
-resource "google_storage_bucket_iam_binding" "binding" {
-  bucket = google_storage_bucket.onboarding_bucket.name
-  role   = "roles/storage.objectViewer"
-
-  members = [
-    "domain:${var.domain}:projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
+resource "google_storage_notification" "onboarding_notification" {
+  bucket             = var.onboarding_bucket_resource.name
+  payload_format     = "JSON_API_V1"
+  topic              = google_pubsub_topic.onboading_topic.name
+  event_types        = ["OBJECT_FINALIZE"]
+  object_name_prefix = "${var.storage_object_name_prefix}/"
+  depends_on = [
+    google_pubsub_topic_iam_binding.binding
   ]
 }
 
-output "created_onboarding_bucket" {
-  value = google_storage_bucket.onboarding_bucket.name
+// Enable notifications by giving the correct IAM permission to the unique service account.
+
+data "google_storage_project_service_account" "gcs_account" {}
+
+resource "google_pubsub_topic_iam_binding" "binding" {
+  topic   = google_pubsub_topic.onboading_topic.name
+  role    = "roles/pubsub.publisher"
+  members = ["serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"]
+}
+
+// End enabling notifications
+
+resource "google_pubsub_subscription" "onboarding_subscription" {
+  name  = "spingo-onboarding-${var.storage_object_name_prefix}-subscription"
+  topic = google_pubsub_topic.onboading_topic.name
+}
+
+output "created_onboarding_topic_name" {
+  value = google_pubsub_topic.onboading_topic.name
+}
+
+output "created_onboarding_subscription_name" {
+  value = google_pubsub_subscription.onboarding_subscription.name
 }

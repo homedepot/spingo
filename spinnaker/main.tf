@@ -247,6 +247,50 @@ module "spinnaker-dns" {
   }
 }
 
+resource "google_storage_bucket" "onboarding_bucket" {
+  name          = "${var.gcp_project}-spinnaker-onboarding"
+  storage_class = "MULTI_REGIONAL"
+  versioning {
+    enabled = true
+  }
+}
+
+resource "google_project_iam_custom_role" "onboarding_role" {
+  role_id     = "onboarding_user_bucket_role"
+  title       = "Onboarding Submitter Role"
+  description = "This role will allow an authorized user to upload onboarding credentials to the onboarding bucket but not be able to read anyone elses"
+  permissions = ["storage.objects.list", "storage.objects.create"]
+}
+
+resource "google_storage_bucket_iam_binding" "binding" {
+  bucket = google_storage_bucket.onboarding_bucket.name
+  role   = "roles/storage.objectViewer"
+
+  members = [
+    "domain:${var.domain}:projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
+  ]
+}
+
+module "onboarding_gke" {
+  source                     = "./modules/onboarding"
+  gcp_project                = var.gcp_project
+  onboarding_bucket_resource = google_storage_bucket.onboarding_bucket
+  storage_object_name_prefix = "gke"
+  domain                     = replace(var.spingo_user_email, "/^.*@/", "")
+}
+
+module "onboarding-pubsub-service-account" {
+  source               = "./modules/gcp-service-account"
+  service_account_name = "spinnaker-onboarding-pub-sub"
+  bucket_name          = module.halyard-storage.bucket_name
+  gcp_project          = var.gcp_project
+  roles                = ["roles/storage.admin", "roles/pubsub.subscriber"]
+}
+
+output "created_onboarding_bucket_name" {
+  value = google_storage_bucket.onboarding_bucket.name
+}
+
 output "spinnaker_fiat_account_unique_id" {
   value = google_service_account.spinnaker_oauth_fiat.unique_id
 }
@@ -285,4 +329,16 @@ output "google_sql_database_failover_instance_names" {
 
 output "cluster_region" {
   value = var.cluster_region
+}
+
+output "created_onboarding_topic_name" {
+  value = onboarding_gke.created_onboarding_topic_name
+}
+
+output "created_onboarding_subscription_name" {
+  value = onboarding_gke.created_onboarding_subscription_name
+}
+
+output "created_onboarding_service_account_name" {
+  value = module.onboarding-pubsub-service-account.service-account-name
 }

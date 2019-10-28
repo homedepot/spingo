@@ -135,3 +135,8 @@ variable "extras" {
   # min_cpu_platform = "" # Minimum CPU platform to be used by this instance. The instance may be scheduled on the specified or newer CPU platform. Applicable values are the friendly names of CPU platforms, such as Intel Haswell.
 }
 
+variable "spingo_user_email" {
+  description = "This is the is the email address of the person who first executed spingo for this project extracted from their gcloud login"
+  type        = string
+}
+

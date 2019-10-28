@@ -72,5 +72,7 @@ vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_zone > halyard/
 
 # For GCP Org Admin Email
 vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_admin_email > halyard/var-gcp_admin_email.auto.tfvars
+vault read -field value secret/"$PROJECT"/local-vars-halyard-spingo_user_email > spinnaker/var-spingo_user_email.auto.tfvars
+vault read -field value secret/"$PROJECT"/local-vars-halyard-spingo_user_email > halyard/var-spingo_user_email.auto.tfvars
 
 cd "$CWD"

@@ -47,6 +47,11 @@ variable "gcp_admin_email" {
   type        = string
 }
 
+variable "spingo_user_email" {
+  description = "This is the is the email address of the person who first executed spingo for this project extracted from their gcloud login"
+  type        = string
+}
+
 data "terraform_remote_state" "np" {
   backend = "gcs"
 
@@ -158,7 +163,7 @@ data "template_file" "setup_onboarding" {
     ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
     PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${data.terraform_remote_state.np.outputs.created_onboarding_service_account_name}.json"
     ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
-    HALYARD_COMMANDS        = templatefile("./halScripts/onboarding-halyard.sh", { deployments = data.terraform_remote_state.np.outputs.hostname_config_values })
+    HALYARD_COMMANDS        = templatefile("./halScripts/onboarding-halyard.sh", { deployments = data.terraform_remote_state.np.outputs.cluster_config_values })
   }
 }
 

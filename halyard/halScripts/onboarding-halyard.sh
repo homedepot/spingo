@@ -14,4 +14,5 @@ hal config pubsub google subscription add $SPIN_SUB_NAME \
 
 echo "Running Spinnaker On-Boarding for deployment named ${deployment}"
 hal deploy apply --deployment ${deployment}
+
 %{ endfor ~}

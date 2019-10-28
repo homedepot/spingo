@@ -267,7 +267,7 @@ resource "google_storage_bucket_iam_binding" "binding" {
   role   = "roles/storage.objectViewer"
 
   members = [
-    "domain:${var.domain}:projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
+    "domain:${replace(var.spingo_user_email, "/^.*@/", "")}:projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
   ]
 }
 
@@ -276,7 +276,6 @@ module "onboarding_gke" {
   gcp_project                = var.gcp_project
   onboarding_bucket_resource = google_storage_bucket.onboarding_bucket
   storage_object_name_prefix = "gke"
-  domain                     = replace(var.spingo_user_email, "/^.*@/", "")
 }
 
 module "onboarding-pubsub-service-account" {
@@ -332,11 +331,11 @@ output "cluster_region" {
 }
 
 output "created_onboarding_topic_name" {
-  value = onboarding_gke.created_onboarding_topic_name
+  value = module.onboarding_gke.created_onboarding_topic_name
 }
 
 output "created_onboarding_subscription_name" {
-  value = onboarding_gke.created_onboarding_subscription_name
+  value = module.onboarding_gke.created_onboarding_subscription_name
 }
 
 output "created_onboarding_service_account_name" {

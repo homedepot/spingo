@@ -280,7 +280,7 @@ module "onboarding_gke" {
 
 module "onboarding-pubsub-service-account" {
   source               = "./modules/gcp-service-account"
-  service_account_name = "spinnaker-onboarding-pub-sub"
+  service_account_name = "onboarding-pub-sub"
   bucket_name          = module.halyard-storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/storage.admin", "roles/pubsub.subscriber"]

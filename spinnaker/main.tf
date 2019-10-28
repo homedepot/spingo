@@ -256,7 +256,7 @@ resource "google_storage_bucket" "onboarding_bucket" {
 }
 
 resource "google_project_iam_custom_role" "onboarding_role" {
-  role_id     = "onboarding_user_bucket_role"
+  role_id     = "onboarding_role"
   title       = "Onboarding Submitter Role"
   description = "This role will allow an authorized user to upload onboarding credentials to the onboarding bucket but not be able to read anyone elses"
   permissions = ["storage.objects.list", "storage.objects.create"]
@@ -264,10 +264,10 @@ resource "google_project_iam_custom_role" "onboarding_role" {
 
 resource "google_storage_bucket_iam_binding" "binding" {
   bucket = google_storage_bucket.onboarding_bucket.name
-  role   = "roles/storage.objectViewer"
+  role   = "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
 
   members = [
-    "domain:${replace(var.spingo_user_email, "/^.*@/", "")}:projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
+    "domain:${replace(var.spingo_user_email, "/^.*@/", "")}"
   ]
 }
 

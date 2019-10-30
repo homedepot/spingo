@@ -99,7 +99,7 @@ echo "enabling dns.googleapis.com"
 gcloud services enable dns.googleapis.com
 echo "enabling redis.googleapis.com"
 gcloud services enable redis.googleapis.com
-echo "enabling admin.googleapis.com - Needed for google OAuth"
+echo "enabling admin.googleapis.com - Needed for Google OAuth"
 gcloud services enable admin.googleapis.com
 
 DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"

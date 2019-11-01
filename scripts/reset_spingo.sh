@@ -75,58 +75,25 @@ SA_EMAIL=$(gcloud iam service-accounts list \
     --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
     --format='value(email)')
 
-if [ -z "$SA_EMAIL" ]; then
-    echo -e "\n\nUnable to determine email address for terraform service account. Does it still exist?"
-    echo -e "Here is the list of remaining service accounts for project $PROJECT : \n"
-    gcloud iam service-accounts list
-    exit 1;
-fi
-
 PROJECT=$(gcloud info --format='value(config.project)')
 
-echo "removing roles from $SERVICE_ACCOUNT_NAME for email : $SA_EMAIL"
-gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/resourcemanager.projectIamAdmin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountAdmin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountKeyAdmin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/compute.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/container.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/storage.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountUser
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/dns.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/redis.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/cloudsql.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/monitoring.admin
+if [ -z "$SA_EMAIL" ]; then
+    echo "No terraform service account left to clean up"
+else
+    echo "removing roles from $SERVICE_ACCOUNT_NAME for email : $SA_EMAIL"
+    for role in $(gcloud projects get-iam-policy np-platforms-cd-thd --flatten="bindings[].members" --format="json" --filter="bindings.members:terraform-account@np-platforms-cd-thd.iam.gserviceaccount.com" | jq -r '.[].bindings.role')
+    do
+        gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
+            --member serviceAccount:"$SA_EMAIL" \
+            --role "$role"
+    done
 
-echo "deleting $SERVICE_ACCOUNT_NAME service account"
-gcloud -q iam service-accounts delete "$SERVICE_ACCOUNT_NAME@$PROJECT.iam.gserviceaccount.com"
+    echo "deleting $SERVICE_ACCOUNT_NAME service account"
+    gcloud -q iam service-accounts delete "$SERVICE_ACCOUNT_NAME@$PROJECT.iam.gserviceaccount.com"
+fi
 
 echo "deleting secret/$PROJECT/$SERVICE_ACCOUNT_DEST from vault"
 vault delete secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME"
-
-echo "deleting the bucket that holds the Terraform state"
-gsutil rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
 
 echo "deleting the local Terraform directories pointing to the old bucket"
 rm -fdr ./dns/.terraform/
@@ -140,5 +107,15 @@ echo "deleting dynamic terraform backend configs"
 rm ./dns/override.tf
 rm ./halyard/override.tf
 rm ./spinnaker/override.tf
+
+echo "deleting the bucket that holds the Terraform state"
+DELETED_BUCKET=1
+while [ "$DELETED_BUCKET" -ne 0 ]; do
+    echo "Attempting to delete the terraform state bucket..."
+    gsutil -m rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
+    DELETED_BUCKET="$?"
+    sleep 2
+done
+
 echo "deletion complete"
 cd "$CWD"

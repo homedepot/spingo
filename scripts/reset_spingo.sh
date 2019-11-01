@@ -23,6 +23,33 @@ need() {
     which "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
 
+bucket_check(){
+    # This section here is because the gsutil tool has a VERY high error rate and needs to be retried
+    TERRAFORM_REMOTE_GCS_NAME="$1"
+    BUCKET_TITLE="$2"
+    BUCKET_CHECK=$(gsutil ls gs://"$TERRAFORM_REMOTE_GCS_NAME" 2>&1)
+    echo "Bucket Check : $BUCKET_CHECK"
+    while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
+        echo "Got an error checking for existance of gs://$TERRAFORM_REMOTE_GCS_NAME trying agian"
+        sleep 2
+        BUCKET_CHECK=$(gsutil ls gs://"$TERRAFORM_REMOTE_GCS_NAME" 2>&1)
+        echo "Inner Bucket Check : $BUCKET_CHECK"
+    done
+    if [[ ! "$BUCKET_CHECK" =~ "BucketNotFoundException" ]]; then
+        echo "Deleting the gs://$TERRAFORM_REMOTE_GCS_NAME bucket that holds the $BUCKET_TITLE"
+        DELETED_BUCKET=1
+        # This section here is because the gsutil tool has a VERY high error rate and needs to be retried
+        while [[ "$DELETED_BUCKET" -ne 0 ]]; do
+            echo "Attempting to delete the $BUCKET_TITLE bucket..."
+            gsutil -m rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
+            DELETED_BUCKET="$?"
+            sleep 2
+        done
+    else
+        echo "$BUCKET_TITLE bucket gs://$TERRAFORM_REMOTE_GCS_NAME does not exist so nothing to delete"
+    fi
+}
+
 while [ "$SCRIPT_CONFIRMATION" != "YES" ]; do
     echo "-----------------------------------------------------------------------------"
     echo "WARNING: Do not run this script unless you have already run 'terraform destoy' in all"
@@ -69,6 +96,7 @@ if [[ "$?" -ne 0 ]]; then
 fi
 
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
+HALYARD_GCS_NAME="$PROJECT-halyard-bucket"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
 
@@ -82,7 +110,7 @@ if [ -z "$SA_EMAIL" ]; then
     echo "No terraform service account left to clean up"
 else
     echo "removing roles from $SERVICE_ACCOUNT_NAME for email : $SA_EMAIL"
-    for role in $(gcloud projects get-iam-policy np-platforms-cd-thd --flatten="bindings[].members" --format="json" --filter="bindings.members:terraform-account@np-platforms-cd-thd.iam.gserviceaccount.com" | jq -r '.[].bindings.role')
+    for role in $(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings.role')
     do
         gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
             --member serviceAccount:"$SA_EMAIL" \
@@ -109,19 +137,8 @@ rm ./dns/override.tf
 rm ./halyard/override.tf
 rm ./spinnaker/override.tf
 
-gsutil ls -b gs://"$TERRAFORM_REMOTE_GCS_NAME" 2>/dev/null
-if [[ "$?" -eq 0 ]]; then
-    echo "deleting the bucket that holds the Terraform state"
-    DELETED_BUCKET=1
-    while [ "$DELETED_BUCKET" -ne 0 ]; do
-        echo "Attempting to delete the terraform state bucket..."
-        gsutil -m rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
-        DELETED_BUCKET="$?"
-        sleep 2
-    done
-else
-    echo "Terraform bucket does not exist so nothing to delete"
-fi
+bucket_check "$TERRAFORM_REMOTE_GCS_NAME" "Terraform state"
+bucket_check "$HALYARD_GCS_NAME" "Halyard"
 
 echo "deletion complete"
 cd "$CWD"

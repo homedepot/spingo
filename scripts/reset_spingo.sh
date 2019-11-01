@@ -109,14 +109,19 @@ rm ./dns/override.tf
 rm ./halyard/override.tf
 rm ./spinnaker/override.tf
 
-echo "deleting the bucket that holds the Terraform state"
-DELETED_BUCKET=1
-while [ "$DELETED_BUCKET" -ne 0 ]; do
-    echo "Attempting to delete the terraform state bucket..."
-    gsutil -m rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
-    DELETED_BUCKET="$?"
-    sleep 2
-done
+gsutil ls -b gs://"$TERRAFORM_REMOTE_GCS_NAME" 2>/dev/null
+if [[ "$?" -eq 0 ]]; then
+    echo "deleting the bucket that holds the Terraform state"
+    DELETED_BUCKET=1
+    while [ "$DELETED_BUCKET" -ne 0 ]; do
+        echo "Attempting to delete the terraform state bucket..."
+        gsutil -m rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
+        DELETED_BUCKET="$?"
+        sleep 2
+    done
+else
+    echo "Terraform bucket does not exist so nothing to delete"
+fi
 
 echo "deletion complete"
 cd "$CWD"

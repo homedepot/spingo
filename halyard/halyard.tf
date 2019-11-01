@@ -115,7 +115,7 @@ data "template_file" "setup_onboarding" {
   vars = {
     PROJECT_NAME            = var.gcp_project
     ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
-    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name,4,length(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name) - 4)}.json"
+    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name, 4, length(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name) - 4)}.json"
     ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
     HALYARD_COMMANDS = templatefile("./halScripts/onboarding-halyard.sh", {
       deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
@@ -190,7 +190,11 @@ data "template_file" "start_script" {
     SCRIPT_SSL_KEYSTORE = base64encode(data.template_file.make_update_keystore_script.rendered)
     SCRIPT_ONBOARDING   = base64encode(data.template_file.setup_onboarding.rendered)
     SCRIPT_X509         = base64encode(data.template_file.cert_script.rendered)
-    PROFILE_ALIASES     = base64encode(data.template_file.profile_aliases.rendered)
+
+    SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
+      USER = var.service_account_name
+    }))
+    PROFILE_ALIASES = base64encode(data.template_file.profile_aliases.rendered)
 
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }

@@ -37,6 +37,7 @@ need "vault"
 need "gcloud"
 need "git"
 need "gsutil"
+need "jq"
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)

@@ -1,5 +1,5 @@
 
-%{ for deployment in deployments ~}
+%{ for deployment, details in deployments ~}
 echo "Begining Spinnaker On-Boarding for deployment named ${deployment}"
 hal config features edit --artifacts true --deployment ${deployment}
 hal config artifact gcs enable --deployment ${deployment}
@@ -12,7 +12,52 @@ hal config pubsub google subscription add $SPIN_SUB_NAME \
   --json-path $JSON_SA_KEY \
   --deployment ${deployment}
 
-echo "Running Spinnaker On-Boarding for deployment named ${deployment}"
+echo "Creating Gate x509 API Service for deployment named ${deployment}"
+cat <<SVC_EOF | kubectl -n spinnaker --kubeconfig="${details.kubeConfig}" apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: spin
+    cluster: spin-gate
+  name: spin-gate-api
+  namespace: spinnaker
+spec:
+  loadBalancerIP: ${details.clientIP}
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 8085
+  selector:
+    app: spin
+    cluster: spin-gate
+  sessionAffinity: None
+  type: LoadBalancer
+SVC_EOF
+
+echo "Added Gate x509 API Service for deployment named ${deployment}"
+hal config security authn x509 edit --role-oid 1.2.840.10070.8.1
+hal config security api ssl edit --client-auth WANT
+hal config security authn x509 enable
+
+echo "Adding x509 API port to gate-local for deployment named ${deployment}"
+cat <<EOF >> /${USER}/.hal/${deployment}/profiles/gate-local.yml
+
+default:
+  apiPort: 8085
+EOF
+
+cat <<EOF > /home/${USER}/.spin/${deployment}.config
+gate:
+  endpoint: https://${details.clientHostnames}
+auth:
+  enabled: true
+  x509:
+    certPath: "/${USER}/x509/$${CERT_NAME}-client.crt"
+    keyPath: "/${USER}/x509/$${CERT_NAME}-client.key"
+EOF
+
+echo "Adding Spinnaker On-Boarding for deployment named ${deployment}"
 hal deploy apply --deployment ${deployment}
 
 %{ endfor ~}

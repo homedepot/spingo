@@ -20,3 +20,7 @@ variable "api_ip_addresses" {
   type = list(string)
 }
 
+variable "x509_ip_addresses" {
+  type = list(string)
+}
+

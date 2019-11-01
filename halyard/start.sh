@@ -45,7 +45,11 @@ runuser -l ${USER} -c 'sudo bash InstallHalyard.sh -y --user ${USER}'
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'
 
 runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${USER}/${USER}.json'
-runuser -l ${USER} -c 'gsutil rsync -x ".*\.kube/http-cache/|.*\.kube/cache/" -d -r gs://${BUCKET} /${USER}'
+runuser -l ${USER} -c 'gsutil -m rsync -x ".*\.kube/http-cache/|.*\.kube/cache/" -d -r gs://${BUCKET} /${USER}'
+runuser -l ${USER} -c 'curl -LO https://storage.googleapis.com/spinnaker-artifacts/spin/$(curl -s https://storage.googleapis.com/spinnaker-artifacts/spin/latest)/linux/amd64/spin'
+runuser -l ${USER} -c 'chmod +x spin'
+runuser -l ${USER} -c 'sudo mv spin /usr/local/bin/spin'
+runuser -l ${USER} -c 'mkdir /home/${USER}/.spin/'
 
 echo "Setting symlinks"
 runuser -l ${USER} -c 'rm -fdr /home/${USER}/.hal'
@@ -66,6 +70,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_MONITORING}" | base64 -d > /home/${USER}/s
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL_KEYSTORE}" | base64 -d > /home/${USER}/setupCertbot.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING}" | base64 -d > /home/${USER}/setupOnboarding.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_SLACK}" | base64 -d > /home/${USER}/setupSlack.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_X509}" | base64 -d > /home/${USER}/createX509.sh'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

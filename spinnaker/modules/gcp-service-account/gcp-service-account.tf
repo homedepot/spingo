@@ -62,3 +62,6 @@ output "service-account-json" {
   value = google_service_account_key.svc_key.private_key
 }
 
+output "service-account-key-path" {
+  value = vault_generic_secret.service-account-key.path
+}

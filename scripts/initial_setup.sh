@@ -173,8 +173,23 @@ echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT
 vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
 
 echo "create the bucket that will store the Terraform State"
-gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/
-gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/
+BUCKET_CHECK=$(gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+echo "Bucket Check : $BUCKET_CHECK"
+while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
+    echo "Got an error creating gs://$TERRAFORM_REMOTE_GCS_NAME trying agian"
+    sleep 2
+    BUCKET_CHECK=$(gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+    echo "Inner Bucket Check : $BUCKET_CHECK"
+done
+
+BUCKET_CHECK=$(gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+echo "Bucket Check : $BUCKET_CHECK"
+while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
+    echo "Got an error versioning gs://$TERRAFORM_REMOTE_GCS_NAME trying agian"
+    sleep 2
+    BUCKET_CHECK=$(gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+    echo "Inner Bucket Check : $BUCKET_CHECK"
+done
 
 vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
 

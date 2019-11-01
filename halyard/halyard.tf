@@ -115,7 +115,7 @@ data "template_file" "setup_onboarding" {
   vars = {
     PROJECT_NAME            = var.gcp_project
     ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
-    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${data.terraform_remote_state.np.outputs.created_onboarding_service_account_name}.json"
+    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name,4,length(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name) - 4)}.json"
     ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
     HALYARD_COMMANDS = templatefile("./halScripts/onboarding-halyard.sh", {
       deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,

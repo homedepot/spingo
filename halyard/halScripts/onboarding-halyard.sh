@@ -36,9 +36,9 @@ spec:
 SVC_EOF
 
 echo "Added Gate x509 API Service for deployment named ${deployment}"
-hal config security authn x509 edit --role-oid 1.2.840.10070.8.1
-hal config security api ssl edit --client-auth WANT
-hal config security authn x509 enable
+hal config security authn x509 edit --role-oid 1.2.840.10070.8.1 --deployment ${deployment}
+hal config security api ssl edit --client-auth WANT --deployment ${deployment}
+hal config security authn x509 enable --deployment ${deployment}
 
 echo "Adding x509 API port to gate-local for deployment named ${deployment}"
 cat <<EOF >> /${USER}/.hal/${deployment}/profiles/gate-local.yml

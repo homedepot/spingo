@@ -6,6 +6,14 @@ This terraform module is designed to setup some basic monitoring and alerting th
 - Google CloudSQL gets less than 20 calls per second for 3 minutes or more
 - Google CloudSQL Failover Replica lags 60 seconds for 1 minute or more
 
+## Prerequisites
+
+You must create a Stackdriver workspace or add your Google Cloud Project to an existing workspace (not covered here)
+
+### Create a Stackdriver Workspace if it doesn't yet exist
+
+You can go [here](https://app.google.stackdriver.com/accounts/create) to create a new workspace. After creation, you then switch to the new workspace.
+
 ## Setup Notification Channels
 Using the UI, you can setup notification channels as below: 
 

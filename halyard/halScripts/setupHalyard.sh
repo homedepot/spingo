@@ -183,5 +183,12 @@ redis:
     enabled: false
 CLOUDDRIVER_LOCAL
 
+# Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
+cat <<EOF >> /${USER}/.hal/${deployment}/service-settings/gate.yml
+kubernetes:
+  useExecHealthCheck: false
+
+EOF
+
 echo "Running initial Spinnaker deployment for deployment named ${DEPLOYMENT_NAME}"
 hal deploy apply

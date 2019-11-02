@@ -14,7 +14,10 @@ fi
 mkdir -p "$CERTSTORE_PATH"
 mkdir -p "$CERBOT_PATH"
 
-docker run \
+n=0
+until [ $n -ge 5 ]
+do
+   docker run \
   -e GCE_PROJECT="${PROJECT}" \
   -e GCE_SERVICE_ACCOUNT_FILE="/gcloud-service-account.json" \
   -v /${USER}/.gcp/certbot.json:/gcloud-service-account.json:ro \
@@ -27,7 +30,10 @@ docker run \
       --pem \
       --email="${CERTBOT_EMAIL}" \
       --domains="*.${DNS}" \
-      $LEGO_CMD
+      $LEGO_CMD && break
+   n=$[$n+1]
+   sleep 3
+done
 
 if [ ! -f "$CERTSTORE_PATH/_.${DNS}.json" ];then
   echo "Unable to find certificate files"

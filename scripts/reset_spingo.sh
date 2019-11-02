@@ -66,9 +66,8 @@ destroy_tf(){
 
 while [ "$SCRIPT_CONFIRMATION" != "YES" ]; do
     echo "-----------------------------------------------------------------------------"
-    echo "WARNING: Do not run this script unless you have already run 'terraform destoy' in all"
-    echo " of the diretories first and you want to re-run initial_setup.sh"
-    echo "This script is designed to remove the service accounts that terraform requires"
+    echo "WARNING: Do not run this script unless you want to re-run initial_setup.sh"
+    echo "This script is designed to remove all infrastructure and service accounts"
     echo "-----------------------------------------------------------------------------"
     echo -n "Enter YES to continue (ctrl-c to exit) : "
     read SCRIPT_CONFIRMATION

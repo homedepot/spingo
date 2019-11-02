@@ -10,6 +10,8 @@ echo "Auto running setupSSL.sh"
 ./setupSSL.sh
 echo "Auto running setupOAuth.sh"
 ./setupOAuth.sh
+echo "Auto running setupSlack.sh"
+./setupSlack.sh
 echo "Auto running setupOnboarding.sh"
 ./setupOnboarding.sh
 

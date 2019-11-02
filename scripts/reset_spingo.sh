@@ -50,6 +50,20 @@ bucket_check(){
     fi
 }
 
+destroy_tf(){
+    DIR="$1"
+    cd "$DIR"
+    echo "Removing infrstructure from terraform directory $DIR"
+    terraform state list >/dev/null 2>&1
+    STATE_CHECK="$?"
+    if [ "$STATE_CHECK" -eq 0 ]; then
+        terraform destroy -auto-approve
+    else
+        echo "No terraform state found so nothing to destroy"
+    fi
+    cd ..
+}
+
 while [ "$SCRIPT_CONFIRMATION" != "YES" ]; do
     echo "-----------------------------------------------------------------------------"
     echo "WARNING: Do not run this script unless you have already run 'terraform destoy' in all"
@@ -86,6 +100,12 @@ do
         break;
     fi
 done
+
+destroy_tf "halyard"
+destroy_tf "monitoring-alerting"
+destroy_tf "spinnaker"
+destroy_tf "static_ips"
+destroy_tf "dns"
 
 vault auth list >/dev/null 2>&1
 if [[ "$?" -ne 0 ]]; then

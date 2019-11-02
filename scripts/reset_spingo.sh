@@ -58,6 +58,8 @@ destroy_tf(){
     STATE_CHECK="$?"
     if [ "$STATE_CHECK" -eq 0 ]; then
         terraform destroy -auto-approve
+        echo "sleep for 5 seconds to give the bucket lock time to close out"
+        sleep 5
     else
         echo "No terraform state found so nothing to destroy"
     fi

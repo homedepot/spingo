@@ -184,7 +184,7 @@ redis:
 CLOUDDRIVER_LOCAL
 
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
-cat <<EOF >> /${USER}/.hal/${deployment}/service-settings/gate.yml
+cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml
 kubernetes:
   useExecHealthCheck: false
 

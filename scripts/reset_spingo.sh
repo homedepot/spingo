@@ -149,14 +149,17 @@ echo "deleting the local Terraform directories pointing to the old bucket"
 rm -fdr ./dns/.terraform/
 rm -fdr ./halyard/.terraform/
 rm -fdr ./spinnaker/.terraform/
+rm -fdr ./monitoring-alerting/.terraform/
 echo "deleting dynamic terraform variables"
 rm ./dns/var*.auto.tfvars
 rm ./halyard/var*.auto.tfvars
 rm ./spinnaker/var*.auto.tfvars
+rm ./monitoring-alerting/var*.auto.tfvars
 echo "deleting dynamic terraform backend configs"
 rm ./dns/override.tf
 rm ./halyard/override.tf
 rm ./spinnaker/override.tf
+rm ./monitoring-alerting/override.tf
 
 bucket_check "$TERRAFORM_REMOTE_GCS_NAME" "Terraform state"
 bucket_check "$HALYARD_GCS_NAME" "Halyard"

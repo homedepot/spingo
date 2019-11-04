@@ -155,10 +155,7 @@ scripts/restore_saved_config_from_vault.sh
 
 If you want to completely destroy the installation:
 
-1. `terraform destroy` all of the subdirectories in the reverse-order that you ran `terraform apply`
-1. execute `scripts/reset_spingo.sh`
-
-`scripts/reset_spingo.sh` is designed to remove the service accounts that terraform requires.
+1. execute `./scripts/reset_spingo.sh`, after confirmation, it will destroy all Terraform resources and the service accounts and buckets that terraform requires so that the `./scripts/initial_setup.sh` can be run again if needed.
 
 ## Contributing
 

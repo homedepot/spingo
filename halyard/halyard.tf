@@ -177,7 +177,10 @@ data "template_file" "start_script" {
     REPLACE             = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
     SCRIPT_SSL          = base64encode(data.template_file.setupSSLMultiple.rendered)
     SCRIPT_OAUTH        = base64encode(data.template_file.setupOAuthMultiple.rendered)
-    SCRIPT_SLACK        = base64encode(data.template_file.setupSlack.rendered)
+    SCRIPT_SLACK        = base64encode(templatefile("./halScripts/setupSlack.sh",{
+      TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
+      deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
+    }))
     SCRIPT_HALYARD      = base64encode(data.template_file.setupHalyardMultiple.rendered)
     SCRIPT_HALPUSH      = base64encode(data.template_file.halpush.rendered)
     SCRIPT_HALGET       = base64encode(data.template_file.halget.rendered)
@@ -290,15 +293,6 @@ data "template_file" "setupOAuth" {
     DOMAIN              = replace(var.gcp_admin_email, "/^.*@/", "")
     ADMIN_EMAIL         = var.gcp_admin_email
     DEPLOYMENT_NAME     = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
-  }
-}
-
-data "template_file" "setupSlack" {
-  template = file("./halScripts/setupSlack.sh")
-
-  vars = {
-    TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
-    deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
   }
 }
 

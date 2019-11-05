@@ -298,6 +298,7 @@ data "template_file" "setupSlack" {
 
   vars = {
     TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
+    deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
   }
 }
 

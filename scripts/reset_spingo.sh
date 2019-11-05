@@ -55,8 +55,14 @@ destroy_tf(){
     cd "$DIR"
     echo "Removing infrstructure from terraform directory $DIR"
     terraform state list >/dev/null 2>&1
-    STATE_CHECK="$?"
-    if [ "$STATE_CHECK" -eq 0 ]; then
+    INIT_STATE_CHECK="$?"
+    if [ "$INIT_STATE_CHECK" -eq 0 ]; then
+        STATE_CHECK=$(terraform state list)
+        if [ "$STATE_CHECK" == "" ]; then
+            echo "No terraform state resources found so nothing to destroy"
+            cd ..
+            return
+        fi
         terraform destroy -auto-approve
         if [ "$?" -ne 0 ]; then
             echo "Unable to destroy infrastructure successfully in $DIR so exiting"

@@ -80,7 +80,7 @@ runuser -l ${USER}  -c 'cd /usr/local/bin; curl https://getmic.ro | sudo bash'
 # format the json bindings file as this will probably be pulled intoa file later
 runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:setlocal filetype yaml\"}" | jq -r "." - > ~/.config/micro/bindings.json'
 
-runuser -l ${USER} -c 'if [ ! -d /${USER}/.hal ]; then ./home/${USER}/quickstart.sh; fi'
+runuser -l ${USER} -c 'if [ ! -d /${USER}/.hal ]; then /home/${USER}/quickstart.sh; fi'
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"

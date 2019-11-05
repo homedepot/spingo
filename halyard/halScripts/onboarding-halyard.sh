@@ -58,6 +58,6 @@ auth:
 EOF
 
 echo "Adding Spinnaker On-Boarding for deployment named ${deployment}"
-hal deploy apply --deployment ${deployment}
+hal deploy apply --deployment ${deployment} --delete-orphaned-services true
 
 %{ endfor ~}

@@ -39,7 +39,7 @@ hal config provider kubernetes account add ${ACCOUNT_NAME} \
     --kubeconfig-file ${KUBE_CONFIG} \
     --deployment ${DEPLOYMENT_NAME}
 
-hal config version edit --version $(hal version latest -q) \
+hal config version edit --version $(hal version list -q -o json | jq -r '.latestSpinnaker') \
     --deployment ${DEPLOYMENT_NAME}
 
 hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}" \

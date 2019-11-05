@@ -58,6 +58,10 @@ destroy_tf(){
     STATE_CHECK="$?"
     if [ "$STATE_CHECK" -eq 0 ]; then
         terraform destroy -auto-approve
+        if [ "$?" -ne 0 ]; then
+            echo "Unable to destroy infrastructure successfully in $DIR so exiting"
+            exit 1
+        fi
         echo "sleep for 5 seconds to give the bucket lock time to close out"
         sleep 5
     else

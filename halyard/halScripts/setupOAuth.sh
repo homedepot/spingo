@@ -7,7 +7,7 @@ ADMIN="${ADMIN_EMAIL}"              # An administrator's email address
 CREDENTIALS=/${USER}/.gcp/spinnaker-fiat.json   # The downloaded service account credentials
 
 if [[ "$CLIENT_ID" != "replace-me" ]]; then
-    echo "Adding Spinnaker Google OAuth Authentication for deployment named ${deployment}"
+    echo "Adding Spinnaker Google OAuth Authentication for deployment named ${DEPLOYMENT_NAME}"
     hal config security authn oauth2 edit \
         --client-id "$CLIENT_ID" \
         --client-secret "$CLIENT_SECRET" \
@@ -34,7 +34,7 @@ if [[ "$CLIENT_ID" != "replace-me" ]]; then
     hal config security authz enable \
         --deployment ${DEPLOYMENT_NAME}
 
-    echo "Added Spinnaker Google OAuth for deployment named ${deployment}"
+    echo "Added Spinnaker Google OAuth for deployment named ${DEPLOYMENT_NAME}"
 else
-    echo "No Google OAuth Client ID found so skipping setting up Google OAuth Authentication for deployment named ${deployment}"
+    echo "No Google OAuth Client ID found so skipping setting up Google OAuth Authentication for deployment named ${DEPLOYMENT_NAME}"
 fi

@@ -14,32 +14,42 @@ GCS_SA_DEST="${ACCOUNT_PATH}"
 
 hal config storage gcs edit \
     --project $(gcloud info --format='value(config.project)') \
-    --json-path "$GCS_SA_DEST"
-hal config storage edit --type gcs
+    --json-path "$GCS_SA_DEST" \
+    --deployment ${DEPLOYMENT_NAME}
+hal config storage edit --type gcs \
+    --deployment ${DEPLOYMENT_NAME}
 
-hal config provider docker-registry enable
+hal config provider docker-registry enable \
+    --deployment ${DEPLOYMENT_NAME}
 
 hal config provider docker-registry account add "${DOCKER}" \
     --address gcr.io \
     --password-file "$GCS_SA_DEST" \
-    --username _json_key
+    --username _json_key \
+    --deployment ${DEPLOYMENT_NAME}
+    
 
-
-hal config provider kubernetes enable
+hal config provider kubernetes enable \
+    --deployment ${DEPLOYMENT_NAME}
 
 hal config provider kubernetes account add ${ACCOUNT_NAME} \
     --docker-registries "${DOCKER}" \
     --provider-version v2 \
     --only-spinnaker-managed=true \
-    --kubeconfig-file ${KUBE_CONFIG}
+    --kubeconfig-file ${KUBE_CONFIG} \
+    --deployment ${DEPLOYMENT_NAME}
 
-hal config version edit --version $(hal version latest -q)
+hal config version edit --version $(hal version latest -q) \
+    --deployment ${DEPLOYMENT_NAME}
 
-hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}"
+hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}" \
+    --deployment ${DEPLOYMENT_NAME}
 
-hal config edit --timezone America/New_York
+hal config edit --timezone America/New_York \
+    --deployment ${DEPLOYMENT_NAME}
 
-hal config generate
+hal config generate \
+    --deployment ${DEPLOYMENT_NAME}
 
 # set-up admin groups for fiat:
 tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/fiat-local.yml << FIAT_LOCAL
@@ -191,4 +201,5 @@ kubernetes:
 EOF
 
 echo "Running initial Spinnaker deployment for deployment named ${DEPLOYMENT_NAME}"
-hal deploy apply
+hal deploy apply \
+    --deployment ${DEPLOYMENT_NAME}

@@ -57,10 +57,14 @@ auth:
     keyPath: "/${USER}/x509/$${CERT_NAME}-client.key"
 EOF
 
-update_kube "${deployment}"
-/home/${USER}/createFiatServiceAccount.sh "${ADMIN_GROUP}"
-
 echo "Adding Spinnaker On-Boarding for deployment named ${deployment}"
-hal deploy apply --deployment ${deployment} --delete-orphaned-services true
+hal deploy apply \
+    --deployment ${deployment} \
+    --wait-for-completion \ # we need to wait for the deployment to complete so that fiat exists
+    --delete-orphaned-services true # we can delete the old redis services
+
+echo "Adding Fiat Service account used by On-Boarding for deployment named ${deployment}"
+update_kube "${deployment}"
+/home/${USER}/createFiatServiceAccount.sh --role "${ADMIN_GROUP}"
 
 %{ endfor ~}

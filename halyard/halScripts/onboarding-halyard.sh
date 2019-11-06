@@ -60,8 +60,7 @@ EOF
 echo "Adding Spinnaker On-Boarding for deployment named ${deployment}"
 hal deploy apply \
     --deployment ${deployment} \
-    --wait-for-completion \ # we need to wait for the deployment to complete so that fiat exists
-    --delete-orphaned-services true # we can delete the old redis services
+    --wait-for-completion # we need to wait for the deployment to complete so that fiat exists
 
 echo "Adding Fiat Service account used by On-Boarding for deployment named ${deployment}"
 update_kube "${deployment}"

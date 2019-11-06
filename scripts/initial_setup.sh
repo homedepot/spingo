@@ -200,7 +200,7 @@ if [[ "$?" -ne 0 ]]; then
     read USER_KEY_PASS
     if [ "$USER_KEY_PASS" == "" ]; then
         echo "creating random keystore password and storing within vault"
-        KEY_PASS=$(openssl rand -base64 32)
+        KEY_PASS=$(openssl rand -base64 29 | tr -d "=+/" | cut -c1-25)
     else
         echo "storing user defined keystore password within vault"
         KEY_PASS="$USER_KEY_PASS"

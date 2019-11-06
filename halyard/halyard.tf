@@ -52,6 +52,12 @@ variable "spingo_user_email" {
   type        = string
 }
 
+variable "spinnaker_admin_group" {
+  description = "This is the is the email address of the person who first executed spingo for this project extracted from their gcloud login"
+  type        = string
+  default     = "gg_spinnaker_admins"
+}
+
 data "terraform_remote_state" "np" {
   backend = "gcs"
 
@@ -117,6 +123,8 @@ data "template_file" "setup_onboarding" {
     ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
     PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name, 4, length(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name) - 4)}.json"
     ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+    USER                    = var.service_account_name
+    ADMIN_GROUP             = var.spinnaker_admin_group
     HALYARD_COMMANDS = templatefile("./halScripts/onboarding-halyard.sh", {
       deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
         [{
@@ -130,7 +138,6 @@ data "template_file" "setup_onboarding" {
       }])
       USER = var.service_account_name
     })
-    USER = var.service_account_name
   }
 }
 
@@ -171,13 +178,13 @@ data "template_file" "start_script" {
   template = file("./start.sh")
 
   vars = {
-    USER                = var.service_account_name
-    BUCKET              = "${var.gcp_project}${var.bucket_name}"
-    PROJECT             = var.gcp_project
-    REPLACE             = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
-    SCRIPT_SSL          = base64encode(data.template_file.setupSSLMultiple.rendered)
-    SCRIPT_OAUTH        = base64encode(data.template_file.setupOAuthMultiple.rendered)
-    SCRIPT_SLACK        = base64encode(templatefile("./halScripts/setupSlack.sh",{
+    USER         = var.service_account_name
+    BUCKET       = "${var.gcp_project}${var.bucket_name}"
+    PROJECT      = var.gcp_project
+    REPLACE      = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
+    SCRIPT_SSL   = base64encode(data.template_file.setupSSLMultiple.rendered)
+    SCRIPT_OAUTH = base64encode(data.template_file.setupOAuthMultiple.rendered)
+    SCRIPT_SLACK = base64encode(templatefile("./halScripts/setupSlack.sh", {
       TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
       deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
     }))
@@ -305,6 +312,7 @@ data "template_file" "setupHalyard" {
     ACCOUNT_PATH                    = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
     DOCKER                          = "docker-registry"
     ACCOUNT_NAME                    = "spin-cluster-account"
+    ADMIN_GROUP                     = var.spinnaker_admin_group
     SPIN_UI_IP                      = data.google_compute_address.ui[count.index].address
     SPIN_API_IP                     = data.google_compute_address.api[count.index].address
     SPIN_REDIS_ADDR                 = data.vault_generic_secret.vault-redis[count.index].data["address"]

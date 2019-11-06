@@ -63,9 +63,19 @@ destroy_tf(){
             cd ..
             return
         fi
-        terraform destroy -auto-approve
-        if [ "$?" -ne 0 ]; then
-            echo "Unable to destroy infrastructure successfully in $DIR so exiting"
+        limit=5
+        n=1
+        until [ $n -ge $limit ]
+        do
+            terraform destroy -auto-approve && break
+            if [ "$?" -ne 0 ]; then
+                echo "Unable to destroy infrastructure successfully in $DIR so trying again (attempt $n of $limit)"
+            fi
+            n=$[$n+1]
+            sleep 3
+        done
+        if [ $n -ge $limit ]; then
+            echo "Unable to destroy infrastructure successfully in $DIR after $limit attempts so exiting"
             exit 1
         fi
         echo "sleep for 5 seconds to give the bucket lock time to close out"

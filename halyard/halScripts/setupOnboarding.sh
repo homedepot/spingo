@@ -1,13 +1,6 @@
 #!/bin/bash
 
-update_spin(){
-    if [ -d /${USER}/x509 ]; then
-        if [ -L /home/${USER}/.spin/config ]; then
-            unlink /home/${USER}/.spin/config
-        fi
-        ln -s /home/${USER}/.spin/"$1".config /home/${USER}/.spin/config
-    fi
-}
+. /home/${USER}/commonFunctions.sh
 
 PROJECT_NAME="${PROJECT_NAME}"
 ACCOUNT="${ONBOARDING_ACCOUNT}"
@@ -25,6 +18,8 @@ ${HALYARD_COMMANDS}
 
 /home/${USER}/createX509.sh
 
-update_spin "$(cat /${USER}/.hal/config | yq r - 'currentDeployment')"
+CURR_DEPLOYMENT="$(cat /${USER}/.hal/config | yq r - 'currentDeployment')"
+update_spin "$CURR_DEPLOYMENT"
+update_kube "$CURR_DEPLOYMENT"
 
 echo "Onboarding Automation configured and ready"

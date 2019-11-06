@@ -72,6 +72,8 @@ runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING}" | base64 -d > /home/${USER}/s
 runuser -l ${USER} -c 'echo "${SCRIPT_SLACK}" | base64 -d > /home/${USER}/setupSlack.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_X509}" | base64 -d > /home/${USER}/createX509.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_QUICKSTART}" | base64 -d > /home/${USER}/quickstart.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_COMMON}" | base64 -d > /home/${USER}/commonFunctions.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_CREATE_FIAT}" | base64 -d > /home/${USER}/createFiatServiceAccount.sh'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

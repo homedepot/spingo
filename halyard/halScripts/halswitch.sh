@@ -1,13 +1,6 @@
 #!/bin/bash
 
-update_spin(){
-    if [ -d /${USER}/x509 ]; then
-        if [ -L /home/${USER}/.spin/config ]; then
-            unlink /home/${USER}/.spin/config
-        fi
-        ln -s /home/${USER}/.spin/"$1".config /home/${USER}/.spin/config
-    fi
-}
+. /home/${USER}/commonFunctions.sh
 
 echo "-----------------------------------------------------------------------------"
 CURR_DEPL=$(cat /${USER}/.hal/config | yq r - 'currentDeployment')
@@ -21,12 +14,14 @@ do
     elif [ "$CURR_DEPL" == "$hal_name" ]; then
         echo "No change needed to set current deployment to existing setting"
         update_spin "$hal_name"
+        update_kube "$hal_name"
         break;
     else
         echo "-----------------------------------------------------------------------------"
         echo "New deployment $hal_name selected"
         hal config --set-current-deployment "$hal_name"
         update_spin "$hal_name"
+        update_kube "$hal_name"
         break;
     fi
 done

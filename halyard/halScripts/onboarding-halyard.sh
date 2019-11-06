@@ -57,6 +57,9 @@ auth:
     keyPath: "/${USER}/x509/$${CERT_NAME}-client.key"
 EOF
 
+update_kube "${deployment}"
+/home/${USER}/createFiatServiceAccount.sh "${ADMIN_GROUP}"
+
 echo "Adding Spinnaker On-Boarding for deployment named ${deployment}"
 hal deploy apply --deployment ${deployment} --delete-orphaned-services true
 

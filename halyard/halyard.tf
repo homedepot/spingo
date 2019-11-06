@@ -130,13 +130,14 @@ data "template_file" "setup_onboarding" {
         [{
           clientIP        = data.terraform_remote_state.static_ips.outputs.spin_api_ips[0]
           clientHostnames = substr(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[0], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[0]) - 1)
-          kubeConfig      = "/${var.service_account_name}/.kube/config"
+          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
           }, {
           clientIP        = data.terraform_remote_state.static_ips.outputs.spin_api_ips[1]
           clientHostnames = substr(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[1], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[1]) - 1)
           kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
       }])
-      USER = var.service_account_name
+      USER        = var.service_account_name
+      ADMIN_GROUP = var.spinnaker_admin_group
     })
   }
 }
@@ -178,35 +179,37 @@ data "template_file" "start_script" {
   template = file("./start.sh")
 
   vars = {
-    USER         = var.service_account_name
-    BUCKET       = "${var.gcp_project}${var.bucket_name}"
-    PROJECT      = var.gcp_project
-    REPLACE      = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
-    SCRIPT_SSL   = base64encode(data.template_file.setupSSLMultiple.rendered)
-    SCRIPT_OAUTH = base64encode(data.template_file.setupOAuthMultiple.rendered)
+    USER                 = var.service_account_name
+    BUCKET               = "${var.gcp_project}${var.bucket_name}"
+    PROJECT              = var.gcp_project
+    SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
+    REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
+    SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
+    SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
+    SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
+    SCRIPT_HALPUSH       = base64encode(data.template_file.halpush.rendered)
+    SCRIPT_HALGET        = base64encode(data.template_file.halget.rendered)
+    SCRIPT_HALDIFF       = base64encode(data.template_file.haldiff.rendered)
+    SCRIPT_ALIASES       = base64encode(data.template_file.aliases.rendered)
+    SCRIPT_K8SSL         = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
+    SCRIPT_RESETGCP      = base64encode(data.template_file.resetgcp.rendered)
+    SCRIPT_SWITCH        = base64encode(data.template_file.halswitch.rendered)
+    SCRIPT_MONITORING    = base64encode(data.template_file.setupMonitoring.rendered)
+    SCRIPT_SSL_KEYSTORE  = base64encode(data.template_file.make_update_keystore_script.rendered)
+    SCRIPT_ONBOARDING    = base64encode(data.template_file.setup_onboarding.rendered)
+    SCRIPT_X509          = base64encode(data.template_file.cert_script.rendered)
+    SCRIPT_CREATE_FIAT   = base64encode(templatefile("./halScripts/createFiatServiceAccount.sh", {}))
+    SCRIPT_COMMON = base64encode(templatefile("./halScripts/commonFunctions.sh", {
+      USER = var.service_account_name
+    }))
     SCRIPT_SLACK = base64encode(templatefile("./halScripts/setupSlack.sh", {
       TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
       deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
     }))
-    SCRIPT_HALYARD      = base64encode(data.template_file.setupHalyardMultiple.rendered)
-    SCRIPT_HALPUSH      = base64encode(data.template_file.halpush.rendered)
-    SCRIPT_HALGET       = base64encode(data.template_file.halget.rendered)
-    SCRIPT_HALDIFF      = base64encode(data.template_file.haldiff.rendered)
-    SCRIPT_ALIASES      = base64encode(data.template_file.aliases.rendered)
-    SCRIPT_K8SSL        = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
-    SCRIPT_RESETGCP     = base64encode(data.template_file.resetgcp.rendered)
-    SCRIPT_SWITCH       = base64encode(data.template_file.halswitch.rendered)
-    SCRIPT_MONITORING   = base64encode(data.template_file.setupMonitoring.rendered)
-    SCRIPT_SSL_KEYSTORE = base64encode(data.template_file.make_update_keystore_script.rendered)
-    SCRIPT_ONBOARDING   = base64encode(data.template_file.setup_onboarding.rendered)
-    SCRIPT_X509         = base64encode(data.template_file.cert_script.rendered)
-
     SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
       USER = var.service_account_name
     }))
     PROFILE_ALIASES = base64encode(data.template_file.profile_aliases.rendered)
-
-    SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
   }
 }
 
@@ -284,7 +287,7 @@ data "template_file" "k8ssl" {
   vars = {
     SPIN_UI_IP  = data.google_compute_address.ui[count.index].address
     SPIN_API_IP = data.google_compute_address.api[count.index].address
-    KUBE_CONFIG = count.index == 0 ? "/${var.service_account_name}/.kube/config" : "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    KUBE_CONFIG = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }
 
@@ -323,7 +326,7 @@ data "template_file" "setupHalyard" {
     DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password[count.index].data["password"]
     DEPLOYMENT_NAME                 = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
     DEPLOYMENT_INDEX                = count.index
-    KUBE_CONFIG                     = count.index == 0 ? "~/.kube/config" : "~/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }
 

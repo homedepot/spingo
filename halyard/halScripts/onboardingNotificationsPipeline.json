@@ -12,7 +12,7 @@
             "level": "stage",
             "message": {
               "stage.complete": {
-                "text": "A file has been uploaded to the onboarding bucket: \n${ trigger['artifacts'][0]['reference'] }"
+                "text": "A file has been uploaded to the onboarding bucket: \n$${ trigger[\"artifacts\"][0][\"reference\"] }"
               }
             },
             "type": "slack",

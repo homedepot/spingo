@@ -211,8 +211,8 @@ data "template_file" "start_script" {
       SLACK_ADMIN_CHANNEL     = var.spinnaker_admin_slack_channel
     }))
     SCRIPT_SPINGO_ADMIN_APP = base64encode(templatefile("./halScripts/spingoAdminApplication.json", {
-      ADMIN_GROUP             = var.spinnaker_admin_group
-      SPINGO_ADMIN_USER       = var.spingo_user_email
+      ADMIN_GROUP       = var.spinnaker_admin_group
+      SPINGO_ADMIN_USER = var.spingo_user_email
     }))
     SCRIPT_COMMON = base64encode(templatefile("./halScripts/commonFunctions.sh", {
       USER = var.service_account_name

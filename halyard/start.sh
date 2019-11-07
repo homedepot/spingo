@@ -75,7 +75,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_QUICKSTART}" | base64 -d > /home/${USER}/q
 runuser -l ${USER} -c 'echo "${SCRIPT_COMMON}" | base64 -d > /home/${USER}/commonFunctions.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_CREATE_FIAT}" | base64 -d > /home/${USER}/createFiatServiceAccount.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_CURRENT_DEPLOYMENT}" | base64 -d > /home/${USER}/configureToCurrentDeployment.sh'
-runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationPipeline.json'
+runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationsPipeline.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'

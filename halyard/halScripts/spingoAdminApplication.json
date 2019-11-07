@@ -1,24 +1,20 @@
 {
-    "name": "spingoadmin",
-    "attributes": {
-      "name": "spingoadmin",
-      "email": "${SPINGO_ADMIN_USER}",
-      "cloudProviders": "kubernetes",
-      "trafficGuards": [],
-      "instancePort": 80,
-      "repoType": "github",
-      "permissions": {
-        "EXECUTE": [
-          "${ADMIN_GROUP}"
-        ],
-        "WRITE": [
-          "${ADMIN_GROUP}"
-        ],
-        "READ": [
-          "${ADMIN_GROUP}"
-        ]
-      },
-      "user": "${SPINGO_ADMIN_USER}"
-    },
-    "clusters": {}
-  }
+  "name": "spingoadmin",
+  "email": "${SPINGO_ADMIN_USER}",
+  "cloudProviders": "kubernetes",
+  "trafficGuards": [],
+  "instancePort": 80,
+  "repoType": "github",
+  "permissions": {
+    "EXECUTE": [
+      "${ADMIN_GROUP}"
+    ],
+    "WRITE": [
+      "${ADMIN_GROUP}"
+    ],
+    "READ": [
+      "${ADMIN_GROUP}"
+    ]
+  },
+  "user": "${SPINGO_ADMIN_USER}"
+}

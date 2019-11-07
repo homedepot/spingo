@@ -47,6 +47,10 @@ default:
   apiPort: 8085
 EOF
 
+if [ ! -d /${USER}/.spin ]; then
+  mkdir /${USER}/.spin
+fi
+
 cat <<EOF > /${USER}/.spin/${deployment}.config
 gate:
   endpoint: https://${details.clientHostnames}

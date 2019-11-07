@@ -74,6 +74,8 @@ runuser -l ${USER} -c 'echo "${SCRIPT_X509}" | base64 -d > /home/${USER}/createX
 runuser -l ${USER} -c 'echo "${SCRIPT_QUICKSTART}" | base64 -d > /home/${USER}/quickstart.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_COMMON}" | base64 -d > /home/${USER}/commonFunctions.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_CREATE_FIAT}" | base64 -d > /home/${USER}/createFiatServiceAccount.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationPipeline.json'
+runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

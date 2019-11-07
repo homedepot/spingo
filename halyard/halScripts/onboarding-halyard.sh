@@ -64,6 +64,10 @@ hal deploy apply \
 
 echo "Adding Fiat Service account used by On-Boarding for deployment named ${deployment}"
 update_kube "${deployment}"
+update_spin "${deployment}"
 /home/${USER}/createFiatServiceAccount.sh --role "${ADMIN_GROUP}"
+
+spin application save --file=/home/${USER}/spingoAdminApplication.json
+spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json
 
 %{ endfor ~}

@@ -53,9 +53,15 @@ variable "spingo_user_email" {
 }
 
 variable "spinnaker_admin_group" {
-  description = "This is the is the email address of the person who first executed spingo for this project extracted from their gcloud login"
+  description = "This is the role (group) that all the Spinnaker admins are members of. Change this to whatever is the correct group for the platform operators"
   type        = string
   default     = "gg_spinnaker_admins"
+}
+
+variable "spinnaker_admin_slack_channel" {
+  description = "This is the channel to be used to alert the Spinnaker platform admins that new deployment targets need to be onboarded"
+  type        = string
+  default     = "spinnaker_admins"
 }
 
 data "terraform_remote_state" "np" {
@@ -199,6 +205,15 @@ data "template_file" "start_script" {
     SCRIPT_ONBOARDING    = base64encode(data.template_file.setup_onboarding.rendered)
     SCRIPT_X509          = base64encode(data.template_file.cert_script.rendered)
     SCRIPT_CREATE_FIAT   = base64encode(templatefile("./halScripts/createFiatServiceAccount.sh", {}))
+    SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./halScripts/onboardingNotificationsPipeline.json", {
+      ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+      ADMIN_GROUP             = var.spinnaker_admin_group
+      SLACK_ADMIN_CHANNEL     = var.spinnaker_admin_slack_channel
+    }))
+    SCRIPT_SPINGO_ADMIN_APP = base64encode(templatefile("./halScripts/spingoAdminApplication.json", {
+      ADMIN_GROUP             = var.spinnaker_admin_group
+      SPINGO_ADMIN_USER       = var.spingo_user_email
+    }))
     SCRIPT_COMMON = base64encode(templatefile("./halScripts/commonFunctions.sh", {
       USER = var.service_account_name
     }))

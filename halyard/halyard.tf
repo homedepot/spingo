@@ -224,6 +224,9 @@ data "template_file" "start_script" {
     SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
       USER = var.service_account_name
     }))
+    SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./halScripts/configureToCurrentDeployment.sh", {
+      USER = var.service_account_name
+    }))
     PROFILE_ALIASES = base64encode(data.template_file.profile_aliases.rendered)
   }
 }

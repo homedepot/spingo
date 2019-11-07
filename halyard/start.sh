@@ -45,16 +45,16 @@ runuser -l ${USER} -c 'sudo bash InstallHalyard.sh -y --user ${USER}'
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'
 
 runuser -l ${USER} -c 'gcloud auth activate-service-account --key-file=/home/${USER}/${USER}.json'
-runuser -l ${USER} -c 'gsutil -m rsync -x ".*\.kube/http-cache/|.*\.kube/cache/" -d -r gs://${BUCKET} /${USER}'
+runuser -l ${USER} -c 'gsutil -m rsync -x ".*\.kube/http-cache/|.*\.kube/cache/|.*\.kube/config" -d -r gs://${BUCKET} /${USER}'
 runuser -l ${USER} -c 'curl -LO https://storage.googleapis.com/spinnaker-artifacts/spin/$(curl -s https://storage.googleapis.com/spinnaker-artifacts/spin/latest)/linux/amd64/spin'
 runuser -l ${USER} -c 'chmod +x spin'
 runuser -l ${USER} -c 'sudo mv spin /usr/local/bin/spin'
-runuser -l ${USER} -c 'mkdir /home/${USER}/.spin/'
 
 echo "Setting symlinks"
 runuser -l ${USER} -c 'rm -fdr /home/${USER}/.hal'
 runuser -l ${USER} -c 'ln -s /${USER}/.hal /home/${USER}/'
 runuser -l ${USER} -c 'ln -s /${USER}/.kube /home/${USER}/'
+runuser -l ${USER} -c 'ln -s /${USER}/.spin /home/${USER}/'
 
 echo "Setting up helper scripts"
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL.sh'
@@ -74,6 +74,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_X509}" | base64 -d > /home/${USER}/createX
 runuser -l ${USER} -c 'echo "${SCRIPT_QUICKSTART}" | base64 -d > /home/${USER}/quickstart.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_COMMON}" | base64 -d > /home/${USER}/commonFunctions.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_CREATE_FIAT}" | base64 -d > /home/${USER}/createFiatServiceAccount.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_CURRENT_DEPLOYMENT}" | base64 -d > /home/${USER}/configureToCurrentDeployment.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationPipeline.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 
@@ -85,6 +86,7 @@ runuser -l ${USER}  -c 'cd /usr/local/bin; curl https://getmic.ro | sudo bash'
 runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:setlocal filetype yaml\"}" | jq -r "." - > ~/.config/micro/bindings.json'
 
 runuser -l ${USER} -c 'if [ ! -d /${USER}/.hal ]; then /home/${USER}/quickstart.sh; fi'
+runuser -l ${USER} -c 'if [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"

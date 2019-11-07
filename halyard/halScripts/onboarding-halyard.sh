@@ -47,7 +47,7 @@ default:
   apiPort: 8085
 EOF
 
-cat <<EOF > /home/${USER}/.spin/${deployment}.config
+cat <<EOF > /${USER}/.spin/${deployment}.config
 gate:
   endpoint: https://${details.clientHostnames}
 auth:

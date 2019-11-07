@@ -18,8 +18,6 @@ ${HALYARD_COMMANDS}
 
 /home/${USER}/createX509.sh
 
-CURR_DEPLOYMENT="$(cat /${USER}/.hal/config | yq r - 'currentDeployment')"
-update_spin "$CURR_DEPLOYMENT"
-update_kube "$CURR_DEPLOYMENT"
+/home/${USER}/configureToCurrentDeployment.sh
 
 echo "Onboarding Automation configured and ready"

@@ -51,6 +51,8 @@ if [ ! -d /${USER}/.spin ]; then
   mkdir /${USER}/.spin
 fi
 
+/home/${USER}/createX509.sh
+
 cat <<EOF > /${USER}/.spin/${deployment}.config
 gate:
   endpoint: https://${details.clientHostnames}

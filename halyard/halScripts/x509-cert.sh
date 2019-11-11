@@ -20,20 +20,26 @@ fi
 
 JOINED_GROUPS=$(join_by "\n" "$${CERT_GROUPS[@]}")
 
-# Create the inital client key. We pass a password so it can continue without prompting
-openssl genrsa \
-  -des3 \
-  -out "/${USER}/x509/$${CERT_NAME}-client.key" \
-  -passout pass:default \
-  4096
+if [ -f "/${USER}/x509/$${CERT_NAME}-client.crt" ]; then
+  # TODO eventually, we should add a date validation for soon to be expiring certs
+  echo "x509 certificate already exists, so exiting nicely"
+  exit 0
+else
+  echo "x509 certificate does not exist to creating it"
+  # Create the inital client key. We pass a password so it can continue without prompting
+  openssl genrsa \
+    -des3 \
+    -out "/${USER}/x509/$${CERT_NAME}-client.key" \
+    -passout pass:default \
+    4096
 
-# Decrypt the client key and remove the password
-openssl rsa \
-  -in "/${USER}/x509/$${CERT_NAME}-client.key" \
-  -out "/${USER}/x509/$${CERT_NAME}-client.key" \
-  -passin pass:default
+  # Decrypt the client key and remove the password
+  openssl rsa \
+    -in "/${USER}/x509/$${CERT_NAME}-client.key" \
+    -out "/${USER}/x509/$${CERT_NAME}-client.key" \
+    -passin pass:default
 
-cat <<EOF > /${USER}/x509/$${CERT_NAME}-group.conf
+  cat <<EOF > /${USER}/x509/$${CERT_NAME}-group.conf
  distinguished_name     = req_distinguished_name
  attributes             = req_attributes
  req_extensions = v3_req
@@ -62,27 +68,29 @@ cat <<EOF > /${USER}/x509/$${CERT_NAME}-group.conf
 
 EOF
 
-# Generate a certificate signing request for the client
-openssl req \
-  -new \
-  -key "/${USER}/x509/$${CERT_NAME}-client.key" \
-  -out "/${USER}/x509/$${CERT_NAME}-client.csr" \
-  -subj "/C=$${COUNTRY_CODE}/ST=$${STATE_CODE}/L=$${CITY}/O=$${ORGANIZATION}/CN=$${CERT_NAME}@${DOMAIN}" \
-  -config "/${USER}/x509/$${CERT_NAME}-group.conf"
+  # Generate a certificate signing request for the client
+  openssl req \
+    -new \
+    -key "/${USER}/x509/$${CERT_NAME}-client.key" \
+    -out "/${USER}/x509/$${CERT_NAME}-client.csr" \
+    -subj "/C=$${COUNTRY_CODE}/ST=$${STATE_CODE}/L=$${CITY}/O=$${ORGANIZATION}/CN=$${CERT_NAME}@${DOMAIN}" \
+    -config "/${USER}/x509/$${CERT_NAME}-group.conf"
 
-# Generate the x509 certificate
-openssl x509 \
-  -req \
-  -days 365 \
-  -in "/${USER}/x509/$${CERT_NAME}-client.csr" \
-  -CA /${USER}/certbot/${DNS_DOMAIN}_wildcard.crt \
-  -CAkey /${USER}/certbot/${DNS_DOMAIN}_wildcard.key \
-  -CAcreateserial \
-  -out "/${USER}/x509/$${CERT_NAME}-client.crt" \
-  -passin pass:${WILDCARD_KEYSTORE} \
-  -extensions v3_req \
-  -extfile "/${USER}/x509/$${CERT_NAME}-group.conf"
+  # Generate the x509 certificate
+  openssl x509 \
+    -req \
+    -days 365 \
+    -in "/${USER}/x509/$${CERT_NAME}-client.csr" \
+    -CA /${USER}/certbot/${DNS_DOMAIN}_wildcard.crt \
+    -CAkey /${USER}/certbot/${DNS_DOMAIN}_wildcard.key \
+    -CAcreateserial \
+    -out "/${USER}/x509/$${CERT_NAME}-client.crt" \
+    -passin pass:${WILDCARD_KEYSTORE} \
+    -extensions v3_req \
+    -extfile "/${USER}/x509/$${CERT_NAME}-group.conf"
 
-openssl x509 \
-  -in "/${USER}/x509/$${CERT_NAME}-client.crt" \
-  -text
+  openssl x509 \
+    -in "/${USER}/x509/$${CERT_NAME}-client.crt" \
+    -text
+
+fi

@@ -16,8 +16,6 @@ fi
 
 ${HALYARD_COMMANDS}
 
-/home/${USER}/createX509.sh
-
 /home/${USER}/configureToCurrentDeployment.sh
 
 echo "Onboarding Automation configured and ready"

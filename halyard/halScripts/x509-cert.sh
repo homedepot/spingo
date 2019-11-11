@@ -25,7 +25,7 @@ if [ -f "/${USER}/x509/$${CERT_NAME}-client.crt" ]; then
   echo "x509 certificate already exists, so exiting nicely"
   exit 0
 else
-  echo "x509 certificate does not exist to creating it"
+  echo "x509 certificate does not exist so creating it"
   # Create the inital client key. We pass a password so it can continue without prompting
   openssl genrsa \
     -des3 \

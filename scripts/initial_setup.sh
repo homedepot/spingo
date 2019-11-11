@@ -294,8 +294,12 @@ do
 done
 
 echo "setting up default values for user inputted values within vault"
-vault write secret/"$PROJECT"/gcp-oauth "client-id=replace-me" "client-secret=replace-me" >/dev/null 2>&1
-vault write secret/"$PROJECT"/slack-token "value=replace-me" >/dev/null 2>&1
+# override these for presentation
+GOOGLE_OAUTH_CLIENT_ID="$${GOOGLE_OAUTH_CLIENT_ID:-replace-me}"
+GOOGLE_OAUTH_CLIENT_SECRET="$${GOOGLE_OAUTH_CLIENT_SECRET:-replace-me}"
+SLACK_BOT_TOKEN="$${SLACK_BOT_TOKEN:-SLACK_BOT_TOKEN}"
+vault write secret/"$PROJECT"/gcp-oauth "client-id=$GOOGLE_OAUTH_CLIENT_ID" "client-secret=$GOOGLE_OAUTH_CLIENT_SECRET" >/dev/null 2>&1
+vault write secret/"$PROJECT"/slack-token "value=$SLACK_BOT_TOKEN" >/dev/null 2>&1
 echo "-----------------------------------------------------------------------------"
 echo " *****   Google Cloud Platform Organization Email Address   *****"
 echo "-----------------------------------------------------------------------------"

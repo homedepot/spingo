@@ -7,6 +7,8 @@ This terraform module is designed to setup some basic monitoring and alerting th
 - Google CloudSQL Failover Replica lags 60 seconds for 1 minute or more
 
 ## Setup Notification Channels
+Using the UI, you can setup notification channels as below: 
+
 For Slack go to 
 https://app.google.stackdriver.com/settings/accounts/notifications/slack
 

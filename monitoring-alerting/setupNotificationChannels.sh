@@ -40,7 +40,7 @@ do
         echo "You must choose a notification channel"
     elif [ "$channel" == "Finished" ]; then
         if [ -z "${selected_channels[@]}" ]; then
-            echo "you need to make at least one selection before choosing finished"
+            echo "You need to make at least one selection before choosing finished"
         else
             echo "Excellent selections!"
             break;

@@ -221,13 +221,13 @@ if [[ "$HAS_GCR_REGISTRY" != "[]" ]] || [[ "$HAS_US_GCR_REGISTRY" != "[]" ]]; th
     gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
       --iam-account "$SA_EMAIL"
     
-    gsutil cp "$SERVICE_ACCOUNT_DEST" gs://"$ONBOARDING_FULL_DESTINATION""$SERVICE_ACCOUNT_DEST" && rm "$SERVICE_ACCOUNT_DEST"
+    gsutil -o 'GSUtil:parallel_process_count=1' -o 'GSUtil:parallel_thread_count=16' cp "$SERVICE_ACCOUNT_DEST" gs://"$ONBOARDING_FULL_DESTINATION""$SERVICE_ACCOUNT_DEST" && rm "$SERVICE_ACCOUNT_DEST"
   else
     echo "Unable to create service account for the google container registries within project: $PROJECT "
   fi
 fi
 
-gsutil cp "$CONFIG_FILE" gs://"$ONBOARDING_FULL_DESTINATION""$CONFIG_FILE" && rm "$CONFIG_FILE"
+gsutil -o 'GSUtil:parallel_process_count=1' -o 'GSUtil:parallel_thread_count=16' cp "$CONFIG_FILE" gs://"$ONBOARDING_FULL_DESTINATION""$CONFIG_FILE" && rm "$CONFIG_FILE"
 
 # Cleanup boto config
 rm -f boto

@@ -44,7 +44,7 @@ hal config provider kubernetes account edit ${ACCOUNT_NAME} \
     --add-write-permission "${ADMIN_GROUP}" \
     --deployment ${DEPLOYMENT_NAME}
 
-hal config version edit --version $(hal version latest -q) \
+hal config version edit --version $(hal version list -q -o json | jq -r '.latestSpinnaker') \
     --deployment ${DEPLOYMENT_NAME}
 
 hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}" \

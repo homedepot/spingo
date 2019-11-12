@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -e
 vaultdir="$HOME/vault"
-if [[ "$VAULT_ADDR" != "http://127.0.0.1:8200" ]]; then
+VAULT_PORT_TO_USE="8888"
+if [[ "$VAULT_ADDR" != "http://127.0.0.1:$VAULT_PORT_TO_USE" ]]; then
   export VAULT_ADDR_NOT_SET="true"
-  export VAULT_ADDR="http://127.0.0.1:8200"
+  export VAULT_ADDR="http://127.0.0.1:$VAULT_PORT_TO_USE"
 fi
 
 mkdir -p $vaultdir
@@ -41,7 +42,7 @@ storage "file" {
 }
 disable_mlock = true
 listener "tcp" {
-  address = "127.0.0.1:8200"
+  address = "127.0.0.1:$VAULT_PORT_TO_USE"
   tls_disable = 1
 }
 CONFIGURATION
@@ -69,6 +70,7 @@ vault status
 echo "vault should be set up now"
 
 if [[ -n $VAULT_ADDR_NOT_SET ]]; then
-  echo -e "please set \$VAULT_ADDR to \"http://127.0.0.1:8200\" by running the command on the next line\nexport VAULT_ADDR=\"http://127.0.0.1:8200\"\n"
+  echo -e "vault has been setup to \"http://127.0.0.1:$VAULT_PORT_TO_USE\""
+  export VAULT_ADDR="http://127.0.0.1:$VAULT_PORT_TO_USE"
 fi
 

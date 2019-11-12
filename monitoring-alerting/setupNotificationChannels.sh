@@ -39,8 +39,12 @@ do
     if [[ $channel == "" ]]; then
         echo "You must choose a notification channel"
     elif [ "$channel" == "Finished" ]; then
-        echo "Excellent selections!"
-        break;
+        if [ -z "${selected_channels[@]}" ]; then
+            echo "you need to make at least one selection before choosing finished"
+        else
+            echo "Excellent selections!"
+            break;
+        fi
     elif [ "$channel" == "Cancel" ]; then
         echo "Cancelling at user request"
         exit 1

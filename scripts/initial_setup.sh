@@ -76,8 +76,8 @@ do
     fi
 done
 
-vault auth list >/dev/null 2>&1
-if [[ "$?" -ne 0 ]]; then
+VAULT_RESPONSE=$(vault status -format json | jq -r '. | select(.initialized == true and .sealed == false) | .type')
+if [[ "$VAULT_RESPONSE" == "" ]]; then
   echo "not logged into vault!"
   echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.example.com:10231')"
   echo "2. login: (e.g. 'vault login <some token>')"

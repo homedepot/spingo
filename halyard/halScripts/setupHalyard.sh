@@ -44,7 +44,7 @@ hal config provider kubernetes account edit ${ACCOUNT_NAME} \
     --add-write-permission "${ADMIN_GROUP}" \
     --deployment ${DEPLOYMENT_NAME}
 
-hal config version edit --version 1.16.4 \
+hal config version edit --version $(hal version latest -q) \
     --deployment ${DEPLOYMENT_NAME}
 
 hal config deploy edit --type distributed --account-name "${ACCOUNT_NAME}" \

@@ -7,11 +7,11 @@ need() {
 }
 
 exists() {
-    list=$1[@]
+    list=$1[@] #cannot pass array to function, they just come in as literals. indirect expansion done below
     name="$2"
     RESULT="false"
-    arr=("${!list}")
-    for item in ${arr[@]}
+
+    for item in "${!list}" #indirect expansion done here. "${!list}" expands to "$first_arg[@]"
     do
         if [ "$item" == "$name" ]; then
             RESULT="true"

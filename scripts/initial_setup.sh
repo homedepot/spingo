@@ -77,7 +77,7 @@ do
 done
 
 VAULT_RESPONSE=$(vault status -format json | jq -r '. | select(.initialized == true and .sealed == false) | .initialized')
-if [[ "$VAULT_RESPONSE" == "true" ]]; then
+if [[ "$VAULT_RESPONSE" != "true" ]]; then
   echo "not logged into vault!"
   echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.example.com:10231')"
   echo "2. login: (e.g. 'vault login <some token>')"

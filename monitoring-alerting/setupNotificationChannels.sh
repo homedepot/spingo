@@ -7,11 +7,11 @@ need() {
 }
 
 exists() {
-    list=$1[@]
+    list=$1[@] #cannot pass array to function, they just come in as literals. indirect expansion done below
     name="$2"
     RESULT="false"
-    arr=("${!list}")
-    for item in ${arr[@]}
+
+    for item in "${!list}" #indirect expansion done here. "${!list}" expands to "$first_arg[@]"
     do
         if [ "$item" == "$name" ]; then
             RESULT="true"
@@ -39,8 +39,12 @@ do
     if [[ $channel == "" ]]; then
         echo "You must choose a notification channel"
     elif [ "$channel" == "Finished" ]; then
-        echo "Excellent selections!"
-        break;
+        if [ -z "${selected_channels[@]}" ]; then
+            echo "You need to make at least one selection before choosing finished"
+        else
+            echo "Excellent selections!"
+            break;
+        fi
     elif [ "$channel" == "Cancel" ]; then
         echo "Cancelling at user request"
         exit 1

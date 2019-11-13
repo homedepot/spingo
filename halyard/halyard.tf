@@ -492,5 +492,5 @@ resource "google_compute_instance" "halyard-spin-vm" {
 }
 
 output "halyard_command" {
-  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard-spin-vm.name}\""
+  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard-spin-vm[0].name}\""
 }

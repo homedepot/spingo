@@ -23,7 +23,7 @@ hal config provider docker-registry account add "${DOCKER}" \
     --address gcr.io \
     --password-file "$GCS_SA_DEST" \
     --username _json_key
-    
+
 
 hal config provider kubernetes enable
 
@@ -109,7 +109,7 @@ tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/orca-local.yml << ORCA_LOCAL
 sql:
   enabled: true
   connectionPool:
-    jdbcUrl: jdbc:mysql://localhost:3306/orca
+    jdbcUrl: jdbc:mysql://localhost:3306/orca?useSSL=false&useUnicode=true&characterEncoding=utf8
     user: orca_service
     password: ${DB_SERVICE_USER_PASSWORD}
     connectionTimeout: 5000
@@ -117,7 +117,7 @@ sql:
     # MariaDB-specific:
     maxPoolSize: 50
   migration:
-    jdbcUrl: jdbc:mysql://localhost:3306/orca
+    jdbcUrl: jdbc:mysql://localhost:3306/orca?useSSL=false&useUnicode=true&characterEncoding=utf8
     user: orca_migrate
     password: ${DB_MIGRATE_USER_PASSWORD}
 
@@ -155,7 +155,7 @@ sql:
       # for more detail and to view defaults, see:
       # https://github.com/spinnaker/kork/blob/master/kork-sql/src/main/kotlin/com/netflix/spinnaker/kork/sql/config/ConnectionPoolProperties.kt
       default: true
-      jdbcUrl: jdbc:mysql://localhost:3306/clouddriver
+      jdbcUrl: jdbc:mysql://localhost:3306/clouddriver?useSSL=false&useUnicode=true&characterEncoding=utf8
       user: clouddriver_service
       password: ${DB_CLOUDDRIVER_SVC_PASSWORD}
       # password: depending on db auth and how spinnaker secrets are managed
@@ -166,11 +166,11 @@ sql:
     tasks:
       user: clouddriver_service
       password: ${DB_CLOUDDRIVER_SVC_PASSWORD}
-      jdbcUrl: jdbc:mysql://localhost:3306/clouddriver
+      jdbcUrl: jdbc:mysql://localhost:3306/clouddriver?useSSL=false&useUnicode=true&characterEncoding=utf8
   migration:
     user: clouddriver_migrate
     password: ${DB_CLOUDDRIVER_MIGRATE_PASSWORD}
-    jdbcUrl: jdbc:mysql://localhost:3306/clouddriver
+    jdbcUrl: jdbc:mysql://localhost:3306/clouddriver?useSSL=false&useUnicode=true&characterEncoding=utf8
 
 redis:
   enabled: true

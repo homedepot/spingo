@@ -47,6 +47,23 @@ variable "gcp_admin_email" {
   type        = string
 }
 
+variable "spingo_user_email" {
+  description = "This is the is the email address of the person who first executed spingo for this project extracted from their gcloud login"
+  type        = string
+}
+
+variable "spinnaker_admin_group" {
+  description = "This is the role (group) that all the Spinnaker admins are members of. Change this to whatever is the correct group for the platform operators"
+  type        = string
+  default     = "gg_spinnaker_admins"
+}
+
+variable "spinnaker_admin_slack_channel" {
+  description = "This is the channel to be used to alert the Spinnaker platform admins that new deployment targets need to be onboarded"
+  type        = string
+  default     = "spinnaker_admins"
+}
+
 data "terraform_remote_state" "np" {
   backend = "gcs"
 
@@ -54,6 +71,16 @@ data "terraform_remote_state" "np" {
     bucket      = "${var.gcp_project}-tf"
     credentials = "${var.terraform_account}.json"
     prefix      = "np"
+  }
+}
+
+data "terraform_remote_state" "static_ips" {
+  backend = "gcs"
+
+  config = {
+    bucket      = "${var.gcp_project}-tf"
+    credentials = "${var.terraform_account}.json"
+    prefix      = "np-static-ips"
   }
 }
 
@@ -68,6 +95,10 @@ data "vault_generic_secret" "keystore-pass" {
   path = "secret/${var.gcp_project}/keystore-pass"
 }
 
+data "vault_generic_secret" "halyard-svc-key" {
+  path = data.terraform_remote_state.np.outputs.spinnaker_halyard_service_account_key_path
+}
+
 data "vault_generic_secret" "spinnaker_ui_address" {
   count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/spinnaker_ui_url/${count.index}"
@@ -76,66 +107,6 @@ data "vault_generic_secret" "spinnaker_ui_address" {
 data "vault_generic_secret" "spinnaker_api_address" {
   count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
-}
-
-resource "google_service_account" "service_account" {
-  display_name = var.service_account_name
-  account_id   = var.service_account_name
-}
-
-resource "google_service_account_key" "svc_key" {
-  service_account_id = google_service_account.service_account.name
-}
-
-resource "google_project_iam_member" "storage_admin" {
-  role   = "roles/storage.admin"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
-resource "google_project_iam_member" "serviceAccountKeyAdmin" {
-  role   = "roles/iam.serviceAccountKeyAdmin"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
-resource "google_project_iam_member" "containeradmin" {
-  role   = "roles/container.admin"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
-resource "google_project_iam_member" "rolesbrowser" {
-  role   = "roles/browser"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
-resource "google_project_iam_member" "containerclusteradmin" {
-  role   = "roles/container.clusterAdmin"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
-resource "google_project_iam_member" "serviceAccountUser" {
-  role   = "roles/iam.serviceAccountUser"
-  member = "serviceAccount:${google_service_account.service_account.email}"
-}
-
-resource "google_service_account" "certbot_account" {
-  display_name = "certbot"
-  account_id   = "certbot"
-}
-
-resource "google_service_account_key" "certbot_svc_key" {
-  service_account_id = google_service_account.certbot_account.name
-}
-
-resource "google_project_iam_member" "certbot_dns_admin" {
-  role   = "roles/dns.admin"
-  member = "serviceAccount:${google_service_account.certbot_account.email}"
-}
-
-resource "google_storage_bucket_object" "certbot_svc_key_storage" {
-  name         = ".gcp/certbot.json"
-  content      = base64decode(google_service_account_key.certbot_svc_key.private_key)
-  bucket       = "${var.gcp_project}${var.bucket_name}"
-  content_type = "application/json"
 }
 
 data "template_file" "make_update_keystore_script" {
@@ -150,17 +121,48 @@ data "template_file" "make_update_keystore_script" {
   }
 }
 
+data "template_file" "setup_onboarding" {
+  template = file("./halScripts/setupOnboarding.sh")
+
+  vars = {
+    PROJECT_NAME            = var.gcp_project
+    ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
+    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name, 4, length(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name) - 4)}.json"
+    ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+    USER                    = var.service_account_name
+    ADMIN_GROUP             = var.spinnaker_admin_group
+    HALYARD_COMMANDS = templatefile("./halScripts/onboarding-halyard.sh", {
+      deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
+        [{
+          clientIP        = data.terraform_remote_state.static_ips.outputs.spin_api_ips[0]
+          clientHostnames = substr(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[0], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[0]) - 1)
+          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
+          }, {
+          clientIP        = data.terraform_remote_state.static_ips.outputs.spin_api_ips[1]
+          clientHostnames = substr(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[1], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[1]) - 1)
+          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
+      }])
+      USER        = var.service_account_name
+      ADMIN_GROUP = var.spinnaker_admin_group
+    })
+  }
+}
+
+data "template_file" "cert_script" {
+  template = file("./halScripts/x509-cert.sh")
+
+  vars = {
+    USER              = var.service_account_name
+    DOMAIN            = replace(var.gcp_admin_email, "/^.*@/", "")
+    DNS_DOMAIN        = var.cloud_dns_hostname
+    WILDCARD_KEYSTORE = data.vault_generic_secret.keystore-pass.data["value"]
+  }
+}
+
 provider "google" {
   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
   project     = var.gcp_project
   zone        = var.gcp_zone
-}
-
-resource "google_storage_bucket_object" "service_account_key_storage" {
-  name         = ".gcp/${var.service_account_name}.json"
-  content      = base64decode(google_service_account_key.svc_key.private_key)
-  bucket       = "${var.gcp_project}${var.bucket_name}"
-  content_type = "application/json"
 }
 
 data "template_file" "aliases" {
@@ -183,26 +185,49 @@ data "template_file" "start_script" {
   template = file("./start.sh")
 
   vars = {
-    USER                = var.service_account_name
-    BUCKET              = "${var.gcp_project}${var.bucket_name}"
-    PROJECT             = var.gcp_project
-    REPLACE             = google_service_account_key.svc_key.private_key
-    SCRIPT_SSL          = base64encode(data.template_file.setupSSLMultiple.rendered)
-    SCRIPT_OAUTH        = base64encode(data.template_file.setupOAuthMultiple.rendered)
-    SCRIPT_SLACK        = base64encode(data.template_file.setupSlack.rendered)
-    SCRIPT_HALYARD      = base64encode(data.template_file.setupHalyardMultiple.rendered)
-    SCRIPT_HALPUSH      = base64encode(data.template_file.halpush.rendered)
-    SCRIPT_HALGET       = base64encode(data.template_file.halget.rendered)
-    SCRIPT_HALDIFF      = base64encode(data.template_file.haldiff.rendered)
-    SCRIPT_ALIASES      = base64encode(data.template_file.aliases.rendered)
-    SCRIPT_K8SSL        = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
-    SCRIPT_RESETGCP     = base64encode(data.template_file.resetgcp.rendered)
-    SCRIPT_SWITCH       = base64encode(data.template_file.halswitch.rendered)
-    SCRIPT_MONITORING   = base64encode(data.template_file.setupMonitoring.rendered)
-    SCRIPT_SSL_KEYSTORE = base64encode(data.template_file.make_update_keystore_script.rendered)
-    PROFILE_ALIASES     = base64encode(data.template_file.profile_aliases.rendered)
-
+    USER                 = var.service_account_name
+    BUCKET               = "${var.gcp_project}${var.bucket_name}"
+    PROJECT              = var.gcp_project
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
+    REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
+    SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
+    SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
+    SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
+    SCRIPT_HALPUSH       = base64encode(data.template_file.halpush.rendered)
+    SCRIPT_HALGET        = base64encode(data.template_file.halget.rendered)
+    SCRIPT_HALDIFF       = base64encode(data.template_file.haldiff.rendered)
+    SCRIPT_ALIASES       = base64encode(data.template_file.aliases.rendered)
+    SCRIPT_K8SSL         = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
+    SCRIPT_RESETGCP      = base64encode(data.template_file.resetgcp.rendered)
+    SCRIPT_SWITCH        = base64encode(data.template_file.halswitch.rendered)
+    SCRIPT_MONITORING    = base64encode(data.template_file.setupMonitoring.rendered)
+    SCRIPT_SSL_KEYSTORE  = base64encode(data.template_file.make_update_keystore_script.rendered)
+    SCRIPT_ONBOARDING    = base64encode(data.template_file.setup_onboarding.rendered)
+    SCRIPT_X509          = base64encode(data.template_file.cert_script.rendered)
+    SCRIPT_CREATE_FIAT   = base64encode(templatefile("./halScripts/createFiatServiceAccount.sh", {}))
+    SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./halScripts/onboardingNotificationsPipeline.json", {
+      ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+      ADMIN_GROUP             = var.spinnaker_admin_group
+      SLACK_ADMIN_CHANNEL     = var.spinnaker_admin_slack_channel
+    }))
+    SCRIPT_SPINGO_ADMIN_APP = base64encode(templatefile("./halScripts/spingoAdminApplication.json", {
+      ADMIN_GROUP       = var.spinnaker_admin_group
+      SPINGO_ADMIN_USER = var.spingo_user_email
+    }))
+    SCRIPT_COMMON = base64encode(templatefile("./halScripts/commonFunctions.sh", {
+      USER = var.service_account_name
+    }))
+    SCRIPT_SLACK = base64encode(templatefile("./halScripts/setupSlack.sh", {
+      TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
+      deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
+    }))
+    SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
+      USER = var.service_account_name
+    }))
+    SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./halScripts/configureToCurrentDeployment.sh", {
+      USER = var.service_account_name
+    }))
+    PROFILE_ALIASES = base64encode(data.template_file.profile_aliases.rendered)
   }
 }
 
@@ -280,7 +305,7 @@ data "template_file" "k8ssl" {
   vars = {
     SPIN_UI_IP  = data.google_compute_address.ui[count.index].address
     SPIN_API_IP = data.google_compute_address.api[count.index].address
-    KUBE_CONFIG = count.index == 0 ? "/${var.service_account_name}/.kube/config" : "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    KUBE_CONFIG = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }
 
@@ -299,14 +324,6 @@ data "template_file" "setupOAuth" {
   }
 }
 
-data "template_file" "setupSlack" {
-  template = file("./halScripts/setupSlack.sh")
-
-  vars = {
-    TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
-  }
-}
-
 data "template_file" "setupHalyard" {
   count    = length(data.terraform_remote_state.np.outputs.cluster_config_values)
   template = file("./halScripts/setupHalyard.sh")
@@ -316,6 +333,7 @@ data "template_file" "setupHalyard" {
     ACCOUNT_PATH                    = "/${var.service_account_name}/.gcp/spinnaker-gcs-account.json"
     DOCKER                          = "docker-registry"
     ACCOUNT_NAME                    = "spin-cluster-account"
+    ADMIN_GROUP                     = var.spinnaker_admin_group
     SPIN_UI_IP                      = data.google_compute_address.ui[count.index].address
     SPIN_API_IP                     = data.google_compute_address.api[count.index].address
     SPIN_REDIS_ADDR                 = data.vault_generic_secret.vault-redis[count.index].data["address"]
@@ -326,7 +344,7 @@ data "template_file" "setupHalyard" {
     DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password[count.index].data["password"]
     DEPLOYMENT_NAME                 = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
     DEPLOYMENT_INDEX                = count.index
-    KUBE_CONFIG                     = count.index == 0 ? "~/.kube/config" : "~/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }
 
@@ -468,8 +486,11 @@ resource "google_compute_instance" "halyard-spin-vm" {
   metadata_startup_script = data.template_file.start_script.rendered
 
   service_account {
-    email  = google_service_account.service_account.email
+    email  = data.terraform_remote_state.np.outputs.spinnaker_halyard_service_account_email
     scopes = ["userinfo-email", "compute-rw", "storage-full", "service-control", "https://www.googleapis.com/auth/cloud-platform"]
   }
 }
 
+output "halyard_command" {
+  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard-spin-vm[0].name}\""
+}

@@ -76,8 +76,8 @@ do
     fi
 done
 
-vault auth list >/dev/null 2>&1
-if [[ "$?" -ne 0 ]]; then
+VAULT_RESPONSE=$(vault status -format json | jq -r '. | select(.initialized == true and .sealed == false) | .initialized')
+if [[ "$VAULT_RESPONSE" != "true" ]]; then
   echo "not logged into vault!"
   echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.example.com:10231')"
   echo "2. login: (e.g. 'vault login <some token>')"
@@ -99,13 +99,14 @@ echo "enabling dns.googleapis.com"
 gcloud services enable dns.googleapis.com
 echo "enabling redis.googleapis.com"
 gcloud services enable redis.googleapis.com
+echo "enabling admin.googleapis.com - Needed for Google OAuth"
+gcloud services enable admin.googleapis.com
 
 DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"
 USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
-ONBOARDING_BUCKET="$PROJECT-spinnaker-onboarding"
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
 gcloud iam service-accounts create \
@@ -155,6 +156,12 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
 gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/monitoring.admin'
+gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/iam.roleAdmin'
+gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/pubsub.admin'
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
@@ -166,20 +173,23 @@ echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT
 vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
 
 echo "create the bucket that will store the Terraform State"
-gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/
-gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/
+BUCKET_CHECK=$(gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+echo "Bucket Check : $BUCKET_CHECK"
+while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
+    echo "Got an error creating gs://$TERRAFORM_REMOTE_GCS_NAME trying agian"
+    sleep 2
+    BUCKET_CHECK=$(gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+    echo "Inner Bucket Check : $BUCKET_CHECK"
+done
 
-echo "create the bucket that will store the onboarding information from teams"
-gsutil mb -p "$PROJECT" gs://"$ONBOARDING_BUCKET"/
-gsutil versioning set on gs://"$ONBOARDING_BUCKET"/
-
-echo "create custom onboarding bucket IAM role"
-gcloud iam roles create onboarding_bucket_role --project "$PROJECT" \
---title "Onboarding Submitter" --description "List and create access for storage objects for use in spinnaker onboarding" \
---permissions storage.objects.list,storage.objects.create  --stage GA
-
-echo "set permissions of onboarding bucket to be creator for domain of $DOMAIN"
-gsutil iam ch "domain:$DOMAIN:projects/$PROJECT/roles/onboarding_bucket_role" gs://"$ONBOARDING_BUCKET"
+BUCKET_CHECK=$(gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+echo "Bucket Check : $BUCKET_CHECK"
+while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
+    echo "Got an error versioning gs://$TERRAFORM_REMOTE_GCS_NAME trying agian"
+    sleep 2
+    BUCKET_CHECK=$(gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
+    echo "Inner Bucket Check : $BUCKET_CHECK"
+done
 
 vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
 
@@ -190,7 +200,7 @@ if [[ "$?" -ne 0 ]]; then
     read USER_KEY_PASS
     if [ "$USER_KEY_PASS" == "" ]; then
         echo "creating random keystore password and storing within vault"
-        KEY_PASS=$(openssl rand -base64 32)
+        KEY_PASS=$(openssl rand -base64 29 | tr -d "=+/" | cut -c1-25)
     else
         echo "storing user defined keystore password within vault"
         KEY_PASS="$USER_KEY_PASS"
@@ -284,8 +294,12 @@ do
 done
 
 echo "setting up default values for user inputted values within vault"
-vault write secret/"$PROJECT"/gcp-oauth "client-id=replace-me" "client-secret=replace-me" >/dev/null 2>&1
-vault write secret/"$PROJECT"/slack-token "value=replace-me" >/dev/null 2>&1
+# override these for presentation
+GOOGLE_OAUTH_CLIENT_ID="${GOOGLE_OAUTH_CLIENT_ID:-replace-me}"
+GOOGLE_OAUTH_CLIENT_SECRET="${GOOGLE_OAUTH_CLIENT_SECRET:-replace-me}"
+SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-replace-me}"
+vault write secret/"$PROJECT"/gcp-oauth "client-id=$GOOGLE_OAUTH_CLIENT_ID" "client-secret=$GOOGLE_OAUTH_CLIENT_SECRET" >/dev/null 2>&1
+vault write secret/"$PROJECT"/slack-token "value=$SLACK_BOT_TOKEN" >/dev/null 2>&1
 echo "-----------------------------------------------------------------------------"
 echo " *****   Google Cloud Platform Organization Email Address   *****"
 echo "-----------------------------------------------------------------------------"
@@ -294,5 +308,7 @@ while [ -z $gcp_admin_email ]; do
     read gcp_admin_email
 done
 terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 echo "setup complete"
 cd "$CWD"

@@ -1,0 +1,43 @@
+{
+  "name": "GKE On-Boarding Notification",
+  "application": "spingoadmin",
+  "keepWaitingPipelines": false,
+  "limitConcurrent": true,
+  "stages": [
+    {
+      "name": "Alert",
+      "notifications": [
+        {
+          "address": "${SLACK_ADMIN_CHANNEL}",
+          "level": "stage",
+          "message": {
+            "stage.complete": {
+              "text": "A file has been uploaded to the onboarding bucket: \n$${ trigger[\"artifacts\"][0][\"reference\"] }"
+            }
+          },
+          "type": "slack",
+          "when": [
+            "stage.complete"
+          ]
+        }
+      ],
+      "refId": "1",
+      "requisiteStageRefIds": [],
+      "sendNotifications": true,
+      "type": "wait",
+      "waitTime": 0
+    }
+  ],
+  "triggers": [
+    {
+      "attributeConstraints": {
+        "eventType": "OBJECT_FINALIZE"
+      },
+      "enabled": true,
+      "pubsubSystem": "google",
+      "runAsUser": "${ADMIN_GROUP}_member",
+      "subscriptionName": "${ONBOARDING_SUBSCRIPTION}",
+      "type": "pubsub"
+    }
+  ]
+}

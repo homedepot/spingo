@@ -28,6 +28,11 @@ resource "google_compute_address" "api" {
   region = var.region
 }
 
+resource "google_compute_address" "api-spin" {
+  name   = "spinnaker-api-x509"
+  region = var.region
+}
+
 resource "google_compute_address" "sandbox-ui" {
   name   = "sandbox-ui"
   region = var.region
@@ -35,6 +40,11 @@ resource "google_compute_address" "sandbox-ui" {
 
 resource "google_compute_address" "sandbox-api" {
   name   = "sandbox-api"
+  region = var.region
+}
+
+resource "google_compute_address" "sandbox-api-spin" {
+  name   = "sandbox-api-x509"
   region = var.region
 }
 
@@ -58,4 +68,11 @@ resource "google_compute_address" "sandbox-cloudnat" {
   lifecycle {
     ignore_changes = [users]
   }
+}
+
+output "spin_api_ips" {
+  value = [
+    google_compute_address.api-spin.address,
+    google_compute_address.sandbox-api-spin.address
+    ]
 }

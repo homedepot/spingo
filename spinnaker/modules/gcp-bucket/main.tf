@@ -13,6 +13,7 @@ resource "google_storage_bucket" "bucket-config" {
   versioning {
     enabled = true
   }
+  force_destroy = true
 }
 
 output "bucket_name" {

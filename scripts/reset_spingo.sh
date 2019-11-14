@@ -23,11 +23,73 @@ need() {
     which "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
 
+bucket_check(){
+    # This section here is because the gsutil tool has a VERY high error rate and needs to be retried
+    TERRAFORM_REMOTE_GCS_NAME="$1"
+    BUCKET_TITLE="$2"
+    BUCKET_CHECK=$(gsutil ls gs://"$TERRAFORM_REMOTE_GCS_NAME" 2>&1)
+    echo "Bucket Check : $BUCKET_CHECK"
+    while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
+        echo "Got an error checking for existance of gs://$TERRAFORM_REMOTE_GCS_NAME trying agian"
+        sleep 2
+        BUCKET_CHECK=$(gsutil ls gs://"$TERRAFORM_REMOTE_GCS_NAME" 2>&1)
+        echo "Inner Bucket Check : $BUCKET_CHECK"
+    done
+    if [[ ! "$BUCKET_CHECK" =~ "BucketNotFoundException" ]]; then
+        echo "Deleting the gs://$TERRAFORM_REMOTE_GCS_NAME bucket that holds the $BUCKET_TITLE"
+        DELETED_BUCKET=1
+        # This section here is because the gsutil tool has a VERY high error rate and needs to be retried
+        while [[ "$DELETED_BUCKET" -ne 0 ]]; do
+            echo "Attempting to delete the $BUCKET_TITLE bucket..."
+            gsutil -m rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
+            DELETED_BUCKET="$?"
+            sleep 2
+        done
+    else
+        echo "$BUCKET_TITLE bucket gs://$TERRAFORM_REMOTE_GCS_NAME does not exist so nothing to delete"
+    fi
+}
+
+destroy_tf(){
+    DIR="$1"
+    cd "$DIR"
+    echo "Removing infrstructure from terraform directory $DIR"
+    terraform state list >/dev/null 2>&1
+    INIT_STATE_CHECK="$?"
+    if [ "$INIT_STATE_CHECK" -eq 0 ]; then
+        STATE_CHECK=$(terraform state list)
+        if [ "$STATE_CHECK" == "" ]; then
+            echo "No terraform state resources found so nothing to destroy"
+            cd ..
+            return
+        fi
+        limit=5
+        n=1
+        until [ $n -ge $limit ]
+        do
+            terraform destroy -auto-approve && break
+            if [ "$?" -ne 0 ]; then
+                echo "Unable to destroy infrastructure successfully in $DIR so trying again (attempt $n of $limit)"
+            fi
+            n=$[$n+1]
+            sleep 3
+        done
+        if [ $n -ge $limit ]; then
+            echo "Unable to destroy infrastructure successfully in $DIR after $limit attempts so exiting"
+            exit 1
+        fi
+        echo "sleep for 5 seconds to give the bucket lock time to close out"
+        sleep 5
+    else
+        echo "No terraform state found so nothing to destroy"
+    fi
+    cd ..
+}
+
 while [ "$SCRIPT_CONFIRMATION" != "YES" ]; do
     echo "-----------------------------------------------------------------------------"
-    echo "WARNING: Do not run this script unless you have already run 'terraform destoy' in all"
-    echo " of the diretories first and you want to re-run initial_setup.sh"
-    echo "This script is designed to remove the service accounts that terraform requires"
+    echo "WARNING: Do not run this script unless you want to re-run initial_setup.sh"
+    echo "This script is designed to remove all infrastructure and service accounts"
     echo "-----------------------------------------------------------------------------"
     echo -n "Enter YES to continue (ctrl-c to exit) : "
     read SCRIPT_CONFIRMATION
@@ -37,6 +99,7 @@ need "vault"
 need "gcloud"
 need "git"
 need "gsutil"
+need "jq"
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
@@ -59,6 +122,12 @@ do
     fi
 done
 
+destroy_tf "halyard"
+destroy_tf "monitoring-alerting"
+destroy_tf "spinnaker"
+destroy_tf "static_ips"
+destroy_tf "dns"
+
 vault auth list >/dev/null 2>&1
 if [[ "$?" -ne 0 ]]; then
   echo "not logged into vault!"
@@ -68,6 +137,7 @@ if [[ "$?" -ne 0 ]]; then
 fi
 
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
+HALYARD_GCS_NAME="$PROJECT-halyard-bucket"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
 
@@ -75,70 +145,44 @@ SA_EMAIL=$(gcloud iam service-accounts list \
     --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
     --format='value(email)')
 
-if [ -z "$SA_EMAIL" ]; then
-    echo -e "\n\nUnable to determine email address for terraform service account. Does it still exist?"
-    echo -e "Here is the list of remaining service accounts for project $PROJECT : \n"
-    gcloud iam service-accounts list
-    exit 1;
-fi
-
 PROJECT=$(gcloud info --format='value(config.project)')
 
-echo "removing roles from $SERVICE_ACCOUNT_NAME for email : $SA_EMAIL"
-gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/resourcemanager.projectIamAdmin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountAdmin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountKeyAdmin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/compute.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/container.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/storage.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/iam.serviceAccountUser
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/dns.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/redis.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/cloudsql.admin
-gcloud --no-user-output-enabled projects remove-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role roles/monitoring.admin
+if [ -z "$SA_EMAIL" ]; then
+    echo "No terraform service account left to clean up"
+else
+    echo "removing roles from $SERVICE_ACCOUNT_NAME for email : $SA_EMAIL"
+    for role in $(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings.role')
+    do
+        gcloud --no-user-output-enabled projects remove-iam-policy-binding "$PROJECT" \
+            --member serviceAccount:"$SA_EMAIL" \
+            --role "$role"
+    done
 
-echo "deleting $SERVICE_ACCOUNT_NAME service account"
-gcloud -q iam service-accounts delete "$SERVICE_ACCOUNT_NAME@$PROJECT.iam.gserviceaccount.com"
+    echo "deleting $SERVICE_ACCOUNT_NAME service account"
+    gcloud -q iam service-accounts delete "$SERVICE_ACCOUNT_NAME@$PROJECT.iam.gserviceaccount.com"
+fi
 
 echo "deleting secret/$PROJECT/$SERVICE_ACCOUNT_DEST from vault"
 vault delete secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME"
-
-echo "deleting the bucket that holds the Terraform state"
-gsutil rm -r gs://"$TERRAFORM_REMOTE_GCS_NAME"
 
 echo "deleting the local Terraform directories pointing to the old bucket"
 rm -fdr ./dns/.terraform/
 rm -fdr ./halyard/.terraform/
 rm -fdr ./spinnaker/.terraform/
+rm -fdr ./monitoring-alerting/.terraform/
 echo "deleting dynamic terraform variables"
 rm ./dns/var*.auto.tfvars
 rm ./halyard/var*.auto.tfvars
 rm ./spinnaker/var*.auto.tfvars
+rm ./monitoring-alerting/var*.auto.tfvars
 echo "deleting dynamic terraform backend configs"
 rm ./dns/override.tf
 rm ./halyard/override.tf
 rm ./spinnaker/override.tf
+rm ./monitoring-alerting/override.tf
+
+bucket_check "$TERRAFORM_REMOTE_GCS_NAME" "Terraform state"
+bucket_check "$HALYARD_GCS_NAME" "Halyard"
+
 echo "deletion complete"
 cd "$CWD"

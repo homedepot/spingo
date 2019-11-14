@@ -71,4 +71,3 @@ echo "vault should be set up now"
 if [[ -n $VAULT_ADDR_NOT_SET ]]; then
   echo -e "please set \$VAULT_ADDR to \"http://127.0.0.1:8200\" by running the command on the next line\nexport VAULT_ADDR=\"http://127.0.0.1:8200\"\n"
 fi
-

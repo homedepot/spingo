@@ -6,7 +6,7 @@ resource "kubernetes_service_account" "service_account" {
     namespace = var.service_account_namespace
   }
 
-  depends_on  = [var.spinnaker_nodepool]
+  depends_on = [var.spinnaker_nodepool]
 }
 
 resource "kubernetes_cluster_role_binding" "cluster_role_binding" {
@@ -59,7 +59,7 @@ data "template_file" "kubeconfig" {
 
 resource "google_storage_bucket_object" "spinnaker_kubeconfig_file" {
   count        = var.enable ? 1 : 0
-  name         = var.cluster_list_index == 0 ? ".kube/config" : ".kube/${var.cluster_name}.config"
+  name         = ".kube/${var.cluster_name}.config"
   content      = data.template_file.kubeconfig[0].rendered
   bucket       = var.bucket_name
   content_type = "application/text"

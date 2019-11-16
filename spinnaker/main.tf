@@ -26,6 +26,7 @@ provider "google" {
   # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
   region  = var.cluster_region
+  version = "~> 2.8"
 }
 
 provider "google" {
@@ -35,6 +36,7 @@ provider "google" {
   # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
   project = var.managed_dns_gcp_project
   region  = var.cluster_region
+  version = "~> 2.8"
 }
 
 provider "google-beta" {
@@ -43,6 +45,7 @@ provider "google-beta" {
   # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
   region  = var.cluster_region
+  version = "~> 2.8"
 }
 
 # Query the terraform service account from GCP

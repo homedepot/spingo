@@ -163,6 +163,7 @@ provider "google" {
   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
   project     = var.gcp_project
   zone        = var.gcp_zone
+  version     = "~> 2.8"
 }
 
 data "template_file" "aliases" {

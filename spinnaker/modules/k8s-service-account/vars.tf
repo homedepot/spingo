@@ -54,7 +54,7 @@ variable "spinnaker_nodepool" {
 }
 
 variable "spinnaker_namespace" {
-  type        = "string"
+  type        = string
   description = "namespace where spinnaker lives"
 }
 

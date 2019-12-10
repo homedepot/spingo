@@ -1,7 +1,7 @@
 
-%{ for deployment in deployments ~}
+%{ for deployment, details in deployments ~}
 echo "Creating Gate x509 API Service for deployment named ${deployment}"
-cat <<SVC_EOF | kubectl -n spinnaker --kubeconfig="${KUBE_CONFIG}" apply -f -
+cat <<SVC_EOF | kubectl -n spinnaker --kubeconfig="${details.kubeConfig}" apply -f -
 apiVersion: v1
 kind: Service
 metadata:
@@ -11,7 +11,7 @@ metadata:
   name: spin-gate-api
   namespace: spinnaker
 spec:
-  loadBalancerIP: ${SPIN_API_CLIENT_IP}
+  loadBalancerIP: ${details.clientIP}
   ports:
   - port: 443
     protocol: TCP

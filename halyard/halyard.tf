@@ -452,11 +452,6 @@ data "google_compute_address" "api" {
   name  = "${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}-api"
 }
 
-data "google_compute_address" "vault" {
-  count = length(data.terraform_remote_state.np.outputs.cluster_config_values)
-  name  = "vault-${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}"
-}
-
 data "vault_generic_secret" "vault-redis" {
   count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/redis/${count.index}"

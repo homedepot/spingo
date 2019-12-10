@@ -101,6 +101,8 @@ echo "enabling redis.googleapis.com"
 gcloud services enable redis.googleapis.com
 echo "enabling admin.googleapis.com - Needed for Google OAuth"
 gcloud services enable admin.googleapis.com
+echo "enabling cloudkms.googleapis.com - Needed for Vault"
+gcloud services enable cloudkms.googleapis.com
 
 DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"
 USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
@@ -162,6 +164,9 @@ gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
 gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
     --member serviceAccount:"$SA_EMAIL" \
     --role='roles/pubsub.admin'
+gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
+    --member serviceAccount:"$SA_EMAIL" \
+    --role='roles/cloudkms.admin'
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \

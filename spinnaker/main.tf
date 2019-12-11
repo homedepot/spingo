@@ -248,13 +248,14 @@ data "google_compute_address" "sandbox_api_ip_address" {
 }
 
 module "spinnaker-dns" {
-  source            = "./modules/dns"
-  gcp_project       = var.managed_dns_gcp_project
-  cluster_config    = var.hostname_config
-  dns_name          = "${var.cloud_dns_hostname}"
-  ui_ip_addresses   = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
-  api_ip_addresses  = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
-  x509_ip_addresses = data.terraform_remote_state.static_ips.outputs.spin_api_ips
+  source             = "./modules/dns"
+  gcp_project        = var.managed_dns_gcp_project
+  cluster_config     = var.hostname_config
+  dns_name           = "${var.cloud_dns_hostname}"
+  ui_ip_addresses    = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
+  api_ip_addresses   = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
+  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.spin_api_ips
+  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips
 
   providers = {
     google = google.dns-zone
@@ -321,6 +322,25 @@ module "certbot-service-account" {
   bucket_name          = module.halyard-storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/dns.admin"]
+}
+
+resource "google_kms_key_ring" "vault_keyring" {
+  name     = "vault_keyring"
+  location = var.cluster_region
+}
+
+module "vault_setup" {
+  source                 = "./modules/vault"
+  gcp_project            = var.gcp_project
+  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
+  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  kms_keyring_name       = google_kms_key_ring.vault_keyring.name
+  vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  cluster_region         = var.cluster_region
+}
+
+output "vault_yml_files" {
+  value = module.vault_setup.vault_yml_files
 }
 
 output "created_onboarding_bucket_name" {

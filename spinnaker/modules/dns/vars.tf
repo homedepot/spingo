@@ -24,3 +24,6 @@ variable "x509_ip_addresses" {
   type = list(string)
 }
 
+variable "vault_ip_addresses" {
+  type = list(string)
+}

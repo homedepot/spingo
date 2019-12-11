@@ -12,7 +12,7 @@ resource "google_kms_crypto_key" "kms_key" {
 
 resource "google_storage_bucket" "vault" {
   for_each      = var.cluster_key_map
-  name          = "vault_bucket_${each.key}"
+  name          = "vault_${var.gcp_project}_${each.key}"
   project       = var.gcp_project
   force_destroy = true
   storage_class = "MULTI_REGIONAL"

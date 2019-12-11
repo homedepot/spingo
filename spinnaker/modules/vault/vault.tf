@@ -41,7 +41,7 @@ resource "google_storage_bucket_iam_member" "vault-server" {
 
 resource "google_kms_crypto_key_iam_member" "vault-init" {
   for_each      = var.cluster_key_map
-  crypto_key_id = "projects/${var.gcp_project}/locations/global/keyRings/${var.kms_keyring_name}/cryptoKeys/vault_key_${each.key}"
+  crypto_key_id = "projects/${var.gcp_project}/locations/${var.cluster_region}/keyRings/${var.kms_keyring_name}/cryptoKeys/vault_key_${each.key}"
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${each.key}@${var.gcp_project}.iam.gserviceaccount.com"
 }
@@ -57,6 +57,7 @@ data "template_file" "vault" {
     kms_key_id       = "projects/${var.gcp_project}/locations/global/keyRings/${var.kms_keyring_name}/cryptoKeys/vault_key_${each.key}"
     kms_crypto_key   = "vault_key_${each.key}"
     project          = var.gcp_project
+    cluster_region   = var.cluster_region
     load_balancer_ip = lookup(var.vault_ips_map, each.key, "")
   }
 }

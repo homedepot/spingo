@@ -21,3 +21,7 @@ variable "kms_keyring_name" {
 variable "vault_ips_map" {
   type = map(string)
 }
+
+variable "cluster_region" {
+  type = string
+}

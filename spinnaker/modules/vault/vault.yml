@@ -62,7 +62,7 @@ spec:
         - name: GCS_BUCKET_NAME
           value: "${gcs_bucket_name}"
         - name: KMS_KEY_ID
-          value: "projects/${project}/locations/global/keyRings/${kms_key_ring}/cryptoKeys/${kms_crypto_key}"
+          value: "projects/${project}/locations/${cluster_region}/keyRings/${kms_key_ring}/cryptoKeys/${kms_crypto_key}"
         - name: VAULT_ADDR
           value: "http://127.0.0.1:8200"
         - name: VAULT_SECRET_SHARES

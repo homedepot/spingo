@@ -326,7 +326,7 @@ module "certbot-service-account" {
 
 resource "google_kms_key_ring" "vault_keyring" {
   name     = "vault_keyring"
-  location = "global"
+  location = var.cluster_region
 }
 
 module "vault_setup" {
@@ -336,6 +336,7 @@ module "vault_setup" {
   cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
   kms_keyring_name       = google_kms_key_ring.vault_keyring.name
   vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  cluster_region         = var.cluster_region
 }
 
 output "vault_yml_files" {

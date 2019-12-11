@@ -109,7 +109,7 @@ spec:
 
             seal "gcpckms" {
               project    = "${project}"
-              region     = "global"
+              region     = "${cluster_region}"
               key_ring   = "${kms_key_ring}"
               crypto_key = "${kms_crypto_key}"
             }

@@ -13,7 +13,7 @@ resource "google_kms_crypto_key" "kms_key" {
 data "google_kms_crypto_key" "crypto_key" {
   for_each = var.cluster_key_map
   name     = google_kms_crypto_key.kms_key[each.key].name
-  key_ring = data.google_kms_key_ring.my_key_ring.self_link
+  key_ring = var.kms_key_ring_self_link
 }
 
 output "crypto_key_id_map" {

@@ -1,15 +1,3 @@
-resource "google_kms_crypto_key" "kms_key" {
-  for_each        = var.cluster_key_map
-  name            = "vault_key_${each.key}"
-  key_ring        = var.kms_key_ring_self_link
-  purpose         = "ENCRYPT_DECRYPT"
-  rotation_period = "100000s"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "google_storage_bucket" "vault" {
   for_each      = var.cluster_key_map
   name          = "vault_${var.gcp_project}_${each.key}"
@@ -41,7 +29,7 @@ resource "google_storage_bucket_iam_member" "vault-server" {
 
 resource "google_kms_crypto_key_iam_member" "vault-init" {
   for_each      = var.cluster_key_map
-  crypto_key_id = "projects/${var.gcp_project}/locations/${var.cluster_region}/keyRings/${var.kms_keyring_name}/cryptoKeys/vault_key_${each.key}"
+  crypto_key_id = lookup(var.crypto_key_id_map, each.key, "")
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${each.key}@${var.gcp_project}.iam.gserviceaccount.com"
 }
@@ -55,6 +43,7 @@ data "template_file" "vault" {
     gcs_bucket_name  = google_storage_bucket.vault[each.key].name
     kms_key_ring     = var.kms_keyring_name
     kms_crypto_key   = "vault_key_${each.key}"
+    crypto_key_id    = lookup(var.crypto_key_id_map, each.key, "")
     project          = var.gcp_project
     cluster_region   = var.cluster_region
     load_balancer_ip = lookup(var.vault_ips_map, each.key, "")

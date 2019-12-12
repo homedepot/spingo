@@ -85,7 +85,6 @@ module "gke_keys" {
   source                 = "./modules/crypto_key"
   gcp_project            = var.gcp_project
   cluster_region         = var.cluster_region
-  kms_keyring_name       = google_kms_key_ring.gke_keyring.name
   kms_key_ring_self_link = google_kms_key_ring.gke_keyring.self_link
   cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
   crypto_key_name_prefix = "gke_key"
@@ -345,7 +344,6 @@ module "vault_keys" {
   source                 = "./modules/crypto_key"
   gcp_project            = var.gcp_project
   cluster_region         = var.cluster_region
-  kms_keyring_name       = google_kms_key_ring.vault_keyring.name
   kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
   cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
   crypto_key_name_prefix = "vault_key"

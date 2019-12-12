@@ -25,3 +25,7 @@ variable "vault_ips_map" {
 variable "cluster_region" {
   type = string
 }
+
+variable "crypto_key_id_map" {
+  type = map(string)
+}

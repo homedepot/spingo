@@ -76,6 +76,21 @@ module "google-managed" {
   authorized_networks_redis = [module.k8s.network_link, module.k8s-sandbox.network_link]
 }
 
+resource "google_kms_key_ring" "gke_keyring" {
+  name     = "gke_keyring"
+  location = var.cluster_region
+}
+
+module "gke_keys" {
+  source                 = "./modules/crypto_key"
+  gcp_project            = var.gcp_project
+  cluster_region         = var.cluster_region
+  kms_keyring_name       = google_kms_key_ring.gke_keyring.name
+  kms_key_ring_self_link = google_kms_key_ring.gke_keyring.self_link
+  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  crypto_key_name_prefix = "gke_key"
+}
+
 module "k8s" {
   source          = "github.com/devorbitus/terraform-google-gke-infra"
   name            = "${var.cluster_config["0"]}-${var.cluster_region}"
@@ -93,6 +108,7 @@ module "k8s" {
   cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
+  crypto_key_id             = lookup(module.vault_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
 }
 
 module "k8s-sandbox" {
@@ -112,6 +128,7 @@ module "k8s-sandbox" {
   cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
+  crypto_key_id             = lookup(module.vault_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
 }
 
 module "halyard-storage" {
@@ -324,6 +341,16 @@ resource "google_kms_key_ring" "vault_keyring" {
   location = var.cluster_region
 }
 
+module "vault_keys" {
+  source                 = "./modules/crypto_key"
+  gcp_project            = var.gcp_project
+  cluster_region         = var.cluster_region
+  kms_keyring_name       = google_kms_key_ring.vault_keyring.name
+  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
+  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  crypto_key_name_prefix = "vault_key"
+}
+
 module "vault_setup" {
   source                 = "./modules/vault"
   gcp_project            = var.gcp_project
@@ -332,6 +359,7 @@ module "vault_setup" {
   kms_keyring_name       = google_kms_key_ring.vault_keyring.name
   vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   cluster_region         = var.cluster_region
+  crypto_key_id_map      = module.vault_keys.crypto_key_id_map
 }
 
 output "vault_yml_files" {

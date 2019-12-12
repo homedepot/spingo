@@ -1,8 +1,6 @@
 name: 'Spingo Terraform Validation'
-
 on:
   - pull_request
-
 jobs:
   static-ips:
     name: 'Terraform (Static IPs)'

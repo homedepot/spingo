@@ -107,7 +107,7 @@ module "k8s" {
   cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
-  crypto_key_id             = lookup(module.vault_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
 }
 
 module "k8s-sandbox" {
@@ -127,7 +127,7 @@ module "k8s-sandbox" {
   cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
-  crypto_key_id             = lookup(module.vault_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
 }
 
 module "halyard-storage" {

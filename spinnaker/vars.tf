@@ -48,7 +48,7 @@ variable "second_cluster_node_options" {
     disk_type    = "pd-standard"
     image        = "COS"
     machine_type = "n1-standard-1"
-    preemptible  = true
+    preemptible  = false
   }
 }
 

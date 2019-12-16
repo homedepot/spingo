@@ -73,6 +73,7 @@ GATE_LOCAL
 
 tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/redis.yml << REDIS
 overrideBaseUrl: redis://${SPIN_REDIS_ADDR}
+skipLifeCycleManagement: true
 REDIS
 
 # set-up orca to use cloudsql proxy

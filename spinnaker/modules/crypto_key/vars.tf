@@ -9,7 +9,7 @@ variable "cluster_region" {
 
 variable "kms_key_ring_self_link" {
   type        = string
-  description = "The self link of the created KeyRing in the format projects/[project}/locations/{location}/keyRings/{name}"
+  description = "The self link of the created KeyRing in the format projects/{project}/locations/{location}/keyRings/{name}"
 }
 
 variable "cluster_key_map" {

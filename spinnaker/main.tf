@@ -218,8 +218,8 @@ module "k8s-spinnaker-agent" {
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
   node_metadata             = var.default_node_metadata
-  node_options              = var.second_clsuter_node_options
-  node_pool_options         = var.second_clsuter_node_pool_options
+  node_options              = var.second_cluster_node_options
+  node_pool_options         = var.second_cluster_node_pool_options
   client_certificate_config = var.default_client_certificate_config
   cloud_nat                 = false                                                 # Will re-use the cloud nat created by the primary cluster
   node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
@@ -270,8 +270,8 @@ module "k8s-sandbox-agent" {
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
   node_metadata             = var.default_node_metadata
-  node_options              = var.second_clsuter_node_options
-  node_pool_options         = var.second_clsuter_node_pool_options
+  node_options              = var.second_cluster_node_options
+  node_pool_options         = var.second_cluster_node_pool_options
   client_certificate_config = var.default_client_certificate_config
   cloud_nat                 = false                                                 # Will re-use the cloud nat created by the primary cluster
   node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster

@@ -39,7 +39,7 @@ variable "default_node_options" {
   }
 }
 
-variable "second_clsuter_node_options" {
+variable "second_cluster_node_options" {
   description = "These are the default options node options for the second cluster node pool"
   type        = map(string)
 
@@ -52,7 +52,7 @@ variable "second_clsuter_node_options" {
   }
 }
 
-variable "second_clsuter_node_pool_options" {
+variable "second_cluster_node_pool_options" {
   type        = map(string)
   description = "Options to configure the default Node Pool created for the second cluster."
 

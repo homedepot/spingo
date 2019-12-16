@@ -19,4 +19,31 @@ SECRET_EOF
 
 kubectl --kubeconfig="${details.kubeConfig}" apply -f vault_${details.clusterName}.yml
 
+n=0
+until [ $n -ge 10 ]
+do
+  kubectl -n vault get po -l=app=vault \
+  --kubeconfig="${details.kubeConfig}" \
+  -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
+   n=$[$n+1]
+   sleep 6
+done
+
+kubectl -n vault get po -l=app=vault \
+  --kubeconfig="${details.kubeConfig}" \
+  -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false"
+
+if [ $? -ne 0 ]; then
+    echo "Vault setup for cluster ${deployment} has failed."
+    exit 1
+fi
+echo "Vault is successfully running for cluster ${deployment}"
+
+gsutil cat gs://${details.vaultBucket}/root-token.enc | gcloud kms decrypt \
+      --key=frodo \
+      --keyring=fellowship \
+      --location=global \
+      --ciphertext-file='-' \
+      --plaintext-file='-' | vault login -
+
 %{ endfor ~}

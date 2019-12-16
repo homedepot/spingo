@@ -26,7 +26,7 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 add-apt-repository -y ppa:rmescandon/yq
 apt-get update
-apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk expect yq docker.io
+apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk expect yq docker.io unzip
 
 echo "Setting up directory permissions."
 mkdir /${USER}
@@ -40,6 +40,10 @@ cd /home/${USER}
 runuser -l ${USER} -c 'curl -O https://raw.githubusercontent.com/spinnaker/halyard/master/install/debian/InstallHalyard.sh'
 runuser -l ${USER} -c 'sudo bash InstallHalyard.sh -y --user ${USER}'
 
+echo "Installing Vault"
+runuser -l ${USER} -c 'curl "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip" > /home/${USER}/vault.zip'
+runuser -l ${USER} -c 'unzip /home/${USER}/vault.zip -d /home/${USER}'
+runuser -l ${USER} -c 'sudo mv /home/${USER}/vault /usr/local/bin/vault'
 
 #this is hard coded because it is necessary name.
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'

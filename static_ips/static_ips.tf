@@ -1,8 +1,3 @@
-terraform {
-  backend "gcs" {
-  }
-}
-
 provider "vault" {
 }
 
@@ -33,6 +28,11 @@ resource "google_compute_address" "api-spin" {
   region = var.region
 }
 
+resource "google_compute_address" "vault-spinnaker" {
+  name   = "vault-spinnaker"
+  region = var.region
+}
+
 resource "google_compute_address" "sandbox-ui" {
   name   = "sandbox-ui"
   region = var.region
@@ -45,6 +45,11 @@ resource "google_compute_address" "sandbox-api" {
 
 resource "google_compute_address" "sandbox-api-spin" {
   name   = "sandbox-api-x509"
+  region = var.region
+}
+
+resource "google_compute_address" "vault-sandbox" {
+  name   = "vault-sandbox"
   region = var.region
 }
 
@@ -74,5 +79,19 @@ output "spin_api_ips" {
   value = [
     google_compute_address.api-spin.address,
     google_compute_address.sandbox-api-spin.address
-    ]
+  ]
+}
+
+output "vault_ips" {
+  value = [
+    google_compute_address.vault-spinnaker.address,
+    google_compute_address.vault-sandbox.address
+  ]
+}
+
+output "vault_ips_map" {
+  value = {
+    "spinnaker-${var.region}" = google_compute_address.vault-spinnaker.address
+    "sandbox-${var.region}"   = google_compute_address.vault-sandbox.address
+  }
 }

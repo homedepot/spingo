@@ -36,6 +36,16 @@ resource "google_dns_record_set" "spinnaker-api-x509" {
   rrdatas      = [var.x509_ip_addresses[count.index]]
 }
 
+resource "google_dns_record_set" "vault" {
+  # see the vars file to an explination about this count thing
+  count        = length(var.cluster_config)
+  name         = "vault-${var.cluster_config[count.index]}.${var.dns_name}."
+  type         = "A"
+  ttl          = 300
+  managed_zone = "spinnaker-wildcard-domain"
+  rrdatas      = [var.vault_ip_addresses[count.index]]
+}
+
 resource "vault_generic_secret" "spinnaker_ui_address" {
   count = length(var.cluster_config)
   path  = "secret/${var.gcp_project}/spinnaker_ui_url/${count.index}"

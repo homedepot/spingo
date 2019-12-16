@@ -1,8 +1,3 @@
-terraform {
-  backend "gcs" {
-  }
-}
-
 variable "gcp_project" {
   description = "GCP project name"
 }
@@ -109,6 +104,32 @@ data "vault_generic_secret" "spinnaker_api_address" {
   path  = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
 }
 
+data "template_file" "vault" {
+  template = file("./halScripts/setupVault.sh")
+
+  vars = {
+    USER = var.service_account_name
+    SETUP_VAULT_CONTENTS = templatefile("./halScripts/setup_vault_dynamic.sh", {
+      deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
+        [
+          {
+            vaultYaml           = data.terraform_remote_state.np.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)]
+            clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[0]
+            vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[0]
+            kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
+            }, {
+            vaultYaml           = data.terraform_remote_state.np.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)]
+            clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[1]
+            vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[1]
+            kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
+          }
+      ])
+      USER = var.service_account_name
+      DNS  = var.cloud_dns_hostname
+    })
+  }
+}
+
 data "template_file" "make_update_keystore_script" {
   template = file("./halScripts/make_or_update_keystore.sh")
 
@@ -205,6 +226,7 @@ data "template_file" "start_script" {
     SCRIPT_SSL_KEYSTORE  = base64encode(data.template_file.make_update_keystore_script.rendered)
     SCRIPT_ONBOARDING    = base64encode(data.template_file.setup_onboarding.rendered)
     SCRIPT_X509          = base64encode(data.template_file.cert_script.rendered)
+    SCRIPT_VAULT         = base64encode(data.template_file.vault.rendered)
     SCRIPT_CREATE_FIAT   = base64encode(templatefile("./halScripts/createFiatServiceAccount.sh", {}))
     SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./halScripts/onboardingNotificationsPipeline.json", {
       ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
@@ -307,6 +329,18 @@ data "template_file" "k8ssl" {
     SPIN_UI_IP  = data.google_compute_address.ui[count.index].address
     SPIN_API_IP = data.google_compute_address.api[count.index].address
     KUBE_CONFIG = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    SPIN_CLI_SERVICE = templatefile("./halScripts/spin-gate-api.sh", {
+      deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
+        [
+          {
+            clientIP   = data.terraform_remote_state.static_ips.outputs.spin_api_ips[0]
+            kubeConfig = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
+            }, {
+            clientIP   = data.terraform_remote_state.static_ips.outputs.spin_api_ips[1]
+            kubeConfig = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
+          }
+      ])
+    })
   }
 }
 

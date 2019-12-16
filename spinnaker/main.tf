@@ -225,6 +225,7 @@ module "k8s-spinnaker-agent" {
   node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
 }
 
 provider "kubernetes" {
@@ -276,6 +277,7 @@ module "k8s-sandbox-agent" {
   node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
 }
 
 provider "kubernetes" {

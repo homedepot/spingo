@@ -118,12 +118,14 @@ data "template_file" "vault" {
             vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[0]
             kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
             vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)
+            kmsKey              = ""
             }, {
             vaultYaml           = data.terraform_remote_state.np.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)]
             clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[1]
             vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[1]
             kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
             vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)
+            kmsKey              = ""
           }
       ])
       USER   = var.service_account_name

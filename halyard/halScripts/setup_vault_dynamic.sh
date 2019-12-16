@@ -40,9 +40,9 @@ fi
 echo "Vault is successfully running for cluster ${deployment}"
 
 gsutil cat gs://${details.vaultBucket}/root-token.enc | gcloud kms decrypt \
-      --key=frodo \
-      --keyring=fellowship \
-      --location=global \
+      --key= \
+      --keyring= \
+      --location= \
       --ciphertext-file='-' \
       --plaintext-file='-' | vault login -
 

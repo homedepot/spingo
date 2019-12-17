@@ -199,6 +199,24 @@ redis:
     enabled: false
 CLOUDDRIVER_LOCAL
 
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/front50-local.yml << FRONT50_LOCAL
+sql:
+  enabled: true
+  connectionPools:
+    default:
+     # additional connection pool parameters are available here,
+     # for more detail and to view defaults, see:
+     # https://github.com/spinnaker/kork/blob/master/kork-sql/src/main/kotlin/com/netflix/spinnaker/kork/sql/config/ConnectionPoolProperties.kt 
+      default: true
+      jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
+      user: front50_service
+      password: ${DB_FRONT50_SVC_PASSWORD}
+  migration:
+    user: front50_migrate
+    password: ${DB_FRONT50_MIGRATE_PASSWORD}
+    jdbcUrl: jdbc:mysql://your.database:3306/front50
+FRONT50_LOCAL
+
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
 cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml
 kubernetes:

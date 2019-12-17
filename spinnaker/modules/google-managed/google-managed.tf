@@ -48,6 +48,25 @@ EOF
 
 }
 
+resource "vault_generic_secret" "front50-db-service-user-password" {
+  count = length(var.cluster_config)
+  path  = "secret/${var.gcp_project}/front50-db-service-user-password/${count.index}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.front50-db-service-user-password[count.index].result}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "front50-db-migrate-user-password" {
+  count = length(var.cluster_config)
+  path  = "secret/${var.gcp_project}/front50-db-migrate-user-password/${count.index}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.front50-db-migrate-user-password[count.index].result}"}
+EOF
+
+}
 resource "vault_generic_secret" "spinnaker-db-address" {
   count = length(var.cluster_config)
   path  = "secret/${var.gcp_project}/db-address/${count.index}"
@@ -168,6 +187,16 @@ resource "random_string" "clouddriver-db-service-user-password" {
   special = false
 }
 
+resource "random_string" "front50-db-service-user-password" {
+  count   = length(var.cluster_config)
+  length  = 12
+  special = false
+}
+resource "random_string" "front50-db-migrate-user-password" {
+  count   = length(var.cluster_config)
+  length  = 12
+  special = false
+}
 resource "random_string" "spinnaker-db-migrate-user-password" {
   count   = length(var.cluster_config)
   length  = 12

@@ -1,0 +1,50 @@
+grafana:
+  persistence:
+    enabled: true
+
+  grafana.ini:
+    # users:
+      # viewers_can_edit: true
+    server:
+      root_url: http://grafana.spinnaker.homedepot.com
+    # auth:
+      # disable_login_form: true
+      # disable_signout_menu: true
+    auth.google:
+      enabled: true
+      client_id: CLIENT_ID
+      client_secret: CLIENT_SECRET
+      scopes: https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
+      auth_url: https://accounts.google.com/o/oauth2/auth
+      token_url: https://accounts.google.com/o/oauth2/token
+      allowed_domains: homedepot.com
+      allow_sign_up: true
+
+prometheus:
+  additionalServiceMonitors:
+  - name: spinnaker-microservices-monitor
+    selector:
+      matchLabels:
+        app: spin
+    namespaceSelector:
+      matchNames:
+      - spinnaker
+    endpoints:
+    - targetPort: 8008
+      interval: 10s
+      path: /prometheus_metrics
+  prometheusSpec:
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard

@@ -1,7 +1,7 @@
 ### Installation
 
 ```bash
-helm install spin stable/prometheus-operator -f values.yml -n monitoring
+helm install spin stable/prometheus-operator -f values.yaml -n monitoring
 ```
 
 ### Google OAuth Client Setup

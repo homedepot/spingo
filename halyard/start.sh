@@ -77,6 +77,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_CREATE_FIAT}" | base64 -d > /home/${USER}/
 runuser -l ${USER} -c 'echo "${SCRIPT_CURRENT_DEPLOYMENT}" | base64 -d > /home/${USER}/configureToCurrentDeployment.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationsPipeline.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
+runuser -l ${USER} -c 'echo "${SCRIPT_VAULT}" | base64 -d > /home/${USER}/setupVault.sh'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

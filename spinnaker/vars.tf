@@ -39,6 +39,32 @@ variable "default_node_options" {
   }
 }
 
+variable "second_cluster_node_options" {
+  description = "These are the default options node options for the second cluster node pool"
+  type        = map(string)
+
+  default = {
+    disk_size    = 20
+    disk_type    = "pd-standard"
+    image        = "COS"
+    machine_type = "n1-standard-1"
+    preemptible  = false
+  }
+}
+
+variable "second_cluster_node_pool_options" {
+  type        = map(string)
+  description = "Options to configure the default Node Pool created for the second cluster."
+
+  default = {
+    auto_repair           = true # Whether the nodes will be automatically repaired.
+    auto_upgrade          = true # Whether the nodes will be automatically upgraded.
+    autoscaling_nodes_min = 1    # Minimum number of nodes to create in each zone. Must be >=1 and <= autoscaling_nodes_max.
+    autoscaling_nodes_max = 10   # Maximum number of nodes to create in each zone. Must be >= autoscaling_nodes_min.
+    max_pods_per_node     = 110  # The maximum number of pods per node in this node pool. Note this setting is currently in Beta: https://www.terraform.io/docs/providers/google/r/container_node_pool.html#max_pods_per_node
+  }
+}
+
 variable "default_k8s_options" {
   description = "These are the default options for the cluster"
   type        = map(string)

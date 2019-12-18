@@ -1,8 +1,3 @@
-terraform {
-  backend "gcs" {
-  }
-}
-
 provider "vault" {
 }
 
@@ -64,6 +59,15 @@ variable "cluster_config" {
   }
 }
 
+variable "agent_cluster_config" {
+  description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
+
+  default = {
+    "0" = "spinnaker-agent"
+    "1" = "sandbox-agent"
+  }
+}
+
 variable "hostname_config" {
   description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
 
@@ -81,6 +85,20 @@ module "google-managed" {
   authorized_networks_redis = [module.k8s.network_link, module.k8s-sandbox.network_link]
 }
 
+resource "google_kms_key_ring" "gke_keyring" {
+  name     = "gke_keyring"
+  location = var.cluster_region
+}
+
+module "gke_keys" {
+  source                 = "./modules/crypto_key"
+  gcp_project            = var.gcp_project
+  cluster_region         = var.cluster_region
+  kms_key_ring_self_link = google_kms_key_ring.gke_keyring.self_link
+  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  crypto_key_name_prefix = "gke_key"
+}
+
 module "k8s" {
   source          = "github.com/devorbitus/terraform-google-gke-infra"
   name            = "${var.cluster_config["0"]}-${var.cluster_region}"
@@ -94,10 +112,12 @@ module "k8s" {
   k8s_options               = var.default_k8s_options
   node_options              = var.default_node_options
   node_metadata             = var.default_node_metadata
+  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]  
   client_certificate_config = var.default_client_certificate_config
   cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
 }
 
 module "k8s-sandbox" {
@@ -113,10 +133,12 @@ module "k8s-sandbox" {
   k8s_options               = var.default_k8s_options
   node_options              = var.default_node_options
   node_metadata             = var.default_node_metadata
+  node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"]
   client_certificate_config = var.default_client_certificate_config
   cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
 }
 
 module "halyard-storage" {
@@ -184,6 +206,110 @@ module "k8s-spinnaker-service-account-sandbox" {
   }
 }
 
+module "k8s-spinnaker-agent" {
+  source          = "github.com/devorbitus/terraform-google-gke-infra"
+  name            = "${var.agent_cluster_config["0"]}-${var.cluster_region}"
+  project         = var.gcp_project
+  region          = var.cluster_region
+  private_cluster = true # This will disable public IPs from the nodes
+
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
+
+  oauth_scopes              = var.default_oauth_scopes
+  k8s_options               = var.default_k8s_options
+  node_metadata             = var.default_node_metadata
+  node_options              = var.second_cluster_node_options
+  node_pool_options         = var.second_cluster_node_pool_options
+  client_certificate_config = var.default_client_certificate_config
+  cloud_nat                 = false                                                 # Will re-use the cloud nat created by the primary cluster
+  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
+  create_namespace          = var.default_create_namespace
+  extras                    = var.extras
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
+}
+
+provider "kubernetes" {
+  load_config_file       = false
+  host                   = module.k8s-spinnaker-agent.endpoint
+  cluster_ca_certificate = base64decode(module.k8s-spinnaker-agent.cluster_ca_certificate)
+  token                  = data.google_client_config.current.access_token
+  alias                  = "spinnaker-agent"
+}
+
+module "k8s-spinnaker-service-account-spinnaker-agent" {
+  source                    = "./modules/k8s-service-account"
+  service_account_name      = "spinnaker"
+  service_account_namespace = "kube-system"
+  bucket_name               = module.halyard-storage.bucket_name
+  gcp_project               = var.gcp_project
+  cluster_name              = var.agent_cluster_config["0"]
+  cluster_config            = var.cluster_config
+  cluster_region            = var.cluster_region
+  host                      = module.k8s-spinnaker-agent.endpoint
+  cluster_ca_certificate    = module.k8s-spinnaker-agent.cluster_ca_certificate
+  enable                    = true
+  cluster_list_index        = 1
+  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
+  spinnaker_namespace       = length(module.k8s-spinnaker-agent.created_namespace) > 0 ? module.k8s-spinnaker-agent.created_namespace.0.metadata.0.name : var.default_create_namespace
+  spinnaker_nodepool        = module.k8s-spinnaker-agent.created_nodepool
+
+  providers = {
+    kubernetes = kubernetes.spinnaker-agent
+  }
+}
+
+module "k8s-sandbox-agent" {
+  source          = "github.com/devorbitus/terraform-google-gke-infra"
+  name            = "${var.agent_cluster_config["1"]}-${var.cluster_region}"
+  project         = var.gcp_project
+  region          = var.cluster_region
+  private_cluster = true # This will disable public IPs from the nodes
+
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
+
+  oauth_scopes              = var.default_oauth_scopes
+  k8s_options               = var.default_k8s_options
+  node_metadata             = var.default_node_metadata
+  node_options              = var.second_cluster_node_options
+  node_pool_options         = var.second_cluster_node_pool_options
+  client_certificate_config = var.default_client_certificate_config
+  cloud_nat                 = false                                                 # Will re-use the cloud nat created by the primary cluster
+  node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
+  create_namespace          = var.default_create_namespace
+  extras                    = var.extras
+  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
+}
+
+provider "kubernetes" {
+  load_config_file       = false
+  host                   = module.k8s-sandbox-agent.endpoint
+  cluster_ca_certificate = base64decode(module.k8s-sandbox-agent.cluster_ca_certificate)
+  token                  = data.google_client_config.current.access_token
+  alias                  = "sandbox-agent"
+}
+
+module "k8s-spinnaker-service-account-sandbox-agent" {
+  source                    = "./modules/k8s-service-account"
+  service_account_name      = "spinnaker"
+  service_account_namespace = "kube-system"
+  bucket_name               = module.halyard-storage.bucket_name
+  gcp_project               = var.gcp_project
+  cluster_name              = var.agent_cluster_config["1"]
+  cluster_config            = var.cluster_config
+  cluster_region            = var.cluster_region
+  host                      = module.k8s-sandbox-agent.endpoint
+  cluster_ca_certificate    = module.k8s-sandbox-agent.cluster_ca_certificate
+  enable                    = true
+  cluster_list_index        = 1
+  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
+  spinnaker_namespace       = length(module.k8s-sandbox-agent.created_namespace) > 0 ? module.k8s-sandbox-agent.created_namespace.0.metadata.0.name : var.default_create_namespace
+  spinnaker_nodepool        = module.k8s-sandbox-agent.created_nodepool
+
+  providers = {
+    kubernetes = kubernetes.sandbox-agent
+  }
+}
+
 # to retrieve the keys for this for use outside of terraform, run 
 # `vault read -format json -field=data secret/spinnaker-gcs-account > somefile.json`
 module "spinnaker-gcp-service-account" {
@@ -248,13 +374,14 @@ data "google_compute_address" "sandbox_api_ip_address" {
 }
 
 module "spinnaker-dns" {
-  source            = "./modules/dns"
-  gcp_project       = var.managed_dns_gcp_project
-  cluster_config    = var.hostname_config
-  dns_name          = "${var.cloud_dns_hostname}"
-  ui_ip_addresses   = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
-  api_ip_addresses  = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
-  x509_ip_addresses = data.terraform_remote_state.static_ips.outputs.spin_api_ips
+  source             = "./modules/dns"
+  gcp_project        = var.managed_dns_gcp_project
+  cluster_config     = var.hostname_config
+  dns_name           = "${var.cloud_dns_hostname}"
+  ui_ip_addresses    = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
+  api_ip_addresses   = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
+  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.spin_api_ips
+  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips
 
   providers = {
     google = google.dns-zone
@@ -321,6 +448,35 @@ module "certbot-service-account" {
   bucket_name          = module.halyard-storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/dns.admin"]
+}
+
+resource "google_kms_key_ring" "vault_keyring" {
+  name     = "vault_keyring"
+  location = var.cluster_region
+}
+
+module "vault_keys" {
+  source                 = "./modules/crypto_key"
+  gcp_project            = var.gcp_project
+  cluster_region         = var.cluster_region
+  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
+  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  crypto_key_name_prefix = "vault_key"
+}
+
+module "vault_setup" {
+  source                 = "./modules/vault"
+  gcp_project            = var.gcp_project
+  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
+  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  kms_keyring_name       = google_kms_key_ring.vault_keyring.name
+  vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  cluster_region         = var.cluster_region
+  crypto_key_id_map      = module.vault_keys.crypto_key_id_map
+}
+
+output "vault_yml_files" {
+  value = module.vault_setup.vault_yml_files
 }
 
 output "created_onboarding_bucket_name" {

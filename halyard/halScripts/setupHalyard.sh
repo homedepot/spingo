@@ -106,6 +106,7 @@ deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
 CLOUDDRIVER_PATCH
 
+yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
 
 # set-up front50 to use cloudsql proxy
 tee /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml << FRONT50_PATCH
@@ -121,7 +122,7 @@ deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
 FRONT50_PATCH
 
-yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
+yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml
 
 # set-up replica patch
 tee /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml << REPLICA_PATCH
@@ -230,15 +231,6 @@ sql:
     user: front50_migrate
     password: ${DB_FRONT50_MIGRATE_PASSWORD}
     jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
-redis:
-  enabled: true
-  connection: redis://${SPIN_REDIS_ADDR}
-  cache:
-    enabled: false
-  scheduler:
-    enabled: true
-  taskRepository:
-    enabled: false
 FRONT50_LOCAL
 
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479

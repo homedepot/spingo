@@ -167,3 +167,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VAULT_ADDR: http://localhost:8200
           VAULT_TOKEN: jeremy
+  shellcheck:
+    runs-on: [ubuntu-latest]
+    name: 'Lint shell scripts'
+    steps:
+      - uses: actions/checkout@master
+      - name: 'Check all shell scripts for shellcheck compliance'
+        uses: npmaile/GH-Actions-ShellCheck@master
+        with:
+          find_regex: '.*\.sh'
+          exclusions: '.*halyard.*'
+    

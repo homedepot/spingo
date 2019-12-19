@@ -169,10 +169,10 @@ jobs:
           VAULT_TOKEN: jeremy
   shellcheck:
     runs-on: [ubuntu-latest]
-    name: lint shell scripts
+    name: 'Lint shell scripts'
     steps:
       - uses: actions/checkout@master
-      - name: check all shell scripts
+      - name: 'Check all shell scripts for shellcheck compliance'
         uses: npmaile/GH-Actions-ShellCheck@master
         with:
           find_regex: '.*\.sh'

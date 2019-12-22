@@ -69,6 +69,7 @@ vault read -field value secret/"$PROJECT"/local-vars-static_ips-region > static_
 
 # For halyard VM zone
 vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_zone > halyard/var-gcp_zone.auto.tfvars
+vault read -field value secret/"$PROJECT"/local-vars-halyard-certbot_email > halyard/local-vars-halyard-certbot_email.auto.tfvars
 
 # For GCP Org Admin Email
 vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_admin_email > halyard/var-gcp_admin_email.auto.tfvars

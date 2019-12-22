@@ -45,6 +45,13 @@ runuser -l ${USER} -c 'curl "https://releases.hashicorp.com/vault/1.2.3/vault_1.
 runuser -l ${USER} -c 'unzip /home/${USER}/vault.zip -d /home/${USER}'
 runuser -l ${USER} -c 'sudo mv /home/${USER}/vault /usr/local/bin/vault'
 
+echo "Installing Helm"
+runuser -l ${USER} -c 'curl -LO https://git.io/get_helm.sh'
+runuser -l ${USER} -c 'chmod 700 /home/${USER}/get_helm.sh'
+runuser -l ${USER} -c './get_helm.sh'
+runuser -l ${USER} -c 'git clone https://github.com/hashicorp/vault-helm.git'
+runuser -l ${USER} -c 'git -C /home/${USER}/vault-helm checkout v0.3.0'
+
 #this is hard coded because it is necessary name.
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'
 

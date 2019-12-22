@@ -19,3 +19,7 @@ data "google_kms_crypto_key" "crypto_key" {
 output "crypto_key_id_map" {
   value = { for s in values(var.cluster_key_map) : s => data.google_kms_crypto_key.crypto_key[s].self_link }
 }
+
+output "crypto_key_name_map" {
+  value = { for s in values(var.cluster_key_map) : s => data.google_kms_crypto_key.crypto_key[s].name }
+}

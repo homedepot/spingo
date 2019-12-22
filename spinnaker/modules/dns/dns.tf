@@ -87,3 +87,7 @@ output "spinnaker-api_hosts" {
 output "spinnaker-api_x509_hosts" {
   value = google_dns_record_set.spinnaker-api-x509.*.name
 }
+
+output "vault_hosts_map" {
+  value = { for s in var.cluster_config : s => "vault-${s}.${var.dns_name}" }
+}

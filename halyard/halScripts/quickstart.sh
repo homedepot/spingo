@@ -17,4 +17,7 @@ echo "Auto running setupSlack.sh"
 echo "Auto running setupOnboarding.sh"
 ./setupOnboarding.sh
 
-echo "autostart complete please log into your Spinnaker deployment(s)"
+echo "Auto running halpush to save configuration to halyard bucket"
+./halpush.sh
+
+echo "Autostart complete please log into your Spinnaker deployment(s)"

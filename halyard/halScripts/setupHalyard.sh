@@ -206,6 +206,47 @@ kubernetes:
 
 EOF
 
+if [ -f /${USER}/vault/dyn_acct_${deployment}_rw_token && -s /${USER}/vault/dyn_acct_${deployment}_rw_token && -f /${USER}/vault/dyn_acct_${deployment}_ro_token && -s /${USER}/vault/dyn_acct_${deployment}_ro_token ]; then
+    
+    echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${deployment}"
+
+    cp /${USER}/vault/dyn_acct_${deployment}_rw_token /home/${USER}/.vault-token
+
+    echo "Setting Dynamic Account Secret for deployment ${deployment}"
+    # First we read the existing account information, then we lookup the contents of the kubeconfigFile
+    # and append it as a kubeconfigContents element, lastly we append that to the kubernetes.account list
+    # and store that into the vault secret
+    yq r -j \
+        .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
+        jq --argjson contents $(yq r -j $(yq r .hal/config deploymentConfigurations.0.providers.kubernetes.accounts.0.kubeconfigFile) | jq 'tojson') 'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | vault kv put \
+        -address="https://${VAULT_ADDR}" \
+        secret/spinnaker -
+    
+    echo "Configuring Spinnaker dynamic account for deployment ${deployment}"
+
+    cat <<DYN_CONFIG >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml
+spring:
+  profiles:
+    include: vault
+  cloud:
+    config:
+      server:
+        vault:
+          host: ${VAULT_ADDR}
+          port: 443
+          scheme: https
+          backend: secret
+          kvVersion: 1
+          default-key: spinnaker
+          token: $(cat /${USER}/vault/dyn_acct_${deployment}_ro_token)
+
+DYN_CONFIG
+
+    rm /home/${USER}/.vault-token
+else
+    echo "Dynamic Account Tokens NPT found so skipping configuring dynamic account for deployment ${deployment}"
+fi
+
 echo "Running initial Spinnaker deployment for deployment named ${DEPLOYMENT_NAME}"
 hal deploy apply \
     --deployment ${DEPLOYMENT_NAME}

@@ -166,7 +166,9 @@ echo "Waiting for vault to be up and running for deployment ${deployment}"
 n=0
 until [ $n -ge 20 ]
 do
-   vault status -address="https://${details.vaultAddr}" -format=json && break
+   vault status \
+    -address="https://${details.vaultAddr}" \
+    -format=json && break
    n=$[$n+1]
    echo "Vault is not yet up and running for deployment ${deployment} waiting..."
    sleep 6
@@ -174,13 +176,15 @@ done
 
 echo "Enabling kubernetes auth on vault for deployment ${deployment}"
 
-vault auth enable -address="https://${details.vaultAddr}" \
+vault auth enable \
+    -address="https://${details.vaultAddr}" \
     --path="kubernetes-${details.clusterName}" \
     kubernetes
 
 echo "Enabling kubernetes auth on vault for agent cluster deployment ${deployment}"
 
-vault auth enable -address="https://${details.vaultAddr}" \
+vault auth enable \
+    -address="https://${details.vaultAddr}" \
     --path="kubernetes-${details.clusterName}-agent" \
     kubernetes
 
@@ -207,14 +211,18 @@ K8S_HOST=$(kubectl --kubeconfig="${details.kubeConfig}" config view -o jsonpath=
 
 echo "Creating kubernetes auth config for deployment ${deployment}"
 
-vault write -address "https://${details.vaultAddr}" auth/kubernetes-${details.clusterName}/config \
+vault write \
+    -address "https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}/config \
     token_reviewer_jwt="$SA_JWT_TOKEN" \
     kubernetes_host="$K8S_HOST" \
     kubernetes_ca_cert="$SA_CA_CRT"
 
 echo "Creating role to map to kubernetes service account"
 
-vault write -address "https://${details.vaultAddr}" auth/kubernetes-${details.clusterName}/role/spinnaker \
+vault write \
+    -address "https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}/role/spinnaker \
     bound_service_account_names="default" \
     bound_service_account_namespaces="*" \
     policies="spinnaker-kv-ro" \
@@ -229,14 +237,18 @@ K8S_HOST=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" conf
 
 echo "Creating kubernetes auth config for agent cluster deployment ${deployment}"
 
-vault write -address="https://${details.vaultAddr}" auth/kubernetes-${details.clusterName}-agent/config \
+vault write \
+    -address="https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}-agent/config \
     token_reviewer_jwt="$SA_JWT_TOKEN" \
     kubernetes_host="$K8S_HOST" \
     kubernetes_ca_cert="$SA_CA_CRT"
 
 echo "Creating role to map to kubernetes service account for agent cluster deployment ${deployment}"
 
-vault write -address="https://${details.vaultAddr}" auth/kubernetes-${details.clusterName}-agent/role/spinnaker \
+vault write \
+    -address="https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}-agent/role/spinnaker \
     bound_service_account_names="default" \
     bound_service_account_namespaces="*" \
     policies="spinnaker-kv-ro" \
@@ -248,7 +260,9 @@ echo "Starting Vault GCP Auth (GCE) for deployment ${deployment}"
 
 vault auth enable -address="https://${details.vaultAddr}" gcp
 
-vault write -address="https://${details.vaultAddr}" auth/gcp/role/gcp_gce_role \
+vault write \
+    -address="https://${details.vaultAddr}" \
+    auth/gcp/role/gcp_gce_role \
     project_id="${PROJECT}" \
     type="gce" \
     policies="spinnaker-kv-ro" \
@@ -258,7 +272,10 @@ echo "Ending Vault GCP Auth (GCE) for deployment ${deployment}"
 
 echo "Enabling dynamic account secret keystore for deployment ${deployment}"
 
-vault secrets enable -path=secret/spinnaker -default-lease-ttl=0 -max-lease-ttl=0 kv
+vault secrets enable \
+    -path=secret/spinnaker \
+    -default-lease-ttl=0 \
+    -max-lease-ttl=0 kv
 
 echo "Creating AppRole Auth for deployment ${deployment}"
 
@@ -282,7 +299,8 @@ vault auth enable -address="https://${details.vaultAddr}" approle
 
 echo "Creating Dynamic Accounts Role for deployment ${deployment}"
 
-vault write -address="https://${details.vaultAddr}" auth/approle/role/dynamic_accounts_ro_role \
+vault write -address="https://${details.vaultAddr}" \
+    auth/approle/role/dynamic_accounts_ro_role \
     token_policies="dynamic_accounts_ro_policy" \
     token_max_ttl="1600h" \
     token_num_uses=0 \
@@ -304,7 +322,8 @@ vault write -address="https://${details.vaultAddr}" \
 
 echo "Getting Dynamic Accounts Token for deployment ${deployment}"
 
-vault write -address="https://${details.vaultAddr}" -format=json auth/approle/login \
+vault write -address="https://${details.vaultAddr}" \
+    -format=json auth/approle/login \
     role_id="$(cat /${USER}/vault/dyn_acct_${deployment}_role_id)" \
     secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_secred_id)" \
     | jq -r '.auth.client_token' > /${USER}/vault/dyn_acct_${deployment}_token

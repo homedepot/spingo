@@ -1,4 +1,8 @@
 
+if [ ! -d /${USER}/vault ]; then
+  mkdir /${USER}/vault
+fi
+
 %{ for deployment, details in deployments ~}
 
 echo "${details.vaultYaml}" | base64 -d > /home/${USER}/vault_${details.clusterName}.yml
@@ -71,7 +75,7 @@ helm install \
     --namespace vault \
     --kubeconfig "${details.kubeConfig}" \
     --values /home/${USER}/vault_${details.clusterName}.yml \
-    /home/${USER}/vault-helm
+    https://github.com/hashicorp/vault-helm/archive/v0.3.0.tar.gz
 
 echo "Waiting for vault to be installed for deployment ${deployment}"
 n=0
@@ -242,7 +246,7 @@ echo "Ending vault kubernetes auth for deployment ${deployment}"
 
 echo "Starting Vault GCP Auth (GCE) for deployment ${deployment}"
 
-vault auth enable  -address="https://${details.vaultAddr}" gcp
+vault auth enable -address="https://${details.vaultAddr}" gcp
 
 vault write -address="https://${details.vaultAddr}" auth/gcp/role/gcp_gce_role \
     project_id="${PROJECT}" \
@@ -251,6 +255,57 @@ vault write -address="https://${details.vaultAddr}" auth/gcp/role/gcp_gce_role \
     bound_regions="${CLUSTER_REGION}"
 
 echo "Ending Vault GCP Auth (GCE) for deployment ${deployment}"
+
+echo "Enabling dynamic account secret keystore for deployment ${deployment}"
+
+vault secrets enable -path=secret/spinnaker -default-lease-ttl=0 -max-lease-ttl=0 kv
+
+echo "Creating AppRole Auth for deployment ${deployment}"
+
+echo "Creating Dynamic Accounts Policy for deployment ${deployment}"
+
+cat << VAULT_POLICY | vault policy write -address="https://${details.vaultAddr}" dynamic_accounts_ro_policy -
+# For K/V v1 secrets engine
+path "secret/spinnaker/*" {
+    capabilities = ["read", "list"]
+}
+# For K/V v2 secrets engine
+path "secret/data/spinnaker/*" {
+    capabilities = ["read", "list"]
+}
+
+VAULT_POLICY
+
+echo "Enabling Dynamic Accounts Policy for deployment ${deployment}"
+
+vault auth enable -address="https://${details.vaultAddr}" approle
+
+echo "Creating Dynamic Accounts Role for deployment ${deployment}"
+
+vault write -address="https://${details.vaultAddr}" auth/approle/role/dynamic_accounts_ro_role \
+    token_policies="dynamic_accounts_ro_policy" \
+    token_max_ttl="1600h" \
+    token_num_uses=0 \
+    secret_id_num_uses=0
+
+echo "Getting Dynamic Accounts Role ID for deployment ${deployment}"
+
+vault read -address="https://${details.vaultAddr}" auth/approle/role/dynamic_accounts_ro_role/role-id \
+    field="role_id" > /${USER}/vault/dyn_acct_${deployment}_role_id
+
+echo "Getting Dynamic Accounts Secret ID for deployment ${deployment}"
+
+vault write -address="https://${details.vaultAddr}" -f auth/approle/role/dynamic_accounts_ro_role/secret-id \
+    field="secret_id" > /${USER}/vault/dyn_acct_${deployment}_secred_id
+
+echo "Getting Dynamic Accounts Token for deployment ${deployment}"
+
+vault write auth/approle/login \
+    role_id="$(cat /${USER}/vault/dyn_acct_${deployment}_role_id)" \
+    secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_secred_id)" \
+    field="token" > /${USER}/vault/dyn_acct_${deployment}_token
+
+echo "Ending dynamic account setup for deployment ${deployment}"
 
 rm /home/${USER}/.vault-token
 

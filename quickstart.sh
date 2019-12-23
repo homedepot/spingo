@@ -2,15 +2,14 @@
 
 setup_and_run_tf(){
     DIR="$1"
-    cd "$DIR"
+    cd "$DIR" || { echo "cd to $DIR failed. Unable to run terraform commands. Cowardly exiting" ; return; }
     terraform init
     terraform apply -auto-approve
     cd ..
 }
 
-./scripts/initial_setup.sh
-
-if [ "$?" -ne 0 ];then
+if ! ./scripts/initial_setup.sh
+then
     echo "Initial setup failed so cowardly exiting"
     exit 1
 fi

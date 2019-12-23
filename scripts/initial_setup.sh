@@ -21,7 +21,7 @@
 die() { echo "$*" 1>&2 ; exit 1; }
 
 need() {
-    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+    command -v "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
 
 need "vault"
@@ -37,8 +37,8 @@ terraform_override() {
     # $4 = terraform sub-project directory
     # $5 = GCP project name
 
-    echo -e "terraform {\n backend \"gcs\" {\n bucket = \"$1\" \ncredentials = \"terraform-account.json\" \nprefix = \"$2\" \n} \n}" | terraform fmt - > "$3/$4/override.tf"
-    if [ "$?" -ne 0 ]; then
+    if ! echo -e "terraform {\n backend \"gcs\" {\n bucket = \"$1\" \ncredentials = \"terraform-account.json\" \nprefix = \"$2\" \n} \n}" | terraform fmt - > "$3/$4/override.tf"
+    then
         die "Unable to write terraform backend override file for $4"
     fi
     vault write "secret/$5/local-override-$2" "value"=@"$3/$4/override.tf" >/dev/null 2>&1
@@ -57,7 +57,7 @@ terraform_variable() {
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
-cd "$GIT_ROOT_DIR"
+cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
 
 echo "-----------------------------------------------------------------------------"
 CURR_PROJ=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
@@ -104,7 +104,6 @@ gcloud services enable admin.googleapis.com
 echo "enabling cloudkms.googleapis.com - Needed for Vault"
 gcloud services enable cloudkms.googleapis.com
 
-DOMAIN="$(gcloud config list account --format 'value(core.account)' 2>/dev/null | cut -d'@' -f2)"
 USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"
@@ -115,7 +114,7 @@ gcloud iam service-accounts create \
     "$SERVICE_ACCOUNT_NAME" \
     --display-name "$SERVICE_ACCOUNT_NAME"
 
-while [ -z $SA_EMAIL ]; do
+while [ -z "$SA_EMAIL" ]; do
   echo "waiting for service account to be fully created..."
   sleep 1
   SA_EMAIL=$(gcloud iam service-accounts list \
@@ -196,13 +195,12 @@ while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
     echo "Inner Bucket Check : $BUCKET_CHECK"
 done
 
-vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
-
-if [[ "$?" -ne 0 ]]; then
+if ! vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
+  then
     echo "-----------------------------------------------------------------------------"
     echo " *****   There is no keystore password stored within vault. Please enter a password you want to use or leave blank to create a random one."
     echo "-----------------------------------------------------------------------------"
-    read USER_KEY_PASS
+    read -r USER_KEY_PASS
     if [ "$USER_KEY_PASS" == "" ]; then
         echo "creating random keystore password and storing within vault"
         KEY_PASS=$(openssl rand -base64 29 | tr -d "=+/" | cut -c1-25)
@@ -235,9 +233,9 @@ terraform_variable "certbot_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PRO
 echo "-----------------------------------------------------------------------------"
 echo " *****   Managed Domain   *****"
 echo "-----------------------------------------------------------------------------"
-while [ -z $DOMAIN_TO_MANAGE ]; do
+while [ -z "$DOMAIN_TO_MANAGE" ]; do
     echo -n "What is the domain to manage for Cloud DNS? (example *.spinnaker.example.com would be spinnaker.example.com)?  "
-    read DOMAIN_TO_MANAGE
+    read -r DOMAIN_TO_MANAGE
 done
 
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "dns" "$PROJECT"
@@ -286,7 +284,7 @@ echo "--------------------------------------------------------------------------
 echo " *****   Google Cloud Project Zone    *****"
 echo "-----------------------------------------------------------------------------"
 PS3="Enter the number for the Google Cloud Project Zone place the Halyard and Certbot VMs into (ctrl-c to exit) : ";
-select zone in $(gcloud compute zones list --format='value(name)' --filter='region='$(gcloud compute regions list --filter="name=$region" --format='value(selfLink)' 2>/dev/null) 2>/dev/null)
+select zone in $(gcloud compute zones list --format='value(name)' --filter='region='"$(gcloud compute regions list --filter="name=$region" --format='value(selfLink)' 2>/dev/null)" 2>/dev/null)
 do
     if [ "$zone" == "" ]; then
         echo "You must select a Google Cloud Project Zone"
@@ -308,12 +306,12 @@ vault write secret/"$PROJECT"/slack-token "value=$SLACK_BOT_TOKEN" >/dev/null 2>
 echo "-----------------------------------------------------------------------------"
 echo " *****   Google Cloud Platform Organization Email Address   *****"
 echo "-----------------------------------------------------------------------------"
-while [ -z $gcp_admin_email ]; do
+while [ -z "$gcp_admin_email" ]; do
     echo -n "Enter an email address of an administrator for your Google Cloud Platform Organization (someone with group administration access):  "
-    read gcp_admin_email
+    read -r gcp_admin_email
 done
 terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 echo "setup complete"
-cd "$CWD"
+cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

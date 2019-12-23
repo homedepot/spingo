@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2125,SC2068,SC2001
 set -e
 #I(N8) have no idea what the program does. I take no responsibility for it.
 exists() {
@@ -32,7 +33,7 @@ do
         if [[ "$do_exist" == "true" ]] ; then
             echo "cluster already selected"
         else
-            selected_clusters+=($cluster)
+            selected_clusters+=("$cluster")
             echo "adding cluster $cluster to selected clusters"
         fi
     fi
@@ -43,7 +44,7 @@ for cluster in ${selected_clusters[@]}
 do
     location="$(gcloud beta container clusters list --filter="name:$cluster" --format="value(Location)")"
     cidrlist="$machinecidr"
-    for cidr in "$(gcloud container clusters describe "$cluster" --region "$location" --format="json" | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock')"
+    for cidr in $(gcloud container clusters describe "$cluster" --region "$location" --format="json" | jq '.masterAuthorizedNetworksConfig.cidrBlocks[].cidrBlock')
     do
         cidrlist="$cidrlist,$cidr"
     done

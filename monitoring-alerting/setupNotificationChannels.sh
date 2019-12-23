@@ -1,13 +1,13 @@
 #!/bin/bash
-
+# shellcheck disable=SC2198,SC2068
 die() { echo "$*" 1>&2 ; exit 1; }
 
 need() {
-    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+    command -v "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
 
 exists() {
-    list=$1[@] #cannot pass array to function, they just come in as literals. indirect expansion done below
+    list="$1[@]" #cannot pass array to function, they just come in as literals. indirect expansion done below
     name="$2"
     RESULT="false"
 
@@ -24,9 +24,8 @@ exists() {
 need "gcloud"
 need "jq"
 
-gcloud components install alpha --quiet
-
-if [ "$?" -ne 0 ]; then
+if ! gcloud components install alpha --quiet
+then
     die "Unable to install gcloud alpha components required to manage notification channels"
 fi
 
@@ -53,7 +52,7 @@ do
         if [[ "$do_exist" == "true" ]] ; then
             echo "Channel already selected"
         else
-            selected_channels+=($channel)
+            selected_channels+=("$channel")
             echo "adding channel $channel to selected channels"
         fi
     fi

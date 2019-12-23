@@ -253,6 +253,11 @@ kubernetes:
 
 EOF
 
+cat <<SETTINGS_LOCAL >> ${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
+window.spinnakerSettings.notifications.email.enabled = false;
+window.spinnakerSettings.notifications.bearychat.enabled = false;
+SETTINGS_LOCAL
+
 echo "Running initial Spinnaker deployment for deployment named ${DEPLOYMENT_NAME}"
 hal deploy apply \
     --deployment ${DEPLOYMENT_NAME}

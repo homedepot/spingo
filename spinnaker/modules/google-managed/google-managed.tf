@@ -167,6 +167,15 @@ resource "google_sql_user" "clouddriver-service-user" {
   password = random_string.clouddriver-db-service-user-password[count.index].result
 }
 
+
+resource "google_sql_user" "front50-service-user" {
+  count    = length(var.cluster_config)
+  name     = "front50_service"
+  host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
+  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
+  password = random_string.front50-db-service-user-password[count.index].result
+}
+
 resource "google_sql_user" "spinnaker-migrate-user" {
   count    = length(var.cluster_config)
   name     = "orca_migrate"
@@ -181,6 +190,15 @@ resource "google_sql_user" "clouddriver-migrate-user" {
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.spinnaker-mysql[count.index].name
   password = random_string.clouddriver-db-migrate-user-password[count.index].result
+}
+
+
+resource "google_sql_user" "front50-migrate-user" {
+  count    = length(var.cluster_config)
+  name     = "front50_migrate"
+  host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
+  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
+  password = random_string.front50-db-migrate-user-password[count.index].result
 }
 
 resource "random_string" "spinnaker-db-service-user-password" {
@@ -200,11 +218,7 @@ resource "random_string" "front50-db-service-user-password" {
   length  = 12
   special = false
 }
-resource "random_string" "front50-db-migrate-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
-}
+
 resource "random_string" "spinnaker-db-migrate-user-password" {
   count   = length(var.cluster_config)
   length  = 12
@@ -212,6 +226,12 @@ resource "random_string" "spinnaker-db-migrate-user-password" {
 }
 
 resource "random_string" "clouddriver-db-migrate-user-password" {
+  count   = length(var.cluster_config)
+  length  = 12
+  special = false
+}
+
+resource "random_string" "front50-db-migrate-user-password" {
   count   = length(var.cluster_config)
   length  = 12
   special = false

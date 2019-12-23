@@ -290,20 +290,24 @@ vault write -address="https://${details.vaultAddr}" auth/approle/role/dynamic_ac
 
 echo "Getting Dynamic Accounts Role ID for deployment ${deployment}"
 
-vault read -address="https://${details.vaultAddr}" auth/approle/role/dynamic_accounts_ro_role/role-id \
-    field="role_id" > /${USER}/vault/dyn_acct_${deployment}_role_id
+vault read -address="https://${details.vaultAddr}" \
+    -format=json auth/approle/role/dynamic_accounts_ro_role/role-id \
+    | jq -r '.data.role_id' > /${USER}/vault/dyn_acct_${deployment}_role_id
 
 echo "Getting Dynamic Accounts Secret ID for deployment ${deployment}"
 
-vault write -address="https://${details.vaultAddr}" -f auth/approle/role/dynamic_accounts_ro_role/secret-id \
-    field="secret_id" > /${USER}/vault/dyn_acct_${deployment}_secred_id
+vault write -address="https://${details.vaultAddr}" \
+    -format=json \
+    -force \
+    auth/approle/role/dynamic_accounts_ro_role/secret-id \
+    | jq -r '.data.secret_id' > /${USER}/vault/dyn_acct_${deployment}_secred_id
 
 echo "Getting Dynamic Accounts Token for deployment ${deployment}"
 
-vault write auth/approle/login \
+vault write -address="https://${details.vaultAddr}" -format=json auth/approle/login \
     role_id="$(cat /${USER}/vault/dyn_acct_${deployment}_role_id)" \
     secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_secred_id)" \
-    field="token" > /${USER}/vault/dyn_acct_${deployment}_token
+    | jq -r '.auth.client_token' > /${USER}/vault/dyn_acct_${deployment}_token
 
 echo "Ending dynamic account setup for deployment ${deployment}"
 

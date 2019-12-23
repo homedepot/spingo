@@ -206,7 +206,7 @@ kubernetes:
 
 EOF
 
-if [ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token ]; then
+if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token ]]; then
     
     echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
 

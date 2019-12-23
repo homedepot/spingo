@@ -272,10 +272,9 @@ echo "Ending Vault GCP Auth (GCE) for deployment ${deployment}"
 
 echo "Enabling dynamic account secret keystore for deployment ${deployment}"
 
-vault secrets enable \
-    -address="https://${details.vaultAddr}" \
+vault secrets enable -address="https://${details.vaultAddr}" \
     -version=1 \
-    -path=secret \
+    -path="secret" \
     -default-lease-ttl=0 \
     -max-lease-ttl=0 \
     kv
@@ -283,7 +282,7 @@ vault secrets enable \
 cat << DYN_ACCT_START | vault kv put -address="https://${details.vaultAddr}" secret/spinnaker -
 {
     "kubernetes": {
-        accounts: []
+        "accounts": []
     }
 }
 
@@ -296,11 +295,11 @@ echo "Creating Dynamic Accounts Policy for deployment ${deployment}"
 
 cat << VAULT_POLICY | vault policy write -address="https://${details.vaultAddr}" dynamic_accounts_ro_policy -
 # For K/V v1 secrets engine
-path "secret/spinnaker/*" {
+path "secret/spinnaker" {
     capabilities = ["read", "list"]
 }
 # For K/V v2 secrets engine
-path "secret/data/spinnaker/*" {
+path "secret/data/spinnaker" {
     capabilities = ["read", "list"]
 }
 
@@ -308,11 +307,11 @@ VAULT_POLICY
 
 cat << VAULT_POLICY | vault policy write -address="https://${details.vaultAddr}" dynamic_accounts_rw_policy -
 # For K/V v1 secrets engine
-path "secret/spinnaker/*" {
+path "secret/spinnaker" {
     capabilities = ["read", "list", "create", "update", "delete"]
 }
 # For K/V v2 secrets engine
-path "secret/data/spinnaker/*" {
+path "secret/data/spinnaker" {
     capabilities = ["read", "list", "create", "update", "delete"]
 }
 

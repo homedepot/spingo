@@ -5,7 +5,7 @@
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
-cd "$GIT_ROOT_DIR"
+cd "$GIT_ROOT_DIR" || { echo "failed to go to git root directory $GIT_ROOT_DIR. Exiting"; exit 1;}
 
 ####################################################
 ########             Dependencies           ######## 
@@ -15,13 +15,13 @@ cd "$GIT_ROOT_DIR"
 die() { echo "$*" 1>&2 ; exit 1; }
 
 need() {
-    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+    command -v "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
 
 need "vault"
 
-vault auth list >/dev/null 2>&1
-if [[ "$?" -ne 0 ]]; then
+if ! vault auth list >/dev/null 2>&1
+then
   echo "not logged into vault!"
   echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.example.com:10231')"
   echo "2. login: (e.g. 'vault login <some token>')"
@@ -76,4 +76,4 @@ vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_admin_email > h
 vault read -field value secret/"$PROJECT"/local-vars-halyard-spingo_user_email > spinnaker/var-spingo_user_email.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-halyard-spingo_user_email > halyard/var-spingo_user_email.auto.tfvars
 
-cd "$CWD"
+cd "$CWD" || { echo "failed to return to directory $CWD"; exit;}

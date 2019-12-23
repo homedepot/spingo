@@ -20,7 +20,7 @@
 die() { echo "$*" 1>&2 ; exit 1; }
 
 need() {
-    which "$1" &>/dev/null || die "Binary '$1' is missing but required"
+    command -v "$1" &>/dev/null || die "Binary '$1' is missing but required"
 }
 
 bucket_check(){
@@ -52,7 +52,7 @@ bucket_check(){
 
 destroy_tf(){
     DIR="$1"
-    cd "$DIR"
+    cd "$DIR" || { echo "failed to enter terraform directory $DIR"; return; }
     echo "Removing infrstructure from terraform directory $DIR"
     terraform state list >/dev/null 2>&1
     INIT_STATE_CHECK="$?"
@@ -67,11 +67,11 @@ destroy_tf(){
         n=1
         until [ $n -ge $limit ]
         do
-            terraform destroy -auto-approve && break
-            if [ "$?" -ne 0 ]; then
+            if ! terraform destroy -auto-approve && break
+            then
                 echo "Unable to destroy infrastructure successfully in $DIR so trying again (attempt $n of $limit)"
             fi
-            n=$[$n+1]
+	    n=$((n+1))
             sleep 3
         done
         if [ $n -ge $limit ]; then
@@ -92,7 +92,7 @@ while [ "$SCRIPT_CONFIRMATION" != "YES" ]; do
     echo "This script is designed to remove all infrastructure and service accounts"
     echo "-----------------------------------------------------------------------------"
     echo -n "Enter YES to continue (ctrl-c to exit) : "
-    read SCRIPT_CONFIRMATION
+    read -r SCRIPT_CONFIRMATION
 done
 
 need "vault"
@@ -103,7 +103,7 @@ need "jq"
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
-cd "$GIT_ROOT_DIR"
+cd "$GIT_ROOT_DIR" || { echo "unable to cd back to $GIT_ROOT_DIRECTORY, quitting"; exit 1; }
 
 echo "-----------------------------------------------------------------------------"
 CURR_PROJ=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
@@ -128,8 +128,8 @@ destroy_tf "spinnaker"
 destroy_tf "static_ips"
 destroy_tf "dns"
 
-vault auth list >/dev/null 2>&1
-if [[ "$?" -ne 0 ]]; then
+if ! vault auth list >/dev/null 2>&1
+then
   echo "not logged into vault!"
   echo "1. set VAULT_ADDR (e.g. 'export VAULT_ADDR=https://vault.example.com:10231')"
   echo "2. login: (e.g. 'vault login <some token>')"
@@ -185,4 +185,4 @@ bucket_check "$TERRAFORM_REMOTE_GCS_NAME" "Terraform state"
 bucket_check "$HALYARD_GCS_NAME" "Halyard"
 
 echo "deletion complete"
-cd "$CWD"
+cd "$CWD" || { echo "unable to return to $CWD" ; exit ; }

@@ -206,13 +206,13 @@ kubernetes:
 
 EOF
 
-if [ -f /${USER}/vault/dyn_acct_${deployment}_rw_token && -s /${USER}/vault/dyn_acct_${deployment}_rw_token && -f /${USER}/vault/dyn_acct_${deployment}_ro_token && -s /${USER}/vault/dyn_acct_${deployment}_ro_token ]; then
+if [ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token ]; then
     
-    echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${deployment}"
+    echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
 
-    cp /${USER}/vault/dyn_acct_${deployment}_rw_token /home/${USER}/.vault-token
+    cp /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token /home/${USER}/.vault-token
 
-    echo "Setting Dynamic Account Secret for deployment ${deployment}"
+    echo "Setting Dynamic Account Secret for deployment ${DEPLOYMENT_NAME}"
     # First we read the existing account information, then we lookup the contents of the kubeconfigFile
     # and append it as a kubeconfigContents element, lastly we append that to the kubernetes.account list
     # and store that into the vault secret
@@ -222,7 +222,7 @@ if [ -f /${USER}/vault/dyn_acct_${deployment}_rw_token && -s /${USER}/vault/dyn_
         -address="https://${VAULT_ADDR}" \
         secret/spinnaker -
     
-    echo "Configuring Spinnaker dynamic account for deployment ${deployment}"
+    echo "Configuring Spinnaker dynamic account for deployment ${DEPLOYMENT_NAME}"
 
     cat <<DYN_CONFIG >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml
 spring:
@@ -238,13 +238,13 @@ spring:
           backend: secret
           kvVersion: 1
           default-key: spinnaker
-          token: $(cat /${USER}/vault/dyn_acct_${deployment}_ro_token)
+          token: $(cat /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token)
 
 DYN_CONFIG
 
     rm /home/${USER}/.vault-token
 else
-    echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${deployment}"
+    echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
 fi
 cat <<SETTINGS_LOCAL >> ${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
 window.spinnakerSettings.notifications.email.enabled = false;

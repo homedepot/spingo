@@ -143,6 +143,14 @@ resource "google_sql_database" "clouddriver" {
   collation = "utf8mb4_unicode_ci"
 }
 
+resource "google_sql_database" "front50" {
+  count     = length(var.cluster_config)
+  name      = "front50"
+  instance  = google_sql_database_instance.spinnaker-mysql[count.index].name
+  charset   = "utf8mb4"
+  collation = "utf8mb4_unicode_ci"
+}
+
 resource "google_sql_user" "spinnaker-service-user" {
   count    = length(var.cluster_config)
   name     = "orca_service"

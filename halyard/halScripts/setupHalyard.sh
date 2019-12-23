@@ -265,7 +265,9 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
     # and store that into the vault secret
     yq r -j \
         .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
-        jq --argjson contents $(yq r -j $(yq r .hal/config deploymentConfigurations.0.providers.kubernetes.accounts.0.kubeconfigFile) | jq 'tojson') 'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | vault kv put \
+        jq --arg contents "$(yq r -j $(yq r .hal/config deploymentConfigurations.0.providers.kubernetes.accounts.0.kubeconfigFile) | sed -E ':a;N;$!ba;s/\r{0,1}\n/\n/g')" \
+        'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | \
+        vault kv put \
         -address="https://${VAULT_ADDR}" \
         secret/dynamic_accounts/spinnaker -
     

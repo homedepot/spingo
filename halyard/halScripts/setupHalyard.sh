@@ -244,7 +244,7 @@ DYN_CONFIG
 
     rm /home/${USER}/.vault-token
 else
-    echo "Dynamic Account Tokens NPT found so skipping configuring dynamic account for deployment ${deployment}"
+    echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${deployment}"
 fi
 
 echo "Running initial Spinnaker deployment for deployment named ${DEPLOYMENT_NAME}"

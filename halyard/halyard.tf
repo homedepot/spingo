@@ -389,6 +389,7 @@ data "template_file" "setupHalyard" {
     DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password[count.index].data["password"]
     DEPLOYMENT_NAME                 = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
     DEPLOYMENT_INDEX                = count.index
+    VAULT_ADDR                      = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[count.index], "")
     KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }

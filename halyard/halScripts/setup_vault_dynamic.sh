@@ -5,7 +5,7 @@ fi
 
 %{ for deployment, details in deployments ~}
 
-echo "${details.vaultYaml}" | base64 -d > /home/${USER}/vault_${details.clusterName}.yml
+echo "${details.vaultYaml}" | base64 -d > /${USER}/vault/vault_${details.clusterName}_helm_values.yml
 
 echo "Creating vault namespace for deployment ${deployment}"
 
@@ -74,7 +74,7 @@ helm install \
     --name vault \
     --namespace vault \
     --kubeconfig "${details.kubeConfig}" \
-    --values /home/${USER}/vault_${details.clusterName}.yml \
+    --values /${USER}/vault/vault_${details.clusterName}_helm_values.yml \
     https://github.com/hashicorp/vault-helm/archive/v0.3.0.tar.gz
 
 echo "Waiting for vault to be installed for deployment ${deployment}"

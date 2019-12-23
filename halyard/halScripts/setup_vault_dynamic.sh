@@ -274,9 +274,21 @@ echo "Enabling dynamic account secret keystore for deployment ${deployment}"
 
 vault secrets enable \
     -address="https://${details.vaultAddr}" \
-    -path=secret/spinnaker \
+    -version=1 \
+    -path=secret \
     -default-lease-ttl=0 \
-    -max-lease-ttl=0 kv
+    -max-lease-ttl=0 \
+    kv
+
+cat << DYN_ACCT_START | vault kv put -address="https://${details.vaultAddr}" secret/spinnaker -
+{
+    "kubernetes": {
+        accounts: []
+    }
+}
+
+DYN_ACCT_START
+
 
 echo "Creating AppRole Auth for deployment ${deployment}"
 
@@ -294,13 +306,25 @@ path "secret/data/spinnaker/*" {
 
 VAULT_POLICY
 
+cat << VAULT_POLICY | vault policy write -address="https://${details.vaultAddr}" dynamic_accounts_rw_policy -
+# For K/V v1 secrets engine
+path "secret/spinnaker/*" {
+    capabilities = ["read", "list", "create", "update", "delete"]
+}
+# For K/V v2 secrets engine
+path "secret/data/spinnaker/*" {
+    capabilities = ["read", "list", "create", "update", "delete"]
+}
+
+VAULT_POLICY
+
 echo "Enabling Dynamic Accounts Policy for deployment ${deployment}"
 
 vault auth enable \
     -address="https://${details.vaultAddr}" \
     approle
 
-echo "Creating Dynamic Accounts Role for deployment ${deployment}"
+echo "Creating Dynamic Accounts Read Only Role for deployment ${deployment}"
 
 vault write -address="https://${details.vaultAddr}" \
     auth/approle/role/dynamic_accounts_ro_role \
@@ -309,27 +333,58 @@ vault write -address="https://${details.vaultAddr}" \
     token_num_uses=0 \
     secret_id_num_uses=0
 
-echo "Getting Dynamic Accounts Role ID for deployment ${deployment}"
+echo "Creating Dynamic Accounts Read Write Role for deployment ${deployment}"
+
+vault write -address="https://${details.vaultAddr}" \
+    auth/approle/role/dynamic_accounts_rw_role \
+    token_policies="dynamic_accounts_rw_policy" \
+    token_max_ttl="1600h" \
+    token_num_uses=0 \
+    secret_id_num_uses=0
+
+echo "Getting Dynamic Accounts Read Only Role ID for deployment ${deployment}"
 
 vault read -address="https://${details.vaultAddr}" \
     -format=json auth/approle/role/dynamic_accounts_ro_role/role-id \
-    | jq -r '.data.role_id' > /${USER}/vault/dyn_acct_${deployment}_role_id
+    | jq -r '.data.role_id' > /${USER}/vault/dyn_acct_${deployment}_ro_role_id
 
-echo "Getting Dynamic Accounts Secret ID for deployment ${deployment}"
+echo "Getting Dynamic Accounts Read Only Secret ID for deployment ${deployment}"
 
 vault write -address="https://${details.vaultAddr}" \
     -format=json \
     -force \
     auth/approle/role/dynamic_accounts_ro_role/secret-id \
-    | jq -r '.data.secret_id' > /${USER}/vault/dyn_acct_${deployment}_secred_id
+    | jq -r '.data.secret_id' > /${USER}/vault/dyn_acct_${deployment}_ro_secred_id
 
-echo "Getting Dynamic Accounts Token for deployment ${deployment}"
+echo "Getting Dynamic Accounts Read Only Token for deployment ${deployment}"
 
 vault write -address="https://${details.vaultAddr}" \
     -format=json auth/approle/login \
-    role_id="$(cat /${USER}/vault/dyn_acct_${deployment}_role_id)" \
-    secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_secred_id)" \
-    | jq -r '.auth.client_token' > /${USER}/vault/dyn_acct_${deployment}_token
+    role_id="$(cat /${USER}/vault/dyn_acct_${deployment}_ro_role_id)" \
+    secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_ro_secred_id)" \
+    | jq -r '.auth.client_token' > /${USER}/vault/dyn_acct_${deployment}_ro_token
+
+echo "Getting Dynamic Accounts Read Write Role ID for deployment ${deployment}"
+
+vault read -address="https://${details.vaultAddr}" \
+    -format=json auth/approle/role/dynamic_accounts_rw_role/role-id \
+    | jq -r '.data.role_id' > /${USER}/vault/dyn_acct_${deployment}_rw_role_id
+
+echo "Getting Dynamic Accounts Read Write Secret ID for deployment ${deployment}"
+
+vault write -address="https://${details.vaultAddr}" \
+    -format=json \
+    -force \
+    auth/approle/role/dynamic_accounts_rw_role/secret-id \
+    | jq -r '.data.secret_id' > /${USER}/vault/dyn_acct_${deployment}_rw_secred_id
+
+echo "Getting Dynamic Accounts Read Write Token for deployment ${deployment}"
+
+vault write -address="https://${details.vaultAddr}" \
+    -format=json auth/approle/login \
+    role_id="$(cat /${USER}/vault/dyn_acct_${deployment}_rw_role_id)" \
+    secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_rw_secred_id)" \
+    | jq -r '.auth.client_token' > /${USER}/vault/dyn_acct_${deployment}_rw_token
 
 echo "Ending dynamic account setup for deployment ${deployment}"
 

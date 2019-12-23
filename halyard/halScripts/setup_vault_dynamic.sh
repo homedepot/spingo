@@ -279,7 +279,7 @@ vault secrets enable -address="https://${details.vaultAddr}" \
     -max-lease-ttl=0 \
     kv
 
-cat << DYN_ACCT_START | vault kv put -address="https://${details.vaultAddr}" secret/spinnaker -
+cat << DYN_ACCT_START | vault kv put -address="https://${details.vaultAddr}" secret/dynamic_accounts/spinnaker -
 {
     "kubernetes": {
         "accounts": []
@@ -295,11 +295,11 @@ echo "Creating Dynamic Accounts Policy for deployment ${deployment}"
 
 cat << VAULT_POLICY | vault policy write -address="https://${details.vaultAddr}" dynamic_accounts_ro_policy -
 # For K/V v1 secrets engine
-path "secret/spinnaker" {
+path "secret/dynamic_accounts/*" {
     capabilities = ["read", "list"]
 }
 # For K/V v2 secrets engine
-path "secret/data/spinnaker" {
+path "secret/data/dynamic_accounts/*" {
     capabilities = ["read", "list"]
 }
 
@@ -307,11 +307,11 @@ VAULT_POLICY
 
 cat << VAULT_POLICY | vault policy write -address="https://${details.vaultAddr}" dynamic_accounts_rw_policy -
 # For K/V v1 secrets engine
-path "secret/spinnaker" {
+path "secret/dynamic_accounts/*" {
     capabilities = ["read", "list", "create", "update", "delete"]
 }
 # For K/V v2 secrets engine
-path "secret/data/spinnaker" {
+path "secret/data/dynamic_accounts/*" {
     capabilities = ["read", "list", "create", "update", "delete"]
 }
 

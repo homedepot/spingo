@@ -267,7 +267,7 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
         .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
         jq --argjson contents $(yq r -j $(yq r .hal/config deploymentConfigurations.0.providers.kubernetes.accounts.0.kubeconfigFile) | jq 'tojson') 'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | vault kv put \
         -address="https://${VAULT_ADDR}" \
-        secret/spinnaker -
+        secret/dynamic_accounts/spinnaker -
     
     echo "Configuring Spinnaker dynamic account for deployment ${DEPLOYMENT_NAME}"
 
@@ -282,7 +282,7 @@ spring:
           host: ${VAULT_ADDR}
           port: 443
           scheme: https
-          backend: secret
+          backend: secret/dynamic_accounts
           kvVersion: 1
           default-key: spinnaker
           token: $(cat /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token)

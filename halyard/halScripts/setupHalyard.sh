@@ -108,6 +108,22 @@ CLOUDDRIVER_PATCH
 
 yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
 
+# set-up front50 to use cloudsql proxy
+tee /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml << FRONT50_PATCH
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.name: cloudsql-proxy
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.port: 3306
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.dockerImage: "gcr.io/cloudsql-docker/gce-proxy:1.13"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.0: "'/cloud_sql_proxy'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.1: "'--dir=/cloudsql'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.2: "'-instances=${DB_CONNECTION_NAME}=tcp:3306'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.3: "'-credential_file=/secrets/cloudsql/secret'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.mountPath: /cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
+FRONT50_PATCH
+
+yq write -i -s /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml
+
 # set-up replica patch
 tee /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml << REPLICA_PATCH
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-front50.replicas: 2
@@ -198,6 +214,37 @@ redis:
   taskRepository:
     enabled: false
 CLOUDDRIVER_LOCAL
+
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/front50-local.yml << FRONT50_LOCAL
+sql:
+  enabled: true
+  connectionPools:
+    default:
+     # additional connection pool parameters are available here,
+     # for more detail and to view defaults, see:
+     # https://github.com/spinnaker/kork/blob/master/kork-sql/src/main/kotlin/com/netflix/spinnaker/kork/sql/config/ConnectionPoolProperties.kt 
+      default: true
+      jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
+      user: front50_service
+      password: ${DB_FRONT50_SVC_PASSWORD}
+  migration:
+    user: front50_migrate
+    password: ${DB_FRONT50_MIGRATE_PASSWORD}
+    jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
+spinnaker:
+  gcs:
+    enabled: false
+
+redis:
+  enabled: true
+  connection: redis://${SPIN_REDIS_ADDR}
+  cache:
+    enabled: false
+  scheduler:
+    enabled: true
+  taskRepository:
+    enabled: false
+FRONT50_LOCAL
 
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
 cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml

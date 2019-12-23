@@ -377,6 +377,8 @@ data "template_file" "setupHalyard" {
     DB_MIGRATE_USER_PASSWORD        = data.vault_generic_secret.db-migrate-user-password[count.index].data["password"]
     DB_CLOUDDRIVER_SVC_PASSWORD     = data.vault_generic_secret.clouddriver-db-service-user-password[count.index].data["password"]
     DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password[count.index].data["password"]
+    DB_FRONT50_SVC_PASSWORD         = data.vault_generic_secret.front50-db-service-user-password[count.index].data["password"]
+    DB_FRONT50_MIGRATE_PASSWORD     = data.vault_generic_secret.front50-db-migrate-user-password[count.index].data["password"]
     DEPLOYMENT_NAME                 = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
     DEPLOYMENT_INDEX                = count.index
     KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
@@ -475,6 +477,16 @@ data "vault_generic_secret" "clouddriver-db-service-user-password" {
 data "vault_generic_secret" "clouddriver-db-migrate-user-password" {
   count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/${count.index}"
+}
+
+data "vault_generic_secret" "front50-db-service-user-password" {
+  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  path  = "secret/${var.gcp_project}/front50-db-service-user-password/${count.index}"
+}
+
+data "vault_generic_secret" "front50-db-migrate-user-password" {
+  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  path  = "secret/${var.gcp_project}/front50-db-migrate-user-password/${count.index}"
 }
 
 data "google_compute_address" "halyard-external-ip" {

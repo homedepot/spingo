@@ -273,6 +273,7 @@ echo "Ending Vault GCP Auth (GCE) for deployment ${deployment}"
 echo "Enabling dynamic account secret keystore for deployment ${deployment}"
 
 vault secrets enable \
+    -address="https://${details.vaultAddr}" \
     -path=secret/spinnaker \
     -default-lease-ttl=0 \
     -max-lease-ttl=0 kv
@@ -295,7 +296,9 @@ VAULT_POLICY
 
 echo "Enabling Dynamic Accounts Policy for deployment ${deployment}"
 
-vault auth enable -address="https://${details.vaultAddr}" approle
+vault auth enable \
+    -address="https://${details.vaultAddr}" \
+    approle
 
 echo "Creating Dynamic Accounts Role for deployment ${deployment}"
 

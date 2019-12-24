@@ -356,7 +356,7 @@ data "google_compute_address" "halyard_ip_address" {
 }
 
 data "http" "local_outgoing_ip_address" {
-  url = "https://ifconfig.co"
+  url = "https://ifconfig.me"
 }
 
 data "google_compute_address" "ui_ip_address" {
@@ -440,8 +440,16 @@ module "halyard-service-account" {
     "roles/container.admin",
     "roles/browser",
     "roles/container.clusterAdmin",
-    "roles/iam.serviceAccountUser"
+    "roles/iam.serviceAccountUser",
+    "roles/iam.serviceAccountTokenCreator"
   ]
+}
+
+resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
+  for_each      = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  crypto_key_id = lookup(module.vault_keys.crypto_key_id_map, each.key, "")
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${module.halyard-service-account.service-account-email}"
 }
 
 module "certbot-service-account" {
@@ -475,6 +483,22 @@ module "vault_setup" {
   vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   cluster_region         = var.cluster_region
   crypto_key_id_map      = module.vault_keys.crypto_key_id_map
+}
+
+output "vault_keyring" {
+  value = google_kms_key_ring.vault_keyring.name
+}
+
+output "vault_crypto_key_id_map" {
+  value = module.vault_keys.crypto_key_id_map
+}
+
+output "vault_crypto_key_name_map" {
+  value = module.vault_keys.crypto_key_name_map
+}
+
+output "vault_hosts_map" {
+  value = module.spinnaker-dns.vault_hosts_map
 }
 
 output "vault_yml_files" {

@@ -253,7 +253,49 @@ kubernetes:
 
 EOF
 
-cat <<SETTINGS_LOCAL >> ${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
+if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token ]]; then
+    
+    echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
+
+    cp /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token /home/${USER}/.vault-token
+
+    echo "Setting Dynamic Account Secret for deployment ${DEPLOYMENT_NAME}"
+    # First we read the existing account information, then we lookup the contents of the kubeconfigFile
+    # and append it as a kubeconfigContents element, lastly we append that to the kubernetes.account list
+    # and store that into the vault secret
+    yq r -j \
+        .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
+        jq --arg contents "$(yq r $(yq r .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0.kubeconfigFile) | sed -E ':a;N;$!ba;s/\r{0,1}\n/\n/g')" \
+        'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | \
+        vault kv put \
+        -address="https://${VAULT_ADDR}" \
+        secret/dynamic_accounts/spinnaker -
+    
+    echo "Configuring Spinnaker dynamic account for deployment ${DEPLOYMENT_NAME}"
+
+    cat <<DYN_CONFIG >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml
+spring:
+  profiles:
+    include: vault
+  cloud:
+    config:
+      server:
+        vault:
+          host: ${VAULT_ADDR}
+          port: 443
+          scheme: https
+          backend: secret/dynamic_accounts
+          kvVersion: 1
+          default-key: spinnaker
+          token: $(cat /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token)
+
+DYN_CONFIG
+
+    rm /home/${USER}/.vault-token
+else
+    echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
+fi
+cat <<SETTINGS_LOCAL >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
 window.spinnakerSettings.notifications.email.enabled = false;
 window.spinnakerSettings.notifications.bearychat.enabled = false;
 SETTINGS_LOCAL

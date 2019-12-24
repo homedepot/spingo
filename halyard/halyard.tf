@@ -117,15 +117,25 @@ data "template_file" "vault" {
             clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[0]
             vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[0]
             kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
+            vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)
+            vaultKmsKey         = data.terraform_remote_state.np.outputs.vault_crypto_key_name_map[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)]
+            vaultAddr           = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[0], "")
             }, {
             vaultYaml           = data.terraform_remote_state.np.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)]
             clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[1]
             vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[1]
             kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
+            vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)
+            vaultKmsKey         = data.terraform_remote_state.np.outputs.vault_crypto_key_name_map[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)]
+            vaultAddr           = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[1], "")
           }
       ])
-      USER = var.service_account_name
-      DNS  = var.cloud_dns_hostname
+      USER           = var.service_account_name
+      DNS            = var.cloud_dns_hostname
+      BUCKET         = "${var.gcp_project}${var.bucket_name}"
+      VAULT_KMS_RING = data.terraform_remote_state.np.outputs.vault_keyring
+      CLUSTER_REGION = data.terraform_remote_state.np.outputs.cluster_region
+      PROJECT        = var.gcp_project
     })
   }
 }
@@ -381,6 +391,7 @@ data "template_file" "setupHalyard" {
     DB_FRONT50_MIGRATE_PASSWORD     = data.vault_generic_secret.front50-db-migrate-user-password[count.index].data["password"]
     DEPLOYMENT_NAME                 = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
     DEPLOYMENT_INDEX                = count.index
+    VAULT_ADDR                      = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[count.index], "")
     KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
   }
 }

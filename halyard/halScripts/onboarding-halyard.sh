@@ -71,7 +71,20 @@ hal deploy apply \
 echo "Adding Fiat Service account used by On-Boarding for deployment named ${deployment}"
 update_kube "${deployment}"
 update_spin "${deployment}"
+
 /home/${USER}/createFiatServiceAccount.sh --role "${ADMIN_GROUP}"
+
+echo "Waiting for Gate to be up and running for deployment ${deployment}"
+n=0
+until [ $n -ge 20 ]
+do
+  kubectl -n spinnaker get po -l=app.kubernetes.io/name=gate \
+  --kubeconfig="/${USER}/.kube/${deployment}.config" \
+  -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
+   n=$[$n+1]
+   echo "Gate is not yet up and running for deployment ${deployment} waiting..."
+   sleep 6
+done
 
 spin application save --file=/home/${USER}/spingoAdminApplication.json
 spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json

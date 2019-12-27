@@ -216,10 +216,10 @@ cp "$SERVICE_ACCOUNT_DEST" ./dns
 cp "$SERVICE_ACCOUNT_DEST" ./static_ips
 cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
 rm "$SERVICE_ACCOUNT_DEST"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-spinnaker" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-halyard" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-monitoring" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"

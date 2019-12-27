@@ -1,45 +1,30 @@
-variable "terraform_account" {
-  type    = string
-  default = "terraform-account"
-}
-
-variable "gcp_project" {
-  type        = string
-  description = "GCP project name"
-}
-
-variable "notification_channels" {
-  type        = list(string)
-  description = "The list of notification channels that the policy alerts should be configured to send to SHOULD BE ADDED BY setupNotificationChannels script"
-}
-
 provider "vault" {
 }
 
-data "vault_generic_secret" "terraform-account" {
+data "vault_generic_secret" "terraform_account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 provider "google" {
-  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
 }
 
-data "terraform_remote_state" "np" {
+data "terraform_remote_state" "spinnaker" {
   backend = "gcs"
 
   config = {
     bucket      = "${var.gcp_project}-tf"
-    credentials = "terraform-account.json"
-    prefix      = "np"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-spinnaker"
   }
 }
 
 resource "google_monitoring_uptime_check_config" "gate" {
-  count        = length(data.terraform_remote_state.np.outputs.hostname_config_values)
-  display_name = "${title(data.terraform_remote_state.np.outputs.hostname_config_values[count.index])} Gate"
+  count        = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
+  display_name = "${title(data.terraform_remote_state.spinnaker.outputs.hostname_config_values[count.index])} Gate"
   timeout      = "60s"
 
   http_check {
@@ -52,7 +37,7 @@ resource "google_monitoring_uptime_check_config" "gate" {
     type = "uptime_url"
     labels = {
       project_id = var.gcp_project
-      host       = substr(data.terraform_remote_state.np.outputs.spinnaker-api_hosts[count.index], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_hosts[count.index]) - 1)
+      host       = substr(data.terraform_remote_state.spinnaker.outputs.spinnaker-api_hosts[count.index], 0, length(data.terraform_remote_state.spinnaker.outputs.spinnaker-api_hosts[count.index]) - 1)
     }
   }
 
@@ -64,11 +49,11 @@ resource "google_monitoring_uptime_check_config" "gate" {
 }
 
 resource "google_monitoring_alert_policy" "uptime_alert_policy" {
-  count        = length(data.terraform_remote_state.np.outputs.hostname_config_values)
-  display_name = "Uptime ${title(data.terraform_remote_state.np.outputs.hostname_config_values[count.index])} Gate Policy"
+  count        = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
+  display_name = "Uptime ${title(data.terraform_remote_state.spinnaker.outputs.hostname_config_values[count.index])} Gate Policy"
   combiner     = "OR"
   conditions {
-    display_name = "Uptime Health Check on ${title(data.terraform_remote_state.np.outputs.hostname_config_values[count.index])} Gate"
+    display_name = "Uptime Health Check on ${title(data.terraform_remote_state.spinnaker.outputs.hostname_config_values[count.index])} Gate"
     condition_threshold {
       filter     = "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" resource.type=\"uptime_url\" metric.label.\"check_id\"=\"${google_monitoring_uptime_check_config.gate[count.index].uptime_check_id}\""
       comparison = "COMPARISON_GT"
@@ -94,13 +79,13 @@ resource "google_monitoring_alert_policy" "uptime_alert_policy" {
 }
 
 resource "google_monitoring_alert_policy" "cloudsql_alert_policy" {
-  count        = length(data.terraform_remote_state.np.outputs.cluster_config_values)
-  display_name = "CloudSQL ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} Queries Happening Policy"
+  count        = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
+  display_name = "CloudSQL ${title(data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index])} Queries Happening Policy"
   combiner     = "OR"
   conditions {
-    display_name = "Cloud SQL Database - Queries for ${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_instance_names[count.index]} [SUM]"
+    display_name = "Cloud SQL Database - Queries for ${var.gcp_project}:${data.terraform_remote_state.spinnaker.outputs.google_sql_database_instance_names[count.index]} [SUM]"
     condition_threshold {
-      filter     = "metric.type=\"cloudsql.googleapis.com/database/mysql/queries\" resource.type=\"cloudsql_database\" resource.label.\"database_id\"=\"${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_instance_names[count.index]}\""
+      filter     = "metric.type=\"cloudsql.googleapis.com/database/mysql/queries\" resource.type=\"cloudsql_database\" resource.label.\"database_id\"=\"${var.gcp_project}:${data.terraform_remote_state.spinnaker.outputs.google_sql_database_instance_names[count.index]}\""
       comparison = "COMPARISON_LT"
       duration   = "180s"
       trigger {
@@ -123,13 +108,13 @@ resource "google_monitoring_alert_policy" "cloudsql_alert_policy" {
 }
 
 resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
-  count        = length(data.terraform_remote_state.np.outputs.cluster_config_values)
-  display_name = "Memorystore ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} Redis Calls Policy"
+  count        = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
+  display_name = "Memorystore ${title(data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index])} Redis Calls Policy"
   combiner     = "OR"
   conditions {
-    display_name = "Memorystore - Calls for ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} [SUM]"
+    display_name = "Memorystore - Calls for ${title(data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index])} [SUM]"
     condition_threshold {
-      filter     = "metric.type=\"redis.googleapis.com/commands/calls\" resource.type=\"redis_instance\" resource.label.\"instance_id\"=\"projects/${var.gcp_project}/locations/${data.terraform_remote_state.np.outputs.cluster_region}/instances/${data.terraform_remote_state.np.outputs.redis_instance_links[count.index]}\""
+      filter     = "metric.type=\"redis.googleapis.com/commands/calls\" resource.type=\"redis_instance\" resource.label.\"instance_id\"=\"projects/${var.gcp_project}/locations/${data.terraform_remote_state.spinnaker.outputs.cluster_region}/instances/${data.terraform_remote_state.spinnaker.outputs.redis_instance_links[count.index]}\""
       comparison = "COMPARISON_LT"
       duration   = "180s"
       trigger {
@@ -152,13 +137,13 @@ resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
 }
 
 resource "google_monitoring_alert_policy" "cloudsql_failover_replica_lag_alert_policy" {
-  count        = length(data.terraform_remote_state.np.outputs.cluster_config_values)
-  display_name = "CloudSQL ${title(data.terraform_remote_state.np.outputs.cluster_config_values[count.index])} Failover Replica Lag Policy"
+  count        = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
+  display_name = "CloudSQL ${title(data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index])} Failover Replica Lag Policy"
   combiner     = "OR"
   conditions {
-    display_name = "Cloud SQL Database - Replica Lag for ${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_instance_names[count.index]}"
+    display_name = "Cloud SQL Database - Replica Lag for ${var.gcp_project}:${data.terraform_remote_state.spinnaker.outputs.google_sql_database_instance_names[count.index]}"
     condition_threshold {
-      filter     = "metric.type=\"cloudsql.googleapis.com/database/mysql/replication/seconds_behind_master\" resource.type=\"cloudsql_database\" resource.label.\"database_id\"=\"${var.gcp_project}:${data.terraform_remote_state.np.outputs.google_sql_database_failover_instance_names[count.index]}\""
+      filter     = "metric.type=\"cloudsql.googleapis.com/database/mysql/replication/seconds_behind_master\" resource.type=\"cloudsql_database\" resource.label.\"database_id\"=\"${var.gcp_project}:${data.terraform_remote_state.spinnaker.outputs.google_sql_database_failover_instance_names[count.index]}\""
       comparison = "COMPARISON_GT"
       duration   = "60s"
       trigger {
@@ -180,4 +165,3 @@ resource "google_monitoring_alert_policy" "cloudsql_failover_replica_lag_alert_p
     created_by = "terraform"
   }
 }
-

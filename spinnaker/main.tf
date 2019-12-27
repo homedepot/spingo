@@ -1,16 +1,6 @@
 provider "vault" {
 }
 
-data "terraform_remote_state" "static_ips" {
-  backend = "gcs"
-
-  config = {
-    bucket      = "${var.gcp_project}-tf"
-    credentials = "${var.terraform_account}.json"
-    prefix      = "np-static-ips"
-  }
-}
-
 data "vault_generic_secret" "terraform-account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
@@ -18,7 +8,7 @@ data "vault_generic_secret" "terraform-account" {
 provider "google" {
   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
   region  = var.cluster_region
   version = "~> 2.8"
@@ -28,7 +18,7 @@ provider "google" {
   alias       = "dns-zone"
   credentials = data.vault_generic_secret.terraform-account.data[var.managed_dns_gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.managed_dns_gcp_project
   region  = var.cluster_region
   version = "~> 2.8"
@@ -37,10 +27,30 @@ provider "google" {
 provider "google-beta" {
   credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
   region  = var.cluster_region
   version = "~> 2.8"
+}
+
+data "terraform_remote_state" "static_ips" {
+  backend = "gcs"
+
+  config = {
+    bucket      = "${var.gcp_project}-tf"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-static-ips"
+  }
+}
+
+data "terraform_remote_state" "dns" {
+  backend = "gcs"
+
+  config = {
+    bucket      = "${var.gcp_project}-tf"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-dns"
+  }
 }
 
 # Query the terraform service account from GCP
@@ -221,7 +231,7 @@ module "k8s-spinnaker-agent" {
   node_options              = var.second_cluster_node_options
   node_pool_options         = var.second_cluster_node_pool_options
   client_certificate_config = var.default_client_certificate_config
-  cloud_nat                 = false                                                # Will re-use the cloud nat created by the primary cluster
+  cloud_nat                 = false # Will re-use the cloud nat created by the primary cluster
   cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
   node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"] # Use the same network tags as primary cluster
   create_namespace          = var.default_create_namespace
@@ -274,7 +284,7 @@ module "k8s-sandbox-agent" {
   node_options              = var.second_cluster_node_options
   node_pool_options         = var.second_cluster_node_pool_options
   client_certificate_config = var.default_client_certificate_config
-  cloud_nat                 = false                                                # Will re-use the cloud nat created by the primary cluster
+  cloud_nat                 = false # Will re-use the cloud nat created by the primary cluster
   cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
   node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"] # Use the same network tags as primary cluster
   create_namespace          = var.default_create_namespace

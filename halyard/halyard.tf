@@ -1,71 +1,24 @@
-variable "gcp_project" {
-  description = "GCP project name"
+provider "vault" {
 }
 
-variable "gcp_zone" {
-  description = "GCP zone to create the halyard VM in"
-  type        = string
+data "vault_generic_secret" "terraform_account" {
+  path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
-variable "bucket_name" {
-  description = "GCP Bucket for Halyard"
-  default     = "-halyard-bucket"
+provider "google" {
+  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
+  project     = var.gcp_project
+  zone        = var.gcp_zone
+  version     = "~> 2.8"
 }
 
-variable "service_account_name" {
-  description = "spinnaker service account to run on halyard vm"
-  default     = "spinnaker"
-}
-
-variable "certbot_email" {
-  description = "email account to be informed when certificates from certbot expire"
-  type        = string
-}
-
-variable "hostname_prefix" {
-  description = "hostname prefix to use for spinnaker"
-  default     = "np"
-}
-
-variable "terraform_account" {
-  type    = string
-  default = "terraform-account"
-}
-
-variable "cloud_dns_hostname" {
-  description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
-  type        = string
-}
-
-variable "gcp_admin_email" {
-  description = "This is the email of an administrator of the Google Cloud Project Organization. Possibly the one who granted the directory group read-only policy to the spinnaker-fiat service account"
-  type        = string
-}
-
-variable "spingo_user_email" {
-  description = "This is the is the email address of the person who first executed spingo for this project extracted from their gcloud login"
-  type        = string
-}
-
-variable "spinnaker_admin_group" {
-  description = "This is the role (group) that all the Spinnaker admins are members of. Change this to whatever is the correct group for the platform operators"
-  type        = string
-  default     = "gg_spinnaker_admins"
-}
-
-variable "spinnaker_admin_slack_channel" {
-  description = "This is the channel to be used to alert the Spinnaker platform admins that new deployment targets need to be onboarded"
-  type        = string
-  default     = "spinnaker_admins"
-}
-
-data "terraform_remote_state" "np" {
+data "terraform_remote_state" "spinnaker" {
   backend = "gcs"
 
   config = {
     bucket      = "${var.gcp_project}-tf"
-    credentials = "${var.terraform_account}.json"
-    prefix      = "np"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-spinnaker"
   }
 }
 
@@ -74,16 +27,9 @@ data "terraform_remote_state" "static_ips" {
 
   config = {
     bucket      = "${var.gcp_project}-tf"
-    credentials = "${var.terraform_account}.json"
-    prefix      = "np-static-ips"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-static-ips"
   }
-}
-
-provider "vault" {
-}
-
-data "vault_generic_secret" "terraform-account" {
-  path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 data "vault_generic_secret" "keystore-pass" {
@@ -91,16 +37,16 @@ data "vault_generic_secret" "keystore-pass" {
 }
 
 data "vault_generic_secret" "halyard-svc-key" {
-  path = data.terraform_remote_state.np.outputs.spinnaker_halyard_service_account_key_path
+  path = data.terraform_remote_state.spinnaker.outputs.spinnaker_halyard_service_account_key_path
 }
 
 data "vault_generic_secret" "spinnaker_ui_address" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/spinnaker_ui_url/${count.index}"
 }
 
 data "vault_generic_secret" "spinnaker_api_address" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/spinnaker_api_url/${count.index}"
 }
 
@@ -110,31 +56,31 @@ data "template_file" "vault" {
   vars = {
     USER = var.service_account_name
     SETUP_VAULT_CONTENTS = templatefile("./halScripts/setup_vault_dynamic.sh", {
-      deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
+      deployments = zipmap(data.terraform_remote_state.spinnaker.outputs.cluster_config_values,
         [
           {
-            vaultYaml           = data.terraform_remote_state.np.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)]
-            clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[0]
+            vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0], data.terraform_remote_state.spinnaker.outputs.cluster_region)]
+            clusterName         = data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0]
             vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[0]
-            kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
-            vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)
-            vaultKmsKey         = data.terraform_remote_state.np.outputs.vault_crypto_key_name_map[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[0], data.terraform_remote_state.np.outputs.cluster_region)]
-            vaultAddr           = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[0], "")
+            kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0]}.config"
+            vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0], data.terraform_remote_state.spinnaker.outputs.cluster_region)
+            vaultKmsKey         = data.terraform_remote_state.spinnaker.outputs.vault_crypto_key_name_map[format("%s-%s", data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0], data.terraform_remote_state.spinnaker.outputs.cluster_region)]
+            vaultAddr           = lookup(data.terraform_remote_state.spinnaker.outputs.vault_hosts_map, data.terraform_remote_state.spinnaker.outputs.hostname_config_values[0], "")
             }, {
-            vaultYaml           = data.terraform_remote_state.np.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)]
-            clusterName         = data.terraform_remote_state.np.outputs.cluster_config_values[1]
+            vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_yml_files[format("%s-%s", data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1], data.terraform_remote_state.spinnaker.outputs.cluster_region)]
+            clusterName         = data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1]
             vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips[1]
-            kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
-            vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)
-            vaultKmsKey         = data.terraform_remote_state.np.outputs.vault_crypto_key_name_map[format("%s-%s", data.terraform_remote_state.np.outputs.cluster_config_values[1], data.terraform_remote_state.np.outputs.cluster_region)]
-            vaultAddr           = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[1], "")
+            kubeConfig          = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1]}.config"
+            vaultBucket         = format("vault_%s_%s-%s", var.gcp_project, data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1], data.terraform_remote_state.spinnaker.outputs.cluster_region)
+            vaultKmsKey         = data.terraform_remote_state.spinnaker.outputs.vault_crypto_key_name_map[format("%s-%s", data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1], data.terraform_remote_state.spinnaker.outputs.cluster_region)]
+            vaultAddr           = lookup(data.terraform_remote_state.spinnaker.outputs.vault_hosts_map, data.terraform_remote_state.spinnaker.outputs.hostname_config_values[1], "")
           }
       ])
       USER           = var.service_account_name
       DNS            = var.cloud_dns_hostname
       BUCKET         = "${var.gcp_project}${var.bucket_name}"
-      VAULT_KMS_RING = data.terraform_remote_state.np.outputs.vault_keyring
-      CLUSTER_REGION = data.terraform_remote_state.np.outputs.cluster_region
+      VAULT_KMS_RING = data.terraform_remote_state.spinnaker.outputs.vault_keyring
+      CLUSTER_REGION = data.terraform_remote_state.spinnaker.outputs.cluster_region
       PROJECT        = var.gcp_project
     })
   }
@@ -157,21 +103,21 @@ data "template_file" "setup_onboarding" {
 
   vars = {
     PROJECT_NAME            = var.gcp_project
-    ONBOARDING_ACCOUNT      = data.terraform_remote_state.np.outputs.created_onboarding_service_account_name
-    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name, 4, length(data.terraform_remote_state.np.outputs.created_onboarding_service_account_name) - 4)}.json"
-    ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+    ONBOARDING_ACCOUNT      = data.terraform_remote_state.spinnaker.outputs.created_onboarding_service_account_name
+    PATH_TO_ONBOARDING_KEY  = "/${var.service_account_name}/.gcp/${substr(data.terraform_remote_state.spinnaker.outputs.created_onboarding_service_account_name, 4, length(data.terraform_remote_state.spinnaker.outputs.created_onboarding_service_account_name) - 4)}.json"
+    ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.spinnaker.outputs.created_onboarding_subscription_name
     USER                    = var.service_account_name
     ADMIN_GROUP             = var.spinnaker_admin_group
     HALYARD_COMMANDS = templatefile("./halScripts/onboarding-halyard.sh", {
-      deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
+      deployments = zipmap(data.terraform_remote_state.spinnaker.outputs.cluster_config_values,
         [{
           clientIP        = data.terraform_remote_state.static_ips.outputs.spin_api_ips[0]
-          clientHostnames = substr(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[0], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[0]) - 1)
-          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
+          clientHostnames = substr(data.terraform_remote_state.spinnaker.outputs.spinnaker-api_x509_hosts[0], 0, length(data.terraform_remote_state.spinnaker.outputs.spinnaker-api_x509_hosts[0]) - 1)
+          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0]}.config"
           }, {
           clientIP        = data.terraform_remote_state.static_ips.outputs.spin_api_ips[1]
-          clientHostnames = substr(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[1], 0, length(data.terraform_remote_state.np.outputs.spinnaker-api_x509_hosts[1]) - 1)
-          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
+          clientHostnames = substr(data.terraform_remote_state.spinnaker.outputs.spinnaker-api_x509_hosts[1], 0, length(data.terraform_remote_state.spinnaker.outputs.spinnaker-api_x509_hosts[1]) - 1)
+          kubeConfig      = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1]}.config"
       }])
       USER        = var.service_account_name
       ADMIN_GROUP = var.spinnaker_admin_group
@@ -188,13 +134,6 @@ data "template_file" "cert_script" {
     DNS_DOMAIN        = var.cloud_dns_hostname
     WILDCARD_KEYSTORE = data.vault_generic_secret.keystore-pass.data["value"]
   }
-}
-
-provider "google" {
-  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
-  project     = var.gcp_project
-  zone        = var.gcp_zone
-  version     = "~> 2.8"
 }
 
 data "template_file" "aliases" {
@@ -239,7 +178,7 @@ data "template_file" "start_script" {
     SCRIPT_VAULT         = base64encode(data.template_file.vault.rendered)
     SCRIPT_CREATE_FIAT   = base64encode(templatefile("./halScripts/createFiatServiceAccount.sh", {}))
     SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./halScripts/onboardingNotificationsPipeline.json", {
-      ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.np.outputs.created_onboarding_subscription_name
+      ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.spinnaker.outputs.created_onboarding_subscription_name
       ADMIN_GROUP             = var.spinnaker_admin_group
       SLACK_ADMIN_CHANNEL     = var.spinnaker_admin_slack_channel
     }))
@@ -252,7 +191,7 @@ data "template_file" "start_script" {
     }))
     SCRIPT_SLACK = base64encode(templatefile("./halScripts/setupSlack.sh", {
       TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
-      deployments      = data.terraform_remote_state.np.outputs.cluster_config_values
+      deployments      = data.terraform_remote_state.spinnaker.outputs.cluster_config_values
     }))
     SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
       USER = var.service_account_name
@@ -311,7 +250,7 @@ data "template_file" "haldiff" {
 }
 
 data "template_file" "setupSSL" {
-  count    = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  count    = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
   template = file("./halScripts/setupSSL.sh")
 
   vars = {
@@ -323,7 +262,7 @@ data "template_file" "setupSSL" {
     SPIN_API_IP     = data.google_compute_address.api[count.index].address
     KEYSTORE_PASS   = data.vault_generic_secret.keystore-pass.data["value"]
     KUBE_COMMANDS   = data.template_file.k8ssl[count.index].rendered
-    DEPLOYMENT_NAME = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
+    DEPLOYMENT_NAME = data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]
   }
 }
 
@@ -332,22 +271,22 @@ data "template_file" "setupMonitoring" {
 }
 
 data "template_file" "k8ssl" {
-  count    = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  count    = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
   template = file("./halScripts/setupK8SSL.sh")
 
   vars = {
     SPIN_UI_IP  = data.google_compute_address.ui[count.index].address
     SPIN_API_IP = data.google_compute_address.api[count.index].address
-    KUBE_CONFIG = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    KUBE_CONFIG = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]}.config"
     SPIN_CLI_SERVICE = templatefile("./halScripts/spin-gate-api.sh", {
-      deployments = zipmap(data.terraform_remote_state.np.outputs.cluster_config_values,
+      deployments = zipmap(data.terraform_remote_state.spinnaker.outputs.cluster_config_values,
         [
           {
             clientIP   = data.terraform_remote_state.static_ips.outputs.spin_api_ips[0]
-            kubeConfig = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[0]}.config"
+            kubeConfig = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[0]}.config"
             }, {
             clientIP   = data.terraform_remote_state.static_ips.outputs.spin_api_ips[1]
-            kubeConfig = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[1]}.config"
+            kubeConfig = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[1]}.config"
           }
       ])
     })
@@ -355,7 +294,7 @@ data "template_file" "k8ssl" {
 }
 
 data "template_file" "setupOAuth" {
-  count    = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  count    = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
   template = file("./halScripts/setupOAuth.sh")
 
   vars = {
@@ -365,12 +304,12 @@ data "template_file" "setupOAuth" {
     OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp-oauth.data["client-secret"]
     DOMAIN              = replace(var.gcp_admin_email, "/^.*@/", "")
     ADMIN_EMAIL         = var.gcp_admin_email
-    DEPLOYMENT_NAME     = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
+    DEPLOYMENT_NAME     = data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]
   }
 }
 
 data "template_file" "setupHalyard" {
-  count    = length(data.terraform_remote_state.np.outputs.cluster_config_values)
+  count    = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
   template = file("./halScripts/setupHalyard.sh")
 
   vars = {
@@ -389,10 +328,10 @@ data "template_file" "setupHalyard" {
     DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password[count.index].data["password"]
     DB_FRONT50_SVC_PASSWORD         = data.vault_generic_secret.front50-db-service-user-password[count.index].data["password"]
     DB_FRONT50_MIGRATE_PASSWORD     = data.vault_generic_secret.front50-db-migrate-user-password[count.index].data["password"]
-    DEPLOYMENT_NAME                 = data.terraform_remote_state.np.outputs.cluster_config_values[count.index]
+    DEPLOYMENT_NAME                 = data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]
     DEPLOYMENT_INDEX                = count.index
-    VAULT_ADDR                      = lookup(data.terraform_remote_state.np.outputs.vault_hosts_map, data.terraform_remote_state.np.outputs.hostname_config_values[count.index], "")
-    KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}.config"
+    VAULT_ADDR                      = lookup(data.terraform_remote_state.spinnaker.outputs.vault_hosts_map, data.terraform_remote_state.spinnaker.outputs.hostname_config_values[count.index], "")
+    KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]}.config"
   }
 }
 
@@ -451,52 +390,52 @@ data "template_file" "setupOAuthMultiple" {
 #Get urls
 
 data "google_compute_address" "ui" {
-  count = length(data.terraform_remote_state.np.outputs.cluster_config_values)
-  name  = "${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}-ui"
+  count = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
+  name  = "${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]}-ui"
 }
 
 data "google_compute_address" "api" {
-  count = length(data.terraform_remote_state.np.outputs.cluster_config_values)
-  name  = "${data.terraform_remote_state.np.outputs.cluster_config_values[count.index]}-api"
+  count = length(data.terraform_remote_state.spinnaker.outputs.cluster_config_values)
+  name  = "${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[count.index]}-api"
 }
 
 data "vault_generic_secret" "vault-redis" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/redis/${count.index}"
 }
 
 data "vault_generic_secret" "db-address" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/db-address/${count.index}"
 }
 
 data "vault_generic_secret" "db-service-user-password" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/db-service-user-password/${count.index}"
 }
 
 data "vault_generic_secret" "db-migrate-user-password" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/db-migrate-user-password/${count.index}"
 }
 
 data "vault_generic_secret" "clouddriver-db-service-user-password" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${count.index}"
 }
 
 data "vault_generic_secret" "clouddriver-db-migrate-user-password" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/${count.index}"
 }
 
 data "vault_generic_secret" "front50-db-service-user-password" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/front50-db-service-user-password/${count.index}"
 }
 
 data "vault_generic_secret" "front50-db-migrate-user-password" {
-  count = length(data.terraform_remote_state.np.outputs.hostname_config_values)
+  count = length(data.terraform_remote_state.spinnaker.outputs.hostname_config_values)
   path  = "secret/${var.gcp_project}/front50-db-migrate-user-password/${count.index}"
 }
 
@@ -544,7 +483,7 @@ resource "google_compute_instance" "halyard-spin-vm" {
   metadata_startup_script = data.template_file.start_script.rendered
 
   service_account {
-    email  = data.terraform_remote_state.np.outputs.spinnaker_halyard_service_account_email
+    email  = data.terraform_remote_state.spinnaker.outputs.spinnaker_halyard_service_account_email
     scopes = ["userinfo-email", "compute-rw", "storage-full", "service-control", "https://www.googleapis.com/auth/cloud-platform"]
   }
 }

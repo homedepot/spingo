@@ -3,7 +3,8 @@
 ######################################################################################
 
 variable "terraform_account" {
-  type = string
+  type    = string
+  default = "terraform-account"
 }
 
 variable "gcp_project" {

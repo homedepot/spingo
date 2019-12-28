@@ -1,5 +1,5 @@
 resource "google_storage_bucket" "bucket" {
-  name          = "${var.bucket_name}"
+  name          = var.bucket_name
   storage_class = "MULTI_REGIONAL"
   versioning {
     enabled = true
@@ -9,4 +9,8 @@ resource "google_storage_bucket" "bucket" {
 
 output "bucket_name" {
   value = google_storage_bucket.bucket.name
+}
+
+output "bucket_resource" {
+    value = google_storage_bucket.bucket
 }

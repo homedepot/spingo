@@ -62,8 +62,7 @@ module "k8s-spinnaker-service-account-${deployment}" {
   service_account_namespace = "kube-system"
   bucket_name               = module.halyard-storage.bucket_name
   gcp_project               = var.gcp_project
-  deployment                = "${deployment}"
-  cluster_config            = var.cluster_config
+  cluster_name              = "${deployment}"
   cluster_region            = "${details.clusterRegion}"
   host                      = module.k8s-${deployment}.endpoint
   cluster_ca_certificate    = module.k8s-${deployment}.cluster_ca_certificate
@@ -108,7 +107,6 @@ module "k8s-spinnaker-service-account-${details.clusterPrefix}-agent" {
   bucket_name               = module.halyard-storage.bucket_name
   gcp_project               = var.gcp_project
   cluster_name              = "${deployment}-agent"
-  cluster_config            = var.cluster_config
   cluster_region            = "${details.clusterRegion}"
   host                      = module.k8s-${deployment}-agent.endpoint
   cluster_ca_certificate    = module.k8s-${deployment}-agent.cluster_ca_certificate

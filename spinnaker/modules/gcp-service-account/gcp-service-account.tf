@@ -1,23 +1,6 @@
-variable "service_account_name" {
-  type = string
-}
-
-variable "bucket_name" {
-  type = string
-}
-
-variable "gcp_project" {
-  type        = string
-  description = "GCP project name"
-}
-
-variable "roles" {
-  type = list(string)
-}
-
 resource "google_service_account" "service_account" {
-  display_name = "svc-${var.service_account_name}"
-  account_id   = "svc-${var.service_account_name}"
+  display_name = "${var.service_account_prefix}${length(var.service_account_prefix) > 0 ? "-" : ""}${var.service_account_name}"
+  account_id   = "${var.service_account_prefix}${length(var.service_account_prefix) > 0 ? "-" : ""}${var.service_account_name}"
 }
 
 resource "google_project_iam_member" "roles" {

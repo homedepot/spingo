@@ -129,12 +129,9 @@ module "spinnaker-dns" {
   }
 }
 
-resource "google_storage_bucket" "onboarding_bucket" {
-  name          = "${var.gcp_project}-spinnaker-onboarding"
-  storage_class = "MULTI_REGIONAL"
-  versioning {
-    enabled = true
-  }
+module "onboarding-storage" {
+  source      = "./modules/gcp-bucket"
+  bucket_name = "${var.gcp_project}-spinnaker-onboarding"
 }
 
 resource "google_project_iam_custom_role" "onboarding_role" {
@@ -145,7 +142,7 @@ resource "google_project_iam_custom_role" "onboarding_role" {
 }
 
 resource "google_storage_bucket_iam_binding" "binding" {
-  bucket = google_storage_bucket.onboarding_bucket.name
+  bucket = module.onboarding-storage.bucket_name
   role   = "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
 
   members = [
@@ -244,7 +241,7 @@ output "vault_yml_files" {
 }
 
 output "created_onboarding_bucket_name" {
-  value = google_storage_bucket.onboarding_bucket.name
+  value = module.onboarding-storage.bucket_name
 }
 
 output "spinnaker_fiat_account_unique_id" {
@@ -267,16 +264,16 @@ output "the_gcp_project" {
   value = var.gcp_project
 }
 
-output "spinnaker-ui_hosts" {
-  value = module.spinnaker-dns.spinnaker-ui_hosts
+output "spinnaker-ui_hosts_map" {
+  value = module.spinnaker-dns.ui_hosts_map
 }
 
 output "spinnaker-api_hosts" {
-  value = module.spinnaker-dns.spinnaker-api_hosts
+  value = module.spinnaker-dns.api_hosts_map
 }
 
-output "spinnaker-api_x509_hosts" {
-  value = module.spinnaker-dns.spinnaker-api_x509_hosts
+output "spinnaker-api_x509_hosts_map" {
+  value = module.spinnaker-dns.api_x509_hosts_map
 }
 
 output "google_sql_database_instance_names" {

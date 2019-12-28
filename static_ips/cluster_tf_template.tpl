@@ -4,6 +4,8 @@
 This craziness needs to be done because at the moment Terraform Providers and Modules do not allow for duplication using for_each or count.
 Once the ability exists to make multiple copies this code will be refactored and removed.
 
+Each deployment will have it's own section with a shared section for resources that need to reference the dynamically created resources
+
 */
 
 %{ for deployment, details in deployments ~}
@@ -73,7 +75,7 @@ module "k8s-spinnaker-service-account-${deployment}" {
 
 module "k8s-${deployment}-agent" {
   source          = "github.com/devorbitus/terraform-google-gke-infra"
-  name            = "${deployment}"
+  name            = "${deployment}-agent"
   project         = var.gcp_project
   region          = "${details.clusterRegion}"
   private_cluster = true # This will disable public IPs from the nodes
@@ -100,7 +102,7 @@ module "k8s-spinnaker-service-account-${details.clusterPrefix}-agent" {
   service_account_namespace = "kube-system"
   bucket_name               = module.halyard-storage.bucket_name
   gcp_project               = var.gcp_project
-  deployment                = "${deployment}"
+  cluster_name              = "${deployment}-agent"
   cluster_config            = var.cluster_config
   cluster_region            = "${details.clusterRegion}"
   host                      = module.k8s-${deployment}-agent.endpoint
@@ -121,3 +123,20 @@ module "k8s-spinnaker-service-account-${details.clusterPrefix}-agent" {
 # =======================================================================================
 
 %{ endfor ~}
+
+# =======================================================================================
+# BEGIN SECTION for shared attribute resources
+# =======================================================================================
+
+module "google-managed" {
+  source                    = "./modules/google-managed"
+  gcp_project               = var.gcp_project
+  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
+  authorized_networks_redis = { %{for k,v in deployments }
+        ${k} = module.k8s-${k}.network_link%{ endfor } 
+    }
+}
+
+# =======================================================================================
+# END SECTION for shared attribute resources
+# =======================================================================================

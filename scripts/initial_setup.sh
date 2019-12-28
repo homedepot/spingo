@@ -110,9 +110,15 @@ SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
-gcloud iam service-accounts create \
-    "$SERVICE_ACCOUNT_NAME" \
-    --display-name "$SERVICE_ACCOUNT_NAME"
+if [ gcloud iam service-accounts list \
+      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+      --format='value(email)' ]; then
+    echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
+else
+    gcloud iam service-accounts create \
+        "$SERVICE_ACCOUNT_NAME" \
+        --display-name "$SERVICE_ACCOUNT_NAME"
+fi
 
 while [ -z "$SA_EMAIL" ]; do
   echo "waiting for service account to be fully created..."
@@ -124,48 +130,34 @@ done
 
 echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
 
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/resourcemanager.projectIamAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.serviceAccountAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.serviceAccountKeyAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/compute.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/container.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/storage.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.serviceAccountUser'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/dns.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/redis.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/cloudsql.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/monitoring.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.roleAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/pubsub.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/cloudkms.admin'
+roles=(
+    'roles/resourcemanager.projectIamAdmin'
+    'roles/iam.serviceAccountAdmin'
+    'roles/iam.serviceAccountKeyAdmin'
+    'roles/compute.admin'
+    'roles/container.admin'
+    'roles/storage.admin'
+    'roles/iam.serviceAccountUser'
+    'roles/dns.admin'
+    'roles/redis.admin'
+    'roles/cloudsql.admin'
+    'roles/monitoring.admin'
+    'roles/iam.roleAdmin'
+    'roles/pubsub.admin'
+    'roles/cloudkms.admin'
+)
+
+for role in ${roles[@]}; do
+    echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
+    gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+        --member serviceAccount:"$SA_EMAIL" \
+        --role="$role"
+    if [ "$?" -ne 0 ]; then
+        echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+    else
+        echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+    fi
+done
 
 echo "generating keys for $SERVICE_ACCOUNT_NAME"
 gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \

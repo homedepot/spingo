@@ -90,7 +90,7 @@ resource "google_sql_user" "clouddriver-service-user" {
 
 
 resource "google_sql_user" "front50-service-user" {
-  count    = length(var.cluster_config)
+  for_each = var.ship_plans
   name     = "front50_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
@@ -98,7 +98,7 @@ resource "google_sql_user" "front50-service-user" {
 }
 
 resource "google_sql_user" "orca-migrate-user" {
-  count    = length(var.cluster_config)
+  for_each = var.ship_plans
   name     = "orca_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
@@ -106,7 +106,7 @@ resource "google_sql_user" "orca-migrate-user" {
 }
 
 resource "google_sql_user" "clouddriver-migrate-user" {
-  count    = length(var.cluster_config)
+  for_each = var.ship_plans
   name     = "clouddriver_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
@@ -115,7 +115,7 @@ resource "google_sql_user" "clouddriver-migrate-user" {
 
 
 resource "google_sql_user" "front50-migrate-user" {
-  count    = length(var.cluster_config)
+  for_each = var.ship_plans
   name     = "front50_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name

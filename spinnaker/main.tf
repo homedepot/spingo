@@ -68,9 +68,8 @@ resource "google_kms_key_ring" "gke_keyring" {
 module "gke_keys" {
   source                 = "./modules/crypto_key"
   gcp_project            = var.gcp_project
-  cluster_region         = var.cluster_region
   kms_key_ring_self_link = google_kms_key_ring.gke_keyring.self_link
-  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  ship_plans             = data.terraform_remote_state.static_ips.outputs.ship_plans
   crypto_key_name_prefix = "gke_key"
 }
 
@@ -221,9 +220,8 @@ resource "google_kms_key_ring" "vault_keyring" {
 module "vault_keys" {
   source                 = "./modules/crypto_key"
   gcp_project            = var.gcp_project
-  cluster_region         = var.cluster_region
   kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
-  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  ship_plans             = data.terraform_remote_state.static_ips.outputs.ship_plans
   crypto_key_name_prefix = "vault_key"
 }
 

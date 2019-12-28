@@ -96,25 +96,13 @@ module "spinnaker-gcp-cloudsql-service-account" {
   roles                = ["roles/cloudsql.client"]
 }
 
-resource "google_service_account" "spinnaker_oauth_fiat" {
-  display_name = "spinnaker-fiat"
-  account_id   = "spinnaker-fiat"
-}
-
-resource "google_service_account_key" "fiat_svc_key" {
-  service_account_id = google_service_account.spinnaker_oauth_fiat.name
-}
-
-resource "vault_generic_secret" "fiat-service-account-key" {
-  path      = "secret/${var.gcp_project}/spinnaker_fiat"
-  data_json = base64decode(google_service_account_key.fiat_svc_key.private_key)
-}
-
-resource "google_storage_bucket_object" "fiat_service_account_key_storage" {
-  name         = ".gcp/spinnaker-fiat.json"
-  content      = base64decode(google_service_account_key.fiat_svc_key.private_key)
-  bucket       = module.halyard-storage.bucket_name
-  content_type = "application/json"
+module "spinnaker-gcp-fiat-service-account" {
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "spinnaker-fiat"
+  service_account_prefix = ""
+  bucket_name            = module.halyard-storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = []
 }
 
 data "google_compute_address" "halyard_ip_address" {
@@ -260,7 +248,7 @@ output "created_onboarding_bucket_name" {
 }
 
 output "spinnaker_fiat_account_unique_id" {
-  value = google_service_account.spinnaker_oauth_fiat.unique_id
+  value = module.spinnaker-gcp-fiat-service-account.service-account-id
 }
 
 output "redis_instance_links" {

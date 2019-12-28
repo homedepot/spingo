@@ -3,17 +3,9 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-variable "cluster_region" {
-  type = string
-}
-
 variable "authorized_networks_redis" {
   description = "The networks (self-link) that can connect to the memorystore instance"
   type        = map(string)
-}
-
-variable "cluster_config" {
-  type = map(string)
 }
 
 variable "redis_config" {

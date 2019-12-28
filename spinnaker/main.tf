@@ -60,15 +60,6 @@ data "google_client_config" "current" {
 data "google_project" "project" {
 }
 
-module "google-managed" {
-  source                    = "./modules/google-managed"
-  cluster_region            = var.cluster_region
-  gcp_project               = var.gcp_project
-  cluster_config            = var.cluster_config
-  authorized_networks_redis = { for s in data.terraform_remote_state.static_ips.outputs.ship_plans : s => ""}
-  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
-}
-
 resource "google_kms_key_ring" "gke_keyring" {
   name     = "gke_keyring"
   location = var.cluster_region

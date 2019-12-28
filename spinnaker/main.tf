@@ -75,8 +75,7 @@ module "gke_keys" {
 
 module "halyard-storage" {
   source      = "./modules/gcp-bucket"
-  gcp_project = var.gcp_project
-  bucket_name = "halyard"
+  bucket_name = "${var.gcp_project}-halyard-bucket"
 }
 
 # to retrieve the keys for this for use outside of terraform, run 

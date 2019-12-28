@@ -68,7 +68,7 @@ EOF
 
 resource "vault_generic_secret" "spinnaker_api_x509_address" {
   for_each = var.ship_plans
-  path  = "secret/${var.gcp_project}/spinnaker_api_x509_url/${each.key}"
+  path     = "secret/${var.gcp_project}/spinnaker_api_x509_url/${each.key}"
 
   data_json = <<-EOF
               {"url":"${each.value["x509Subdomain"]}.${each.value["wildcardDomain"]}"}
@@ -77,17 +77,17 @@ EOF
 }
 
 output "ui_hosts_map" {
-  value = { for k,v in var.ship_plans : k => "${v["deckSubdomain"]}${length(v["deckSubdomain"]) > 0 ? "." : ""}${v["wildcardDomain"]}" }
+  value = { for k, v in var.ship_plans : k => "${v["deckSubdomain"]}${length(v["deckSubdomain"]) > 0 ? "." : ""}${v["wildcardDomain"]}" }
 }
 
 output "api_hosts_map" {
-  value = { for k,v in var.ship_plans : k => "${v["gateSubdomain"]}.${v["wildcardDomain"]}" }
+  value = { for k, v in var.ship_plans : k => "${v["gateSubdomain"]}.${v["wildcardDomain"]}" }
 }
 
 output "api_x509_hosts_map" {
-  value = { for k,v in var.ship_plans : k => "${v["x509Subdomain"]}.${v["wildcardDomain"]}" }
+  value = { for k, v in var.ship_plans : k => "${v["x509Subdomain"]}.${v["wildcardDomain"]}" }
 }
 
 output "vault_hosts_map" {
-  value = { for k,v in var.ship_plans : k => "${v["vaultSubdomain"]}.${v["wildcardDomain"]}" }
+  value = { for k, v in var.ship_plans : k => "${v["vaultSubdomain"]}.${v["wildcardDomain"]}" }
 }

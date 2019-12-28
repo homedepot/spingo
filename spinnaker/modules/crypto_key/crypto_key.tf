@@ -17,9 +17,9 @@ data "google_kms_crypto_key" "crypto_key" {
 }
 
 output "crypto_key_id_map" {
-  value = { for k,v in var.ship_plans : k => data.google_kms_crypto_key.crypto_key[k].self_link }
+  value = { for k, v in var.ship_plans : k => data.google_kms_crypto_key.crypto_key[k].self_link }
 }
 
 output "crypto_key_name_map" {
-  value = { for k,v in var.ship_plans : k => data.google_kms_crypto_key.crypto_key[k].name }
+  value = { for k, v in var.ship_plans : k => data.google_kms_crypto_key.crypto_key[k].name }
 }

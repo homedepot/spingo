@@ -51,5 +51,5 @@ data "template_file" "vault" {
 }
 
 output "vault_yml_files_map" {
-  value = { for k,v in values(var.ship_plans) : k => base64encode(data.template_file.vault[k].rendered) }
+  value = { for k, v in values(var.ship_plans) : k => base64encode(data.template_file.vault[k].rendered) }
 }

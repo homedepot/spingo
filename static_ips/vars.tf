@@ -22,22 +22,22 @@ variable "ship_plans" {
   description = "The object that describes all of the clusters that need to be built by Spingo"
   default = {
     spinnaker-us-central1 = {
-      cluster_prefix  = "spinnaker"
-      cluster_region  = "us-central1"
-      wildcard_domain = "thd-spingo13.spinnaker.homedepot.com"
-      gate_subdomain  = "np-api"
-      deck_subdomain  = "np"
-      x509_subdomain  = "np-api-spin"
-      vault_subdomain = "vault-np"
+      clusterPrefix  = "spinnaker"
+      clusterRegion  = "us-central1"
+      wildcardDomain = "thd-spingo13.spinnaker.homedepot.com"
+      gateSubdomain  = "np-api"
+      deckSubdomain  = "np"
+      x509Subdomain  = "np-api-spin"
+      vaultSubdomain = "vault-np"
     }
     sandbox-us-central1 = {
-      cluster_prefix  = "sandbox"
-      cluster_region  = "us-central1"
-      wildcard_domain = "thd-spingo13.spinnaker.homedepot.com"
-      gate_subdomain  = "sandbox-api"
-      deck_subdomain  = "sandbox"
-      x509_subdomain  = "sandbox-api-spin"
-      vault_subdomain = "vault-sandbox"
+      clusterPrefix  = "sandbox"
+      clusterRegion  = "us-central1"
+      wildcardDomain = "thd-spingo13.spinnaker.homedepot.com"
+      gateSubdomain  = "sandbox-api"
+      deckSubdomain  = "sandbox"
+      x509Subdomain  = "sandbox-api-spin"
+      vaultSubdomain = "vault-sandbox"
     }
   }
 }

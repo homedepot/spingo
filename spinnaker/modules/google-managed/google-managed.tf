@@ -2,7 +2,7 @@ resource "google_sql_database_instance" "cloudsql" {
   for_each         = var.ship_plans
   name             = "${lookup(each.value, "cluster_prefix", "")}-${random_string.db-name[each.key].result}-mysql"
   database_version = "MYSQL_5_7"
-  region           = lookup(each.value, "cluster_region", "")
+  region           = lookup(each.value, "clusterRegion", "")
 
   settings {
     # Second-generation instance tiers are based on the machine
@@ -29,7 +29,7 @@ resource "google_sql_database_instance" "cloudsql" {
 resource "google_sql_database_instance" "cloudsql-failover" {
   for_each             = var.ship_plans
   name                 = "${lookup(each.value, "cluster_prefix", "")}-${random_string.db-name[each.key].result}-mysql-failover"
-  region               = lookup(each.value, "cluster_region", "")
+  region               = lookup(each.value, "clusterRegion", "")
   database_version     = "MYSQL_5_7"
   master_instance_name = google_sql_database_instance.cloudsql[each.key].name
 
@@ -174,7 +174,7 @@ resource "google_redis_instance" "cache" {
   display_name       = "${lookup(each.value, "cluster_prefix", "")} memorystore redis cache"
   redis_configs      = var.redis_config
   authorized_network = lookup(var.authorized_networks_redis, each.key, "")
-  region             = lookup(each.value, "cluster_region", "")
+  region             = lookup(each.value, "clusterRegion", "")
 }
 
 resource "vault_generic_secret" "redis-connection" {

@@ -1,5 +1,16 @@
 
+/*
+
+This craziness needs to be done because at the moment Terraform Providers and Modules do not allow for duplication using for_each or count.
+Once the ability exists to make multiple copies this code will be refactored and removed.
+
+*/
+
 %{ for deployment, details in deployments ~}
+
+# =======================================================================================
+# BEGIN SECTION for ${deployment}
+# =======================================================================================
 
 module "k8s-${deployment}" {
   source          = "github.com/devorbitus/terraform-google-gke-infra"
@@ -89,7 +100,7 @@ module "k8s-spinnaker-service-account-${details.clusterPrefix}-agent" {
   service_account_namespace = "kube-system"
   bucket_name               = module.halyard-storage.bucket_name
   gcp_project               = var.gcp_project
-  deployment                = "${deployment}
+  deployment                = "${deployment}"
   cluster_config            = var.cluster_config
   cluster_region            = "${details.clusterRegion}"
   host                      = module.k8s-${deployment}-agent.endpoint
@@ -104,5 +115,9 @@ module "k8s-spinnaker-service-account-${details.clusterPrefix}-agent" {
     kubernetes = kubernetes.${deployment}-agent
   }
 }
+
+# =======================================================================================
+# END SECTION for ${deployment}
+# =======================================================================================
 
 %{ endfor ~}

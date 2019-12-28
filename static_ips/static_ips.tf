@@ -15,31 +15,31 @@ provider "google" {
 resource "google_compute_address" "ui" {
   for_each = var.ship_plans
   name     = "ui-${each.key}"
-  region   = lookup(each.value, "cluster_region", "")
+  region   = lookup(each.value, "clusterRegion", "")
 }
 
 resource "google_compute_address" "api" {
   for_each = var.ship_plans
   name     = "api-${each.key}"
-  region   = lookup(each.value, "cluster_region", "")
+  region   = lookup(each.value, "clusterRegion", "")
 }
 
 resource "google_compute_address" "api_x509" {
   for_each = var.ship_plans
   name     = "api-x509-${each.key}"
-  region   = lookup(each.value, "cluster_region", "")
+  region   = lookup(each.value, "clusterRegion", "")
 }
 
 resource "google_compute_address" "vault" {
   for_each = var.ship_plans
   name     = "vault-${each.key}"
-  region   = lookup(each.value, "cluster_region", "")
+  region   = lookup(each.value, "clusterRegion", "")
 }
 
 resource "google_compute_address" "cloudnat" {
   for_each = var.ship_plans
   name     = "nat-${each.key}"
-  region   = lookup(each.value, "cluster_region", "")
+  region   = lookup(each.value, "clusterRegion", "")
   lifecycle {
     ignore_changes = [users]
   }
@@ -59,23 +59,23 @@ resource "local_file" "foo" {
 }
 
 output "ui_ips" {
-  value = { for s in var.ship_plans : s => google_compute_address.ui[s].address }
+  value = { for k,v in var.ship_plans : k => google_compute_address.ui[k].address }
 }
 
 output "api_ips" {
-  value = { for s in var.ship_plans : s => google_compute_address.api[s].address }
+  value = { for k,v in var.ship_plans : k => google_compute_address.api[k].address }
 }
 
 output "api_x509_ips" {
-  value = { for s in var.ship_plans : s => google_compute_address.api_x509[s].address }
+  value = { for k,v in var.ship_plans : k => google_compute_address.api_x509[k].address }
 }
 
 output "vault_ips" {
-  value = { for s in var.ship_plans : s => google_compute_address.vault[s].address }
+  value = { for k,v in var.ship_plans : k => google_compute_address.vault[k].address }
 }
 
 output "cloudnat_ips" {
-  value = { for s in var.ship_plans : s => google_compute_address.cloudnat[s].address }
+  value = { for k,v in var.ship_plans : k => google_compute_address.cloudnat[k].address }
 }
 
 output "halyard_ip" {

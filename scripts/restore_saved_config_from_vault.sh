@@ -43,10 +43,10 @@ cp "$SERVICE_ACCOUNT_NAME".json ./dns
 # cp "$DNS_SERVICE_ACCOUNT_NAME".json ./dns/"$SERVICE_ACCOUNT_NAME".json
 
 # For overrides.tf
-vault read -field value secret/"$PROJECT"/local-override-np-hal-vm > halyard/override.tf
-vault read -field value secret/"$PROJECT"/local-override-np-dns > dns/override.tf
-vault read -field value secret/"$PROJECT"/local-override-np > spinnaker/override.tf
-vault read -field value secret/"$PROJECT"/local-override-np-static-ips > static_ips/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-halyard > halyard/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-dns > dns/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-spinnaker > spinnaker/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-static-ips > static_ips/override.tf
 
 # GCP Project name
 vault read -field value secret/"$PROJECT"/local-vars-spinnaker-gcp_project > spinnaker/var-gcp_project.auto.tfvars

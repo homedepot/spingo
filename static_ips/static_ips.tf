@@ -10,47 +10,39 @@ provider "google" {
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
-  region  = var.region
 }
 
 resource "google_compute_address" "ui" {
-  name   = "spinnaker-ui"
-  region = var.region
+  for_each = var.ship_plans
+  name     = "ui-${each.key}"
+  region   = lookup(each.value, "cluster_region", "")
 }
 
 resource "google_compute_address" "api" {
-  name   = "spinnaker-api"
-  region = var.region
+  for_each = var.ship_plans
+  name     = "api-${each.key}"
+  region   = lookup(each.value, "cluster_region", "")
 }
 
-resource "google_compute_address" "api-spin" {
-  name   = "spinnaker-api-x509"
-  region = var.region
+resource "google_compute_address" "api_x509" {
+  for_each = var.ship_plans
+  name     = "api-x509-${each.key}"
+  region   = lookup(each.value, "cluster_region", "")
 }
 
-resource "google_compute_address" "vault-spinnaker" {
-  name   = "vault-spinnaker"
-  region = var.region
+resource "google_compute_address" "vault" {
+  for_each = var.ship_plans
+  name     = "vault-${each.key}"
+  region   = lookup(each.value, "cluster_region", "")
 }
 
-resource "google_compute_address" "sandbox-ui" {
-  name   = "sandbox-ui"
-  region = var.region
-}
-
-resource "google_compute_address" "sandbox-api" {
-  name   = "sandbox-api"
-  region = var.region
-}
-
-resource "google_compute_address" "sandbox-api-spin" {
-  name   = "sandbox-api-x509"
-  region = var.region
-}
-
-resource "google_compute_address" "vault-sandbox" {
-  name   = "vault-sandbox"
-  region = var.region
+resource "google_compute_address" "cloudnat" {
+  for_each = var.ship_plans
+  name     = "nat-${each.key}"
+  region   = lookup(each.value, "cluster_region", "")
+  lifecycle {
+    ignore_changes = [users]
+  }
 }
 
 # The static IP address for Halyard is being provisioned here so that the Halyard VM can be destroyed without loosing the IP which has to be added to k8s master whitelist
@@ -59,39 +51,37 @@ resource "google_compute_address" "halyard" {
   region = var.region
 }
 
-resource "google_compute_address" "spinnaker-cloudnat" {
-  name   = "spinnaker-${var.region}-nat"
-  region = var.region
-  lifecycle {
-    ignore_changes = [users]
-  }
+resource "local_file" "foo" {
+  content = templatefile("./cluster_tf_template.tpl", {
+    deployments = var.ship_plans
+  })
+  filename = "${path.module}/../spinnaker/main_clusters.tf"
 }
 
-resource "google_compute_address" "sandbox-cloudnat" {
-  name   = "sandbox-${var.region}-nat"
-  region = var.region
-  lifecycle {
-    ignore_changes = [users]
-  }
+output "ui_ips" {
+  value = { for s in var.ship_plans : s => google_compute_address.ui[s].address }
 }
 
-output "spin_api_ips" {
-  value = [
-    google_compute_address.api-spin.address,
-    google_compute_address.sandbox-api-spin.address
-  ]
+output "api_ips" {
+  value = { for s in var.ship_plans : s => google_compute_address.api[s].address }
+}
+
+output "api_x509_ips" {
+  value = { for s in var.ship_plans : s => google_compute_address.api_x509[s].address }
 }
 
 output "vault_ips" {
-  value = [
-    google_compute_address.vault-spinnaker.address,
-    google_compute_address.vault-sandbox.address
-  ]
+  value = { for s in var.ship_plans : s => google_compute_address.vault[s].address }
 }
 
-output "vault_ips_map" {
-  value = {
-    "spinnaker-${var.region}" = google_compute_address.vault-spinnaker.address
-    "sandbox-${var.region}"   = google_compute_address.vault-sandbox.address
-  }
+output "cloudnat_ips" {
+  value = { for s in var.ship_plans : s => google_compute_address.cloudnat[s].address }
+}
+
+output "halyard_ip" {
+  value = google_compute_address.halyard.address
+}
+
+output "ship_plans" {
+  value = var.ship_plans
 }

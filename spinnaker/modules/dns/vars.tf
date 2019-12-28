@@ -3,10 +3,6 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-variable "cluster_config" {
-  type = map(string)
-}
-
 variable "dns_name" {
   type        = string
   description = "description"

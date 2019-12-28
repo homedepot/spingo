@@ -116,7 +116,6 @@ data "http" "local_outgoing_ip_address" {
 module "spinnaker-dns" {
   source             = "./modules/dns"
   gcp_project        = var.managed_dns_gcp_project
-  cluster_config     = var.hostname_config
   dns_name           = "${var.cloud_dns_hostname}"
   ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
   api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
@@ -153,7 +152,7 @@ resource "google_storage_bucket_iam_binding" "binding" {
 module "onboarding_gke" {
   source                     = "./modules/onboarding"
   gcp_project                = var.gcp_project
-  onboarding_bucket_resource = google_storage_bucket.onboarding_bucket
+  onboarding_bucket_resource = module.onboarding-storage.bucket_resource
   storage_object_name_prefix = "gke"
 }
 
@@ -236,7 +235,7 @@ output "vault_hosts_map" {
 }
 
 output "vault_yml_files_map" {
-  value = module.vault_setup.vault_yml_files
+  value = module.vault_setup.vault_yml_files_map
 }
 
 output "created_onboarding_bucket_name" {
@@ -249,14 +248,6 @@ output "spinnaker_fiat_account_unique_id" {
 
 output "redis_instance_link_map" {
   value = module.google-managed.redis_instance_link_map
-}
-
-output "cluster_config_values" {
-  value = values(var.cluster_config)
-}
-
-output "hostname_config_values" {
-  value = values(var.hostname_config)
 }
 
 output "the_gcp_project" {

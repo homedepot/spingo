@@ -18,10 +18,6 @@ variable "bucket_name" {
   type = string
 }
 
-variable "cluster_config" {
-  type = map(string)
-}
-
 variable "service_account_name" {
   type = string
 }

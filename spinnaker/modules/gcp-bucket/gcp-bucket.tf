@@ -12,5 +12,5 @@ output "bucket_name" {
 }
 
 output "bucket_resource" {
-    value = google_storage_bucket.bucket
+  value = google_storage_bucket.bucket
 }

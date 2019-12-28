@@ -118,10 +118,10 @@ module "spinnaker-dns" {
   gcp_project        = var.managed_dns_gcp_project
   cluster_config     = var.hostname_config
   dns_name           = "${var.cloud_dns_hostname}"
-  ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips
-  api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips
-  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips
-  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips
+  ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
+  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
+  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   ship_plans         = data.terraform_remote_state.static_ips.outputs.ship_plans
 
   providers = {
@@ -182,7 +182,7 @@ module "halyard-service-account" {
 }
 
 resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
-  for_each      = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  for_each      = data.terraform_remote_state.static_ips.outputs.ship_plans
   crypto_key_id = lookup(module.vault_keys.crypto_key_id_map, each.key, "")
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${module.halyard-service-account.service-account-email}"
@@ -213,11 +213,10 @@ module "vault_setup" {
   source                 = "./modules/vault"
   gcp_project            = var.gcp_project
   kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
-  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
   kms_keyring_name       = google_kms_key_ring.vault_keyring.name
   vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
-  cluster_region         = var.cluster_region
   crypto_key_id_map      = module.vault_keys.crypto_key_id_map
+  ship_plans             = data.terraform_remote_state.static_ips.outputs.ship_plans
 }
 
 output "vault_keyring" {
@@ -236,7 +235,7 @@ output "vault_hosts_map" {
   value = module.spinnaker-dns.vault_hosts_map
 }
 
-output "vault_yml_files" {
+output "vault_yml_files_map" {
   value = module.vault_setup.vault_yml_files
 }
 
@@ -248,8 +247,8 @@ output "spinnaker_fiat_account_unique_id" {
   value = module.spinnaker-gcp-fiat-service-account.service-account-id
 }
 
-output "redis_instance_links" {
-  value = module.google-managed.redis_instance_link
+output "redis_instance_link_map" {
+  value = module.google-managed.redis_instance_link_map
 }
 
 output "cluster_config_values" {
@@ -268,7 +267,7 @@ output "spinnaker-ui_hosts_map" {
   value = module.spinnaker-dns.ui_hosts_map
 }
 
-output "spinnaker-api_hosts" {
+output "spinnaker-api_hosts_map" {
   value = module.spinnaker-dns.api_hosts_map
 }
 
@@ -276,16 +275,12 @@ output "spinnaker-api_x509_hosts_map" {
   value = module.spinnaker-dns.api_x509_hosts_map
 }
 
-output "google_sql_database_instance_names" {
-  value = module.google-managed.google_sql_database_instance_names
+output "google_sql_database_instance_names_map" {
+  value = module.google-managed.google_sql_database_instance_names_map
 }
 
-output "google_sql_database_failover_instance_names" {
-  value = module.google-managed.google_sql_database_failover_instance_names
-}
-
-output "cluster_region" {
-  value = var.cluster_region
+output "google_sql_database_failover_instance_names_map" {
+  value = module.google-managed.google_sql_database_failover_instance_names_map
 }
 
 output "created_onboarding_topic_name" {

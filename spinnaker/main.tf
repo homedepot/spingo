@@ -116,7 +116,6 @@ data "http" "local_outgoing_ip_address" {
 module "spinnaker-dns" {
   source             = "./modules/dns"
   gcp_project        = var.managed_dns_gcp_project
-  dns_name           = "${var.cloud_dns_hostname}"
   ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
   api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
   x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map

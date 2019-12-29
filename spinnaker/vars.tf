@@ -22,11 +22,6 @@ variable "managed_dns_gcp_project" {
   description = "GCP project name where the DNS managed zone lives"
 }
 
-variable "cloud_dns_hostname" {
-  type        = string
-  description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
-}
-
 variable "default_node_options" {
   description = "These are the default options node options for the cluster node pool"
   type        = map(string)

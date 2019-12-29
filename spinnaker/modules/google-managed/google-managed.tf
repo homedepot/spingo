@@ -1,8 +1,8 @@
 resource "google_sql_database_instance" "cloudsql" {
   for_each         = var.ship_plans
-  name             = "${lookup(each.value, "cluster_prefix", "")}-${random_string.db-name[each.key].result}-mysql"
+  name             = "${each.value["clusterPrefix"]}-${random_string.db-name[each.key].result}-mysql"
   database_version = "MYSQL_5_7"
-  region           = lookup(each.value, "clusterRegion", "")
+  region           = each.value["clusterRegion"]
 
   settings {
     # Second-generation instance tiers are based on the machine
@@ -28,8 +28,8 @@ resource "google_sql_database_instance" "cloudsql" {
 
 resource "google_sql_database_instance" "cloudsql-failover" {
   for_each             = var.ship_plans
-  name                 = "${lookup(each.value, "cluster_prefix", "")}-${random_string.db-name[each.key].result}-mysql-failover"
-  region               = lookup(each.value, "clusterRegion", "")
+  name                 = "${each.value["cluster_prefix"]}-${random_string.db-name[each.key].result}-mysql-failover"
+  region               = each.value["clusterRegion"]
   database_version     = "MYSQL_5_7"
   master_instance_name = google_sql_database_instance.cloudsql[each.key].name
 
@@ -167,14 +167,14 @@ resource "random_string" "db-name" {
 
 resource "google_redis_instance" "cache" {
   for_each           = var.ship_plans
-  name               = "${lookup(each.value, "cluster_prefix", "")}-ha-memory-cache"
+  name               = "${each.value["clusterPrefix"]}-ha-memory-cache"
   tier               = "STANDARD_HA"
   memory_size_gb     = 1
   redis_version      = "REDIS_4_0"
-  display_name       = "${lookup(each.value, "cluster_prefix", "")} memorystore redis cache"
+  display_name       = "${each.value["clusterPrefix"]} memorystore redis cache"
   redis_configs      = var.redis_config
   authorized_network = lookup(var.authorized_networks_redis, each.key, "")
-  region             = lookup(each.value, "clusterRegion", "")
+  region             = each.value["clusterRegion"]
 }
 
 resource "vault_generic_secret" "redis-connection" {

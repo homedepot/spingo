@@ -3,11 +3,6 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-variable "dns_name" {
-  type        = string
-  description = "description"
-}
-
 variable "ui_ip_addresses" {
   type = map(string)
 }

@@ -24,7 +24,7 @@ variable "ship_plans" {
     spinnaker-us-central1 = {
       clusterPrefix  = "spinnaker"
       clusterRegion  = "us-central1"
-      wildcardDomain = "thd-spingo13.spinnaker.homedepot.com"
+      wildcardDomain = "thd-spingo14.spinnaker.homedepot.com"
       gateSubdomain  = "np-api"
       deckSubdomain  = "np"
       x509Subdomain  = "np-api-spin"
@@ -33,7 +33,7 @@ variable "ship_plans" {
     sandbox-us-central1 = {
       clusterPrefix  = "sandbox"
       clusterRegion  = "us-central1"
-      wildcardDomain = "thd-spingo13.spinnaker.homedepot.com"
+      wildcardDomain = "thd-spingo14.spinnaker.homedepot.com"
       gateSubdomain  = "sandbox-api"
       deckSubdomain  = "sandbox"
       x509Subdomain  = "sandbox-api-spin"

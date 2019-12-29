@@ -195,7 +195,7 @@ do
 done
 SHIP_PLANS_JSON='{"ship_plans":{}}'
 n=1
-until [ $n -le $SELECTED_CLUSTER_COUNT ]
+until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
     echo "Enter the name of cluster $n and press [ENTER]:"
     read CLUSTER_NAME

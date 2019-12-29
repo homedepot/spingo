@@ -59,23 +59,23 @@ resource "local_file" "foo" {
 }
 
 output "ui_ips_map" {
-  value = { for k,v in var.ship_plans : k => google_compute_address.ui[k].address }
+  value = { for k, v in var.ship_plans : k => google_compute_address.ui[k].address }
 }
 
 output "api_ips_map" {
-  value = { for k,v in var.ship_plans : k => google_compute_address.api[k].address }
+  value = { for k, v in var.ship_plans : k => google_compute_address.api[k].address }
 }
 
 output "api_x509_ips_map" {
-  value = { for k,v in var.ship_plans : k => google_compute_address.api_x509[k].address }
+  value = { for k, v in var.ship_plans : k => google_compute_address.api_x509[k].address }
 }
 
 output "vault_ips_map" {
-  value = { for k,v in var.ship_plans : k => google_compute_address.vault[k].address }
+  value = { for k, v in var.ship_plans : k => google_compute_address.vault[k].address }
 }
 
 output "cloudnat_ips_map" {
-  value = { for k,v in var.ship_plans : k => google_compute_address.cloudnat[k].address }
+  value = { for k, v in var.ship_plans : k => google_compute_address.cloudnat[k].address }
 }
 
 output "halyard_ip" {

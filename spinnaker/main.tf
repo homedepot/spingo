@@ -156,11 +156,12 @@ module "onboarding_gke" {
 }
 
 module "onboarding-pubsub-service-account" {
-  source               = "./modules/gcp-service-account"
-  service_account_name = "onboarding-pub-sub"
-  bucket_name          = module.halyard-storage.bucket_name
-  gcp_project          = var.gcp_project
-  roles                = ["roles/storage.admin", "roles/pubsub.subscriber"]
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "onboarding-pub-sub"
+  service_account_prefix = ""
+  bucket_name            = module.halyard-storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = ["roles/storage.admin", "roles/pubsub.subscriber"]
 }
 
 module "halyard-service-account" {
@@ -235,6 +236,10 @@ output "vault_hosts_map" {
 
 output "vault_yml_files_map" {
   value = module.vault_setup.vault_yml_files_map
+}
+
+output "vault_bucket_name_map" {
+  value = module.vault_setup.vault_bucket_name_map
 }
 
 output "created_onboarding_bucket_name" {

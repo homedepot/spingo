@@ -77,6 +77,10 @@ do
     fi
 done
 
+echo "Enabling required Google Cloud APIs. This could take several minutes."
+echo "enabling compute.googleapis.com service"
+gcloud services enable compute.googleapis.com
+
 VAULT_RESPONSE=$(vault status -format json | jq -r '. | select(.initialized == true and .sealed == false) | .initialized')
 if [[ "$VAULT_RESPONSE" != "true" ]]; then
   echo "not logged into vault!"
@@ -267,8 +271,6 @@ terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
 echo "Enabling required Google Cloud APIs. This could take several minutes."
-echo "enabling compute.googleapis.com service"
-gcloud services enable compute.googleapis.com
 echo "enabling iam.googleapis.com service"
 gcloud services enable iam.googleapis.com
 echo "enabling sqladmin.googleapis.com service"

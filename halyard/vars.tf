@@ -29,6 +29,7 @@ variable "terraform_account" {
 
 variable "auto_start_halyard_quickstart" {
   type        = bool
+  default     = true
   description = "Auto run quickstart script on halyard vm if never run before"
 }
 

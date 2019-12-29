@@ -124,12 +124,7 @@ if ! vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
     fi
     vault write secret/"$PROJECT"/keystore-pass "value=$KEY_PASS"
 fi
-cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
-cp "$SERVICE_ACCOUNT_DEST" ./halyard
-cp "$SERVICE_ACCOUNT_DEST" ./dns
-cp "$SERVICE_ACCOUNT_DEST" ./static_ips
-cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
-rm "$SERVICE_ACCOUNT_DEST"
+
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-spinnaker" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-halyard" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
@@ -352,6 +347,13 @@ vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl
 
 echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
 vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+
+cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
+cp "$SERVICE_ACCOUNT_DEST" ./halyard
+cp "$SERVICE_ACCOUNT_DEST" ./dns
+cp "$SERVICE_ACCOUNT_DEST" ./static_ips
+cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
+rm "$SERVICE_ACCOUNT_DEST"
 
 echo "setup complete"
 cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

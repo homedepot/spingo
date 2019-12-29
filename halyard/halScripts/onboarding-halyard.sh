@@ -86,7 +86,22 @@ do
    sleep 6
 done
 
-spin application save --file=/home/${USER}/spingoAdminApplication.json
-spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json
+n=0
+until [ $n -ge 20 ]
+do
+   spin application save --file=/home/${USER}/spingoAdminApplication.json && break
+   n=$[$n+1]
+   echo "Unable to create application through x509 cert for deployment ${deployment} retrying..."
+   sleep 6
+done
+
+n=0
+until [ $n -ge 20 ]
+do
+   spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json && break
+   n=$[$n+1]
+   echo "Unable to create pipeline through x509 cert for deployment ${deployment} retrying..."
+   sleep 6
+done
 
 %{ endfor ~}

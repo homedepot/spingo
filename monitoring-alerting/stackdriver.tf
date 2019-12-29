@@ -90,7 +90,7 @@ resource "google_monitoring_alert_policy" "uptime_alert_policy" {
 
 resource "google_monitoring_alert_policy" "cloudsql_alert_policy" {
   for_each     = data.terraform_remote_state.static_ips.outputs.ship_plans
-  display_name = "CloudSQL ${title(each.key)} Queries Happening Policy"
+  display_name = "CloudSQL ${title(each.value["clusterPrefix"])} Queries Happening Policy"
   combiner     = "OR"
   conditions {
     display_name = "Cloud SQL Database - Queries for ${var.gcp_project}:${data.terraform_remote_state.spinnaker.outputs.google_sql_database_instance_names_map[each.key]} [SUM]"
@@ -119,10 +119,10 @@ resource "google_monitoring_alert_policy" "cloudsql_alert_policy" {
 
 resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
   for_each     = data.terraform_remote_state.static_ips.outputs.ship_plans
-  display_name = "Memorystore ${title(each.key)} Redis Calls Policy"
+  display_name = "Memorystore ${title(each.value["clusterPrefix"])} Redis Calls Policy"
   combiner     = "OR"
   conditions {
-    display_name = "Memorystore - Calls for ${title(each.key)} [SUM]"
+    display_name = "Memorystore - Calls for ${title(each.value["clusterPrefix"])} [SUM]"
     condition_threshold {
       filter     = "metric.type=\"redis.googleapis.com/commands/calls\" resource.type=\"redis_instance\" resource.label.\"instance_id\"=\"projects/${var.gcp_project}/locations/${each.value["clusterRegion"]}/instances/${data.terraform_remote_state.spinnaker.outputs.redis_instance_links_map[each.key]}\""
       comparison = "COMPARISON_LT"
@@ -148,7 +148,7 @@ resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
 
 resource "google_monitoring_alert_policy" "cloudsql_failover_replica_lag_alert_policy" {
   for_each     = data.terraform_remote_state.static_ips.outputs.ship_plans
-  display_name = "CloudSQL ${title(each.key)} Failover Replica Lag Policy"
+  display_name = "CloudSQL ${title(each.value["clusterPrefix"])} Failover Replica Lag Policy"
   combiner     = "OR"
   conditions {
     display_name = "Cloud SQL Database - Replica Lag for ${var.gcp_project}:${data.terraform_remote_state.spinnaker.outputs.google_sql_database_instance_names_map[each.key]}"

@@ -27,6 +27,11 @@ variable "terraform_account" {
   default = "terraform-account"
 }
 
+variable "auto_start_halyard_quickstart" {
+  type        = bool
+  description = "Auto run quickstart script on halyard vm if never run before"
+}
+
 variable "cloud_dns_hostname" {
   description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
   type        = string

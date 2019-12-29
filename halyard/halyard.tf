@@ -59,6 +59,7 @@ data "template_file" "vault" {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_yml_files_map[k]
         clusterName         = v["clusterPrefix"]
+        clusterRegion       = v["clusterRegion"]
         vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips_map[k]
         kubeConfig          = "/${var.service_account_name}/.kube/${k}.config"
         vaultBucket         = data.terraform_remote_state.spinnaker.outputs.vault_bucket_name_map[k]
@@ -70,7 +71,6 @@ data "template_file" "vault" {
       DNS            = var.cloud_dns_hostname
       BUCKET         = "${var.gcp_project}${var.bucket_name}"
       VAULT_KMS_RING = data.terraform_remote_state.spinnaker.outputs.vault_keyring
-      CLUSTER_REGION = data.terraform_remote_state.spinnaker.outputs.cluster_region
       PROJECT        = var.gcp_project
     })
   }

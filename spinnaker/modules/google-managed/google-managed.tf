@@ -257,25 +257,13 @@ EOF
 }
 
 output "redis_instance_link_map" {
-  value = { for s in var.ship_plans : s => google_redis_instance.cache[s].name }
+  value = { for k, v in var.ship_plans : k => google_redis_instance.cache[k].name }
 }
-
-# output "redis_instance_link" {
-#   value = google_redis_instance.cache.*.name
-# }
-
-# output "google_sql_database_instance_names" {
-#   value = google_sql_database_instance.spinnaker-cloudsql.*.name
-# }
 
 output "google_sql_database_instance_names_map" {
-  value = { for s in var.ship_plans : s => google_sql_database_instance.cloudsql[s].name }
+  value = { for k, v in var.ship_plans : k => google_sql_database_instance.cloudsql[k].name }
 }
 
-# output "google_sql_database_failover_instance_names" {
-#   value = google_sql_database_instance.spinnaker-cloudsql-failover.*.name
-# }
-
 output "google_sql_database_failover_instance_names_map" {
-  value = { for s in var.ship_plans : s => google_sql_database_instance.cloudsql-failover[s].name }
+  value = { for k, v in var.ship_plans : k => google_sql_database_instance.cloudsql-failover[k].name }
 }

@@ -28,7 +28,7 @@ resource "google_sql_database_instance" "cloudsql" {
 
 resource "google_sql_database_instance" "cloudsql-failover" {
   for_each             = var.ship_plans
-  name                 = "${each.value["cluster_prefix"]}-${random_string.db-name[each.key].result}-mysql-failover"
+  name                 = "${each.value["clusterPrefix"]}-${random_string.db-name[each.key].result}-mysql-failover"
   region               = each.value["clusterRegion"]
   database_version     = "MYSQL_5_7"
   master_instance_name = google_sql_database_instance.cloudsql[each.key].name

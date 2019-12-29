@@ -190,8 +190,8 @@ do
     fi
 done
 SHIP_PLANS_JSON='{"ship_plans":{}}'
-n=$SELECTED_CLUSTER_COUNT
-until [ $n -le 0 ]
+n=1
+until [ $n -eq $SELECTED_CLUSTER_COUNT ]
 do
     echo "Enter the name of cluster $n and press [ENTER]:"
     read CLUSTER_NAME
@@ -199,14 +199,11 @@ do
     echo "-----------------------------------------------------------------------------"
     echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
     echo "-----------------------------------------------------------------------------"
-    PS3="Enter the number for the Google Cloud Project Region to setup the Spinnaker cluster on (choose the number for Exit to exit) : ";
-    select region in $(gcloud compute regions list --format='value(name)' 2>/dev/null) Exit
+    PS3="Enter the number for the Google Cloud Project Region to setup the Spinnaker cluster on (ctrl-c to exit) : ";
+    select region in $(gcloud compute regions list --format='value(name)' 2>/dev/null)
     do
         if [ "$region" == "" ]; then
             echo "You must select a Google Cloud Project Region"
-        elif [ "$region" == "Exit" ]; then
-            echo "Exiting at user request"
-            exit 1
         else
             echo "-----------------------------------------------------------------------------"
             echo "Google Cloud Project Region $region selected for Cluster $CLUSTER_NAME"
@@ -227,7 +224,7 @@ do
     echo "Enter the subdomain for vault to use for $CLUSTER_NAME and press [ENTER]:"
     read VAULT_SUBDOMAIN
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '. | .ship_plans += { $nm-$reg: { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')
-    n=$[$n-1]
+    n=$[$n+1]
 done
 
 echo "Final Ship Plans JSON : $SHIP_PLANS_JSON"

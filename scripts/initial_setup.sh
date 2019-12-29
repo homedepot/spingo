@@ -231,9 +231,8 @@ do
     n=$[$n+1]
 done
 
-echo "Final Ship Plans JSON : $SHIP_PLANS_JSON"
 echo "$SHIP_PLANS_JSON" > "$GIT_ROOT_DIR"/static_ips/var-ship_plans.auto.tfvars.json
-vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_ROOT_DIR/static_ips/var-ship_plans.auto.tfvars" >/dev/null 2>&1
+vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_ROOT_DIR/static_ips/var-ship_plans.auto.tfvars.json" >/dev/null 2>&1
 
 # choose a zone to place the Halyard VMs into
 echo "-----------------------------------------------------------------------------"
@@ -289,9 +288,10 @@ echo "enabling cloudkms.googleapis.com - Needed for Vault"
 gcloud services enable cloudkms.googleapis.com
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
-if [ $(gcloud iam service-accounts list \
+SA_EMAIL=$(gcloud iam service-accounts list \
       --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)') != "" ]; then
+      --format='value(email)')
+if [ ! -z "$SA_EMAIL" ]; then
     echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
 else
     gcloud iam service-accounts create \

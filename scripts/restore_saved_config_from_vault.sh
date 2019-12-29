@@ -66,6 +66,7 @@ vault read -field value secret/"$PROJECT"/local-vars-dns-gcp_project > dns/var-g
 # For cluster region
 vault read -field value secret/"$PROJECT"/local-vars-spinnaker-cluster_region > spinnaker/var-cluster_region.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-static_ips-region > static_ips/var-region.auto.tfvars
+vault read -field value -format json secret/"$PROJECT"/local-vars-static_ips-ship_plans > static_ips/var-ship_plans.auto.tfvars.json
 
 # For halyard VM zone
 vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_zone > halyard/var-gcp_zone.auto.tfvars

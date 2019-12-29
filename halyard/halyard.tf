@@ -397,12 +397,12 @@ data "vault_generic_secret" "db-address" {
 
 data "vault_generic_secret" "db-service-user-password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/orca-db-service-user-password/${each.key}"
 }
 
 data "vault_generic_secret" "db-migrate-user-password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/orca-db-migrate-user-password/${each.key}"
 }
 
 data "vault_generic_secret" "clouddriver-db-service-user-password" {

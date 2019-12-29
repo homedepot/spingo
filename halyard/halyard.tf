@@ -177,7 +177,7 @@ data "template_file" "start_script" {
     }))
     SCRIPT_SLACK = base64encode(templatefile("./halScripts/setupSlack.sh", {
       TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
-      deployments      = data.terraform_remote_state.spinnaker.outputs.cluster_config_values
+      deployments      = [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : s]
     }))
     SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
       USER = var.service_account_name

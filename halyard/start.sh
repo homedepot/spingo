@@ -96,7 +96,7 @@ runuser -l ${USER}  -c 'cd /usr/local/bin; curl https://getmic.ro | sudo bash'
 runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:setlocal filetype yaml\"}" | jq -r "." - > ~/.config/micro/bindings.json'
 
 runuser -l ${USER} -c 'if [ ! -d /${USER}/.hal ]; then time /home/${USER}/quickstart.sh; fi'
-runuser -l ${USER} -c 'if [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
+runuser -l ${USER} -c 'if [ ${AUTO_START_HALYARD_QUICKSTART} == true ] && [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"

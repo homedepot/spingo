@@ -377,12 +377,12 @@ data "template_file" "setupOAuthMultiple" {
 
 data "google_compute_address" "ui" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  name     = "${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[each.key]}-ui"
+  name     = "ui-${each.key}"
 }
 
 data "google_compute_address" "api" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  name     = "${data.terraform_remote_state.spinnaker.outputs.cluster_config_values[each.key]}-api"
+  name     = "api-${each.key}"
 }
 
 data "vault_generic_secret" "vault-redis" {

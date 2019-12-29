@@ -29,6 +29,7 @@ need "gcloud"
 need "openssl"
 need "git"
 need "cut"
+need "jq"
 
 terraform_override() {
     # $1 = terraform bucket name
@@ -84,89 +85,10 @@ if [[ "$VAULT_RESPONSE" != "true" ]]; then
   exit 1
 fi
 
-echo "Enabling required Google Cloud APIs. This could take several minutes."
-echo "enabling compute.googleapis.com service"
-gcloud services enable compute.googleapis.com
-echo "enabling iam.googleapis.com service"
-gcloud services enable iam.googleapis.com
-echo "enabling sqladmin.googleapis.com service"
-gcloud services enable sqladmin.googleapis.com
-echo "enabling cloudresourcemanager.googleapis.com"
-gcloud services enable cloudresourcemanager.googleapis.com
-echo "enabling container.googleapis.com"
-gcloud services enable container.googleapis.com
-echo "enabling dns.googleapis.com"
-gcloud services enable dns.googleapis.com
-echo "enabling redis.googleapis.com"
-gcloud services enable redis.googleapis.com
-echo "enabling admin.googleapis.com - Needed for Google OAuth"
-gcloud services enable admin.googleapis.com
-echo "enabling cloudkms.googleapis.com - Needed for Vault"
-gcloud services enable cloudkms.googleapis.com
-
 USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
-
-echo "creating $SERVICE_ACCOUNT_NAME service account"
-if [ gcloud iam service-accounts list \
-      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)' ]; then
-    echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
-else
-    gcloud iam service-accounts create \
-        "$SERVICE_ACCOUNT_NAME" \
-        --display-name "$SERVICE_ACCOUNT_NAME"
-fi
-
-while [ -z "$SA_EMAIL" ]; do
-  echo "waiting for service account to be fully created..."
-  sleep 1
-  SA_EMAIL=$(gcloud iam service-accounts list \
-      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)')
-done
-
-echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
-
-roles=(
-    'roles/resourcemanager.projectIamAdmin'
-    'roles/iam.serviceAccountAdmin'
-    'roles/iam.serviceAccountKeyAdmin'
-    'roles/compute.admin'
-    'roles/container.admin'
-    'roles/storage.admin'
-    'roles/iam.serviceAccountUser'
-    'roles/dns.admin'
-    'roles/redis.admin'
-    'roles/cloudsql.admin'
-    'roles/monitoring.admin'
-    'roles/iam.roleAdmin'
-    'roles/pubsub.admin'
-    'roles/cloudkms.admin'
-)
-
-for role in ${roles[@]}; do
-    echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
-    gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-        --member serviceAccount:"$SA_EMAIL" \
-        --role="$role"
-    if [ "$?" -ne 0 ]; then
-        echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
-    else
-        echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
-    fi
-done
-
-echo "generating keys for $SERVICE_ACCOUNT_NAME"
-gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
-    --iam-account "$SA_EMAIL"
-
-vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
-
-echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
-vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
 
 echo "create the bucket that will store the Terraform State"
 BUCKET_CHECK=$(gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
@@ -253,25 +175,71 @@ do
     fi
 done
 
-# choose a region to place the cluster into
+# choose how many clusters to create
 echo "-----------------------------------------------------------------------------"
-echo " *****   Google Cloud Project Region    *****"
+echo " *****   How Many Spinnaker Deployments?   *****"
 echo "-----------------------------------------------------------------------------"
-PS3="Enter the number for the Google Cloud Project Region to setup the Spinnaker cluster on (ctrl-c to exit) : ";
-select region in $(gcloud compute regions list --format='value(name)' 2>/dev/null)
+PS3="Enter the number of Spinnaker Deployments to create inside project $PROJECT (choose the number for Exit to exit) : ";
+select cluster_count in 1 2 3 4 Exit
 do
-    if [ "$region" == "" ]; then
-        echo "You must select a Google Cloud Project Region"
+    if [ "$cluster_count" == "" ]; then
+        echo "You must select a Managed DNS GCP Project"
+    elif [ "$cluster_count" == "Exit" ]; then
+        echo "Exiting at user request"
+        exit 1
     else
         echo "-----------------------------------------------------------------------------"
-        echo "Google Cloud Project Region $region selected"
-        terraform_variable "cluster_region" "$region" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
-        terraform_variable "region" "$region" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
+        echo "Number of Spinnaker Deployments $cluster_count selected"
+        SELECTED_CLUSTER_COUNT=$cluster_count
         break;
     fi
 done
+SHIP_PLANS_JSON='{"ship_plans":{}}'
+n=$SELECTED_CLUSTER_COUNT
+until [ $n -le 0 ]
+do
+    echo "Enter the name of cluster $n and press [ENTER]:"
+    read CLUSTER_NAME
+    # choose a region to place the cluster into
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
+    echo "-----------------------------------------------------------------------------"
+    PS3="Enter the number for the Google Cloud Project Region to setup the Spinnaker cluster on (choose the number for Exit to exit) : ";
+    select region in $(gcloud compute regions list --format='value(name)' 2>/dev/null) Exit
+    do
+        if [ "$region" == "" ]; then
+            echo "You must select a Google Cloud Project Region"
+        elif [ "$region" == "Exit" ]; then
+            echo "Exiting at user request"
+            exit 1
+        else
+            echo "-----------------------------------------------------------------------------"
+            echo "Google Cloud Project Region $region selected for Cluster $CLUSTER_NAME"
+            CLUSTER_REGION=$region
+            break;
+        fi
+    done
+    echo "The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
+    echo "Enter the subdomain for deck to use for $CLUSTER_NAME and press [ENTER]:"
+    read DECK_SUBDOMAIN
+    echo "The subdomain for gate is the address where webhooks like those that come from GitHub will use"
+    echo "Enter the subdomain for gate to use for $CLUSTER_NAME and press [ENTER]:"
+    read GATE_SUBDOMAIN
+    echo "The subdomain for x509 is the address where automation like the spin CLI will use"
+    echo "Enter the subdomain for x509 to use for $CLUSTER_NAME and press [ENTER]:"
+    read X509_SUBDOMAIN
+    echo "The subdomain for vault is the address where the vault server will be setup for accessing secrets"
+    echo "Enter the subdomain for vault to use for $CLUSTER_NAME and press [ENTER]:"
+    read VAULT_SUBDOMAIN
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '. | .ship_plans += { $nm-$reg: { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')
+    n=$[$n-1]
+done
 
-# choose a zone to place the Halyard and Certbot VMs into
+echo "Final Ship Plans JSON : $SHIP_PLANS_JSON"
+echo "$SHIP_PLANS_JSON" > "$GIT_ROOT_DIR"/static_ips/var-ship_plans.auto.tfvars.json
+vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_ROOT_DIR/static_ips/var-ship_plans.auto.tfvars" >/dev/null 2>&1
+
+# choose a zone to place the Halyard VMs into
 echo "-----------------------------------------------------------------------------"
 echo " *****   Google Cloud Project Zone    *****"
 echo "-----------------------------------------------------------------------------"
@@ -305,5 +273,85 @@ done
 terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+
+echo "Enabling required Google Cloud APIs. This could take several minutes."
+echo "enabling compute.googleapis.com service"
+gcloud services enable compute.googleapis.com
+echo "enabling iam.googleapis.com service"
+gcloud services enable iam.googleapis.com
+echo "enabling sqladmin.googleapis.com service"
+gcloud services enable sqladmin.googleapis.com
+echo "enabling cloudresourcemanager.googleapis.com"
+gcloud services enable cloudresourcemanager.googleapis.com
+echo "enabling container.googleapis.com"
+gcloud services enable container.googleapis.com
+echo "enabling dns.googleapis.com"
+gcloud services enable dns.googleapis.com
+echo "enabling redis.googleapis.com"
+gcloud services enable redis.googleapis.com
+echo "enabling admin.googleapis.com - Needed for Google OAuth"
+gcloud services enable admin.googleapis.com
+echo "enabling cloudkms.googleapis.com - Needed for Vault"
+gcloud services enable cloudkms.googleapis.com
+
+echo "creating $SERVICE_ACCOUNT_NAME service account"
+if [ $(gcloud iam service-accounts list \
+      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+      --format='value(email)') != "" ]; then
+    echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
+else
+    gcloud iam service-accounts create \
+        "$SERVICE_ACCOUNT_NAME" \
+        --display-name "$SERVICE_ACCOUNT_NAME"
+fi
+
+while [ -z "$SA_EMAIL" ]; do
+  echo "waiting for service account to be fully created..."
+  sleep 1
+  SA_EMAIL=$(gcloud iam service-accounts list \
+      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+      --format='value(email)')
+done
+
+echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
+
+roles=(
+    'roles/resourcemanager.projectIamAdmin'
+    'roles/iam.serviceAccountAdmin'
+    'roles/iam.serviceAccountKeyAdmin'
+    'roles/compute.admin'
+    'roles/container.admin'
+    'roles/storage.admin'
+    'roles/iam.serviceAccountUser'
+    'roles/dns.admin'
+    'roles/redis.admin'
+    'roles/cloudsql.admin'
+    'roles/monitoring.admin'
+    'roles/iam.roleAdmin'
+    'roles/pubsub.admin'
+    'roles/cloudkms.admin'
+)
+
+for role in ${roles[@]}; do
+    echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
+    gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+        --member serviceAccount:"$SA_EMAIL" \
+        --role="$role"
+    if [ "$?" -ne 0 ]; then
+        echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+    else
+        echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+    fi
+done
+
+echo "generating keys for $SERVICE_ACCOUNT_NAME"
+gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
+    --iam-account "$SA_EMAIL"
+
+vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
+
+echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
+vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+
 echo "setup complete"
 cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

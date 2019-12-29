@@ -15,31 +15,31 @@ provider "google" {
 resource "google_compute_address" "ui" {
   for_each = var.ship_plans
   name     = "ui-${each.key}"
-  region   = lookup(each.value, "clusterRegion", "")
+  region   = each.value["clusterRegion"]
 }
 
 resource "google_compute_address" "api" {
   for_each = var.ship_plans
   name     = "api-${each.key}"
-  region   = lookup(each.value, "clusterRegion", "")
+  region   = each.value["clusterRegion"]
 }
 
 resource "google_compute_address" "api_x509" {
   for_each = var.ship_plans
   name     = "api-x509-${each.key}"
-  region   = lookup(each.value, "clusterRegion", "")
+  region   = each.value["clusterRegion"]
 }
 
 resource "google_compute_address" "vault" {
   for_each = var.ship_plans
   name     = "vault-${each.key}"
-  region   = lookup(each.value, "clusterRegion", "")
+  region   = each.value["clusterRegion"]
 }
 
 resource "google_compute_address" "cloudnat" {
   for_each = var.ship_plans
   name     = "nat-${each.key}"
-  region   = lookup(each.value, "clusterRegion", "")
+  region   = each.value["clusterRegion"]
   lifecycle {
     ignore_changes = [users]
   }

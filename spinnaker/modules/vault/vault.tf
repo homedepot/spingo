@@ -53,3 +53,7 @@ data "template_file" "vault" {
 output "vault_yml_files_map" {
   value = { for k, v in var.ship_plans : k => base64encode(data.template_file.vault[k].rendered) }
 }
+
+output "vault_bucket_name_map" {
+    value = { for k, v in var.ship_plans : k => google_storage_bucket.vault[k].name }
+}

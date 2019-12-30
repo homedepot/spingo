@@ -175,8 +175,8 @@ prompt_for_value() {
         while [ -z "$READ_RESPONSE" ]; do
             echoerr "$3"
             read -r READ_RESPONSE
+            READ_RESPONSE="${READ_RESPONSE:-$5}"
         done
-        READ_RESPONSE="${READ_RESPONSE:-$5}"
         echo "$READ_RESPONSE"
     else
         echoerr "Found $2 as environment variable so moving on"

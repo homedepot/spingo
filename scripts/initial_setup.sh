@@ -260,7 +260,6 @@ do
     # $3 = git root directory
     # $4 = user readable name for value
     CLUSTER_NAME=$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")
-    echo "the cluster name is $CLUSTER_NAME"
     CLUSTER_REGION=""
     while [ -z "$CLUSTER_REGION" ]; do
         # choose a region to place the cluster into
@@ -268,7 +267,14 @@ do
         echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
         echo "-----------------------------------------------------------------------------"
         DEFAULT_CLUSTER_REGION=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)
-        PS3="Enter the number for the Cluster Region to setup the Spinnaker cluster on or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit) : ";
+        READ_PROMPT_BASE="Enter the number for the Cluster Region for #$1 and press [ENTER]"
+        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit)"
+        if [ -z "$DEFAULT_CLUSTER_REGION" ]; then
+            READ_PROMPT="$READ_PROMPT_BASE"":"
+        else
+            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+        fi
+        PS3="$READ_PROMPT";
         CLUSTER_REGION=$(selectWithDefault $(gcloud compute regions list --format='value(name)' 2>/dev/null))
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done

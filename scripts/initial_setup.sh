@@ -396,26 +396,38 @@ roles=(
     'roles/cloudkms.admin'
 )
 
+EXISTING_ROLES=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s)
+
 for role in ${roles[@]}; do
-    echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
-    gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-        --member serviceAccount:"$SA_EMAIL" \
-        --role="$role"
-    if [ "$?" -ne 0 ]; then
-        echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+    EXISTING_ROLE_CHECK=$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')
+    if [ -z "$EXISTING_ROLE_CHECK" ]; then
+        echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
+        gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+            --member serviceAccount:"$SA_EMAIL" \
+            --role="$role"
+        if [ "$?" -ne 0 ]; then
+            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+        else
+            echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+        fi
     else
-        echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+        echo "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"
     fi
 done
 
-echo "generating keys for $SERVICE_ACCOUNT_NAME"
-gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
-    --iam-account "$SA_EMAIL"
-
 vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
 
-echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
-vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+EXISTING_KEY=$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")
+if [ -z "$EXISTING_KEY" ]; then
+    echo "generating keys for $SERVICE_ACCOUNT_NAME"
+    gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
+        --iam-account "$SA_EMAIL"
+    echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
+    vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+else
+    echo "key already exists in vault for $SERVICE_ACCOUNT_NAME so no need to create it again"
+    echo "$EXISTING_KEY" > "$SERVICE_ACCOUNT_DEST"
+fi
 
 cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
 cp "$SERVICE_ACCOUNT_DEST" ./halyard

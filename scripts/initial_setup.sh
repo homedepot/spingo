@@ -429,7 +429,7 @@ roles=(
     'roles/cloudkms.admin'
 )
 
-EXISTING_ROLES=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s)
+EXISTING_ROLES=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')
 
 for role in ${roles[@]}; do
     EXISTING_ROLE_CHECK=$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')

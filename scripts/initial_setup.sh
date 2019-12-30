@@ -267,7 +267,7 @@ do
         echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
         echo "-----------------------------------------------------------------------------"
         DEFAULT_CLUSTER_REGION=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)
-        READ_PROMPT_BASE="Enter the number for the Cluster Region for #$1 and press [ENTER]"
+        READ_PROMPT_BASE="Enter the number for the Cluster Region for #$n and press [ENTER]"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit)"
         if [ -z "$DEFAULT_CLUSTER_REGION" ]; then
             READ_PROMPT="$READ_PROMPT_BASE"":"

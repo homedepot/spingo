@@ -1,6 +1,6 @@
 resource "google_kms_key_ring" "keyring" {
   for_each = var.kms_key_ring_cluster_map
-  name     = "${kms_key_ring_prefix}_${each.key}"
+  name     = "${var.kms_key_ring_prefix}_${each.key}"
   location = each.key
 }
 

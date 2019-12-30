@@ -65,12 +65,12 @@ data "template_file" "vault" {
         vaultBucket         = data.terraform_remote_state.spinnaker.outputs.vault_bucket_name_map[k]
         vaultKmsKey         = data.terraform_remote_state.spinnaker.outputs.vault_crypto_key_name_map[k]
         vaultAddr           = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map[k]
+        vaultKmsKeyRingName = data.terraform_remote_state.spinnaker.outputs.vault_keyring_name_map[v["clusterRegion"]]    
         }
       }
       USER           = var.service_account_name
       DNS            = var.cloud_dns_hostname
       BUCKET         = "${var.gcp_project}${var.bucket_name}"
-      VAULT_KMS_RING = data.terraform_remote_state.spinnaker.outputs.vault_keyring
       PROJECT        = var.gcp_project
     })
   }

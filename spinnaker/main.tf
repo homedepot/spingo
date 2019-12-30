@@ -222,8 +222,8 @@ module "vault_setup" {
   ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
 }
 
-output "vault_keyring" {
-  value = google_kms_key_ring.vault_keyring.name
+output "vault_keyring_name_map" {
+  value = module.vault_keyring.kms_key_ring_name_map
 }
 
 output "vault_crypto_key_id_map" {

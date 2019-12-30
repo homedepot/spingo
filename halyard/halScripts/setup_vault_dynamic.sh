@@ -105,7 +105,7 @@ echo "Getting vault root token for deployment ${deployment}"
 
 gsutil cat gs://${details.vaultBucket}/root-token.enc | base64 -d | gcloud kms decrypt \
       --key=${details.vaultKmsKey} \
-      --keyring=${VAULT_KMS_RING} \
+      --keyring=${details.vaultKmsKeyRingName} \
       --location=${details.clusterRegion} \
       --ciphertext-file='-' \
       --plaintext-file='-' > /home/${USER}/.vault-token

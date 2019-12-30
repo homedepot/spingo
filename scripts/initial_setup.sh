@@ -51,8 +51,13 @@ terraform_variable() {
     # $3 = git root directory
     # $4 = terraform sub-project directory
     # $5 = GCP project name
-
-    echo -e "$1 = \"$2\"" > "$3/$4/var-$1.auto.tfvars"
+    # $6 = override quotes
+    if [ -z "$6" ]; then
+        QUOTE="\""
+    else
+        QUOTE="$6"
+    fi
+    echo -e "$1 = ${QUOTE}${2}${QUOTE} > "$3/$4/var-$1.auto.tfvars"
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
@@ -65,9 +70,9 @@ prompt_to_use_base_hostname_for_deck_or_get_value(){
     # $6 = is base hostname use available
     # $7 = base hostname chosen by user stored at DOMAIN_TO_MANAGE
     if [ "$6" == "true" ]; then
-        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
-        printf '%s\n' " *****   There can be only one deployment that can use the base hostname $7 as the hostname for it's UI (deck) *****"  >&2
-        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+        echoerr "-----------------------------------------------------------------------------"
+        echoerr " *****   There can be only one deployment that can use the base hostname $7 as it's hostname for it's UI (deck) *****"
+        echoerr "-----------------------------------------------------------------------------"
         PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
         PROMPT_VALUE=$(select_with_default "No" "Yes")
         if [ "$PROMPT_VALUE" == "Yes" ]; then
@@ -94,21 +99,21 @@ prompt_for_value_with_default() {
     READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
     while [ -z "$PROMPT_VALUE" ]; do
         DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
-        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+        echoerr "-----------------------------------------------------------------------------"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
         if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
             READ_PROMPT="$READ_PROMPT_BASE"":"
         else
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
         fi
-        printf '%s\n' "$READ_PROMPT"  >&2
+        echoerr "$READ_PROMPT"  >&2
         read PROMPT_VALUE
         PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
         if [ -z "$PROMPT_VALUE" ]; then 
-            printf '%s\n' "You must enter a $4" >&2
+            echoerr "You must enter a $4"
         else
-            printf '%s\n' "-----------------------------------------------------------------------------"  >&2
-            printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
+            echoerr "-----------------------------------------------------------------------------"
+            echoerr "Entered $4 is $PROMPT_VALUE"
         fi
     done
     echo "$PROMPT_VALUE"
@@ -144,12 +149,38 @@ select_with_default() {
 
 }
 
+echoerr () {
+    printf '%s\n' "$1" >&2
+}
+
 check_for_base_hostname_used() {
     RESULT=$(echo "$1" | jq '.ship_plans | to_entries | .[].value | select(.deckSubdomain == "") | .deckSubdomain == ""')
     if [ "$RESULT" == "true" ]; then
         echo "false"
     else
         echo "true"
+    fi
+}
+
+prompt_for_value() {
+    # $1 = value of existing env var to check
+    # $2 = Human name of field to input
+    # $3 = Prompt message
+    # $4 = optional Extra help instructions
+    # $5 = optional default answer
+    if [ "$1" == "" ]; then
+        echoerr "-----------------------------------------------------------------------------"
+        echoerr " *****   $2   *****  $4"
+        echoerr "-----------------------------------------------------------------------------"
+        while [ -z "$READ_RESPONSE" ]; do
+            echoerr -n "$3"
+            read -r READ_RESPONSE
+        done
+        READ_RESPONSE="${READ_RESPONSE:-$5}"
+        echo "$READ_RESPONSE"
+    else
+        echoerr "Found $2 as environment variable so moving on"
+        echo "$1"
     fi
 }
 
@@ -355,11 +386,43 @@ do
     fi
 done
 
-echo "setting up default values for user inputted values within vault"
-# override these for presentation
-GOOGLE_OAUTH_CLIENT_ID="${GOOGLE_OAUTH_CLIENT_ID:-replace-me}"
-GOOGLE_OAUTH_CLIENT_SECRET="${GOOGLE_OAUTH_CLIENT_SECRET:-replace-me}"
-SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-replace-me}"
+GOOGLE_OAUTH_CLIENT_ID=$(prompt_for_value \
+    "$GOOGLE_OAUTH_CLIENT_ID" \
+    "Google OAuth Client ID" \
+    "What is the Google OAuth Client ID? : " \
+    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")
+GOOGLE_OAUTH_CLIENT_SECRET=$(prompt_for_value \
+    "$GOOGLE_OAUTH_CLIENT_SECRET" \
+    "Google OAuth Client Secret" \
+    "What is the Google OAuth Client Secret? : " \
+    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")
+AUTO_QUICKSTART_HALYARD=$(prompt_for_value \
+    "$AUTO_QUICKSTART_HALYARD" \
+    "Halyard Auto Quickstart" \
+    "Do you want to enable halyard auto initial quickstart or just press [ENTER] to use default (yes) ? : " \
+    "Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time")
+if [ "$AUTO_QUICKSTART_HALYARD" != "yes" ]; then
+    terraform_variable "auto_start_halyard_quickstart" "false" "$GIT_ROOT_DIR" "halyard" "$PROJECT" ""
+else
+    terraform_variable "auto_start_halyard_quickstart" "true" "$GIT_ROOT_DIR" "halyard" "$PROJECT" ""
+fi
+if [ -z "$SLACK_BOT_TOKEN" ]; then
+    PS3="Do you want to setup Slack automatically and already have a token or just press [ENTER] for (No)? : "
+    USE_SLACK=$(select_with_default "No" "Yes")
+    USE_SLACK=${USE_SLACK:-No}
+    if [ "$USE_SLACK" == "No" ]; then
+        SLACK_BOT_TOKEN=$(prompt_for_value \
+        "" \
+        "Slack Bot Token" \
+        "What is your Slack Bot Token?" \
+        "Setup using instructions found here https://github.com/homedepot/spingo#if-you-are-going-to-use-slack-integration-skip-to-next-section-if-not")
+    else
+        SLACK_BOT_TOKEN="no-slack"
+    fi
+else
+    echo "Found Slack Bot Token in environment variable so moving on"
+fi
+
 vault write secret/"$PROJECT"/gcp-oauth "client-id=$GOOGLE_OAUTH_CLIENT_ID" "client-secret=$GOOGLE_OAUTH_CLIENT_SECRET" >/dev/null 2>&1
 vault write secret/"$PROJECT"/slack-token "value=$SLACK_BOT_TOKEN" >/dev/null 2>&1
 echo "-----------------------------------------------------------------------------"
@@ -372,6 +435,8 @@ done
 terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+
+
 
 echo "Enabling required Google Cloud APIs. This could take several minutes."
 echo "enabling iam.googleapis.com service"

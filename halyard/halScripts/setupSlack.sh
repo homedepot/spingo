@@ -4,7 +4,7 @@ SPINNAKER_BOT="spinnakerbot"
 TOKEN_FROM_SLACK="${TOKEN_FROM_SLACK}"
 
 %{ for deployment in deployments ~}
-if [[ "$TOKEN_FROM_SLACK" != "replace-me" ]]; then
+if [[ "$TOKEN_FROM_SLACK" != "no-slack" ]]; then
     echo "Adding Spinnaker Slack Integration for deployment named ${deployment}"
     hal config notification slack enable \
         --deployment ${deployment}

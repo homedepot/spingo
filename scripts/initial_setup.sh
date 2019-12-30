@@ -69,7 +69,7 @@ prompt_for_value_with_default() {
         OPTIONAL_CLUSTER_NAME="Cluster $5 "
     fi
     READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
-    while [ -z "$PROMPT_VALUE" ] && [ "$6" != "true" ]; do
+    while [ -z "$PROMPT_VALUE" ]; do
         DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
         printf '%s\n' "-----------------------------------------------------------------------------"  >&2
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
@@ -86,6 +86,9 @@ prompt_for_value_with_default() {
         else
             printf '%s\n' "-----------------------------------------------------------------------------"  >&2
             printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
+            if [ "$6" == "true" ]; then
+                break;
+            fi
         fi
     done
     echo "$PROMPT_VALUE"

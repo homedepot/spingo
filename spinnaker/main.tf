@@ -109,10 +109,6 @@ module "spinnaker-gcp-fiat-service-account" {
   roles                  = []
 }
 
-data "google_compute_address" "halyard_ip_address" {
-  name = "halyard-external-ip"
-}
-
 data "http" "local_outgoing_ip_address" {
   url = "https://ifconfig.me"
 }

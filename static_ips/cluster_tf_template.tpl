@@ -84,7 +84,7 @@ module "k8s-${deployment}-agent" {
   region          = "${details.clusterRegion}"
   private_cluster = true # This will disable public IPs from the nodes
 
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
+  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", ["${halyard_ip_address}"])]]))
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options

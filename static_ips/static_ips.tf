@@ -53,7 +53,8 @@ resource "google_compute_address" "halyard" {
 
 resource "local_file" "foo" {
   content = templatefile("./cluster_tf_template.tpl", {
-    deployments = var.ship_plans
+    deployments        = var.ship_plans
+    halyard_ip_address = google_compute_address.halyard.address
   })
   filename = "${path.module}/../spinnaker/main_clusters.tf"
 }

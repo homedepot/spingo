@@ -334,6 +334,7 @@ do
     n=$[$n+1]
 done
 
+terraform_variable "region" "$CLUSTER_REGION" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 echo "$SHIP_PLANS_JSON" > "$GIT_ROOT_DIR"/static_ips/var-ship_plans.auto.tfvars.json
 vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_ROOT_DIR/static_ips/var-ship_plans.auto.tfvars.json" >/dev/null 2>&1
 

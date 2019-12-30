@@ -56,6 +56,35 @@ terraform_variable() {
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
+# Custom `select` implementation that allows *empty* input.
+# Pass the choices as individual arguments.
+# Output is the chosen item, or "", if the user just pressed ENTER.
+# Example:
+#    choice=$(selectWithDefault 'one' 'two' 'three')
+selectWithDefault() {
+
+  local item i=0 numItems=$# 
+
+  # Print numbered menu items, based on the arguments passed.
+  for item; do         # Short for: for item in "$@"; do
+    printf '%s\n' "$((++i))) $item"
+  done >&2 # Print to stderr, as `select` does.
+
+  # Prompt the user for the index of the desired item.
+  while :; do
+    printf %s "${PS3-#? }" >&2 # Print the prompt string to stderr, as `select` does.
+    read -r index
+    # Make sure that the input is either empty or that a valid index was entered.
+    [[ -z $index ]] && break  # empty input
+    (( index >= 1 && index <= numItems )) 2>/dev/null || { echo "Invalid selection. Please try again." >&2; continue; }
+    break
+  done
+
+  # Output the selected item, if any.
+  [[ -n $index ]] && printf %s "${@: index:1}"
+
+}
+
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
 cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
@@ -197,8 +226,11 @@ SHIP_PLANS_JSON='{"ship_plans":{}}'
 n=1
 until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
-    echo "Enter the name of cluster $n and press [ENTER]:"
+    DEFAULT_CLUSTER_NAME=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterPrefix' 2>/dev/null)
+    echo "-----------------------------------------------------------------------------"
+    echo "Enter the name of cluster #$n and press [ENTER] or just press [ENTER] for the default (${DEFAULT_CLUSTER_NAME}):"
     read CLUSTER_NAME
+    CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
     # choose a region to place the cluster into
     echo "-----------------------------------------------------------------------------"
     echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
@@ -215,16 +247,24 @@ do
             break;
         fi
     done
-    echo "The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
+    echo "-----------------------------------------------------------------------------"
     echo "Enter the subdomain for deck to use for $CLUSTER_NAME and press [ENTER]:"
     read DECK_SUBDOMAIN
-    echo "The subdomain for gate is the address where webhooks like those that come from GitHub will use"
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
+    echo "-----------------------------------------------------------------------------"
     echo "Enter the subdomain for gate to use for $CLUSTER_NAME and press [ENTER]:"
     read GATE_SUBDOMAIN
-    echo "The subdomain for x509 is the address where automation like the spin CLI will use"
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for x509 is the address where automation like the spin CLI will use"
+    echo "-----------------------------------------------------------------------------"
     echo "Enter the subdomain for x509 to use for $CLUSTER_NAME and press [ENTER]:"
     read X509_SUBDOMAIN
-    echo "The subdomain for vault is the address where the vault server will be setup for accessing secrets"
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
+    echo "-----------------------------------------------------------------------------"
     echo "Enter the subdomain for vault to use for $CLUSTER_NAME and press [ENTER]:"
     read VAULT_SUBDOMAIN
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" --arg dsh "-" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')

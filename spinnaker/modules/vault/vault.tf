@@ -41,7 +41,7 @@ data "template_file" "vault" {
 
   vars = {
     gcs_bucket_name  = google_storage_bucket.vault[each.key].name
-    kms_key_ring     = var.kms_keyring_name
+    kms_key_ring     = var.kms_keyring_name_map[each.value["clusterRegion"]]
     kms_crypto_key   = "vault_key_${each.key}"
     crypto_key_id    = lookup(var.crypto_key_id_map, each.key, "")
     project          = var.gcp_project
@@ -55,5 +55,5 @@ output "vault_yml_files_map" {
 }
 
 output "vault_bucket_name_map" {
-    value = { for k, v in var.ship_plans : k => google_storage_bucket.vault[k].name }
+  value = { for k, v in var.ship_plans : k => google_storage_bucket.vault[k].name }
 }

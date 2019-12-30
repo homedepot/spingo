@@ -7,11 +7,6 @@ variable "terraform_account" {
   default = "terraform-account"
 }
 
-variable "cluster_region" {
-  type        = string
-  description = "GCP region, e.g. us-east1"
-}
-
 variable "gcp_project" {
   type        = string
   description = "GCP project name"

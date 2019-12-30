@@ -3,8 +3,8 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-variable "kms_key_ring_self_link" {
-  type        = string
+variable "kms_key_ring_self_link_map" {
+  type        = map(string)
   description = "The self link of the created KeyRing in the format projects/{project}/locations/{location}/keyRings/{name}"
 }
 

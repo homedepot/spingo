@@ -10,7 +10,6 @@ provider "google" {
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
-  region  = var.cluster_region
   version = "~> 2.8"
 }
 
@@ -20,7 +19,6 @@ provider "google" {
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.managed_dns_gcp_project
-  region  = var.cluster_region
   version = "~> 2.8"
 }
 
@@ -29,7 +27,6 @@ provider "google-beta" {
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
-  region  = var.cluster_region
   version = "~> 2.8"
 }
 
@@ -60,17 +57,24 @@ data "google_client_config" "current" {
 data "google_project" "project" {
 }
 
-resource "google_kms_key_ring" "gke_keyring" {
-  name     = "gke_keyring"
-  location = var.cluster_region
+# resource "google_kms_key_ring" "gke_keyring" {
+#   for_each = { for k, v in values(data.terraform_remote_state.static_ips.outputs.ship_plans) : v["clusterRegion"] => v["clusterRegion"]... }
+#   name     = "gke_keyring_${each.key}"
+#   location = each.value
+# }
+
+module "gke_keyring" {
+  source                   = "./modules/kms_key_ring"
+  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => v["clusterRegion"]... }
+  kms_key_ring_prefix      = "gke_keyring"
 }
 
 module "gke_keys" {
-  source                 = "./modules/crypto_key"
-  gcp_project            = var.gcp_project
-  kms_key_ring_self_link = google_kms_key_ring.gke_keyring.self_link
-  ship_plans             = data.terraform_remote_state.static_ips.outputs.ship_plans
-  crypto_key_name_prefix = "gke_key"
+  source                     = "./modules/crypto_key"
+  gcp_project                = var.gcp_project
+  kms_key_ring_self_link_map = module.gke_keyring.kms_key_ring_region_map
+  ship_plans                 = data.terraform_remote_state.static_ips.outputs.ship_plans
+  crypto_key_name_prefix     = "gke_key"
 }
 
 module "halyard-storage" {
@@ -195,27 +199,27 @@ module "certbot-service-account" {
   roles                = ["roles/dns.admin"]
 }
 
-resource "google_kms_key_ring" "vault_keyring" {
-  name     = "vault_keyring"
-  location = var.cluster_region
+module "vault_keyring" {
+  source                   = "./modules/kms_key_ring"
+  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => v["clusterRegion"]... }
+  kms_key_ring_prefix      = "vault_keyring"
 }
 
 module "vault_keys" {
-  source                 = "./modules/crypto_key"
-  gcp_project            = var.gcp_project
-  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
-  ship_plans             = data.terraform_remote_state.static_ips.outputs.ship_plans
-  crypto_key_name_prefix = "vault_key"
+  source                     = "./modules/crypto_key"
+  gcp_project                = var.gcp_project
+  kms_key_ring_self_link_map = module.vault_keyring.kms_key_ring_region_map
+  ship_plans                 = data.terraform_remote_state.static_ips.outputs.ship_plans
+  crypto_key_name_prefix     = "vault_key"
 }
 
 module "vault_setup" {
-  source                 = "./modules/vault"
-  gcp_project            = var.gcp_project
-  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
-  kms_keyring_name       = google_kms_key_ring.vault_keyring.name
-  vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
-  crypto_key_id_map      = module.vault_keys.crypto_key_id_map
-  ship_plans             = data.terraform_remote_state.static_ips.outputs.ship_plans
+  source               = "./modules/vault"
+  gcp_project          = var.gcp_project
+  kms_keyring_name_map = module.vault_keyring.kms_key_ring_name_map
+  vault_ips_map        = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  crypto_key_id_map    = module.vault_keys.crypto_key_id_map
+  ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
 }
 
 output "vault_keyring" {

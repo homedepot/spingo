@@ -108,6 +108,22 @@ CLOUDDRIVER_PATCH
 
 yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
 
+# set-up front50 to use cloudsql proxy
+tee /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml << FRONT50_PATCH
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.name: cloudsql-proxy
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.port: 3306
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.dockerImage: "gcr.io/cloudsql-docker/gce-proxy:1.13"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.0: "'/cloud_sql_proxy'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.1: "'--dir=/cloudsql'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.2: "'-instances=${DB_CONNECTION_NAME}=tcp:3306'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.command.3: "'-credential_file=/secrets/cloudsql/secret'"
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.mountPath: /cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-front50.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
+FRONT50_PATCH
+
+yq write -i -s /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml
+
 # set-up replica patch
 tee /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml << REPLICA_PATCH
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.spin-front50.replicas: 2
@@ -199,6 +215,37 @@ redis:
     enabled: false
 CLOUDDRIVER_LOCAL
 
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/front50-local.yml << FRONT50_LOCAL
+sql:
+  enabled: true
+  connectionPools:
+    default:
+     # additional connection pool parameters are available here,
+     # for more detail and to view defaults, see:
+     # https://github.com/spinnaker/kork/blob/master/kork-sql/src/main/kotlin/com/netflix/spinnaker/kork/sql/config/ConnectionPoolProperties.kt 
+      default: true
+      jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
+      user: front50_service
+      password: ${DB_FRONT50_SVC_PASSWORD}
+  migration:
+    user: front50_migrate
+    password: ${DB_FRONT50_MIGRATE_PASSWORD}
+    jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
+spinnaker:
+  gcs:
+    enabled: false
+
+redis:
+  enabled: true
+  connection: redis://${SPIN_REDIS_ADDR}
+  cache:
+    enabled: false
+  scheduler:
+    enabled: true
+  taskRepository:
+    enabled: false
+FRONT50_LOCAL
+
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
 cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml
 kubernetes:
@@ -206,7 +253,49 @@ kubernetes:
 
 EOF
 
-cat <<SETTINGS_LOCAL >> ${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
+if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token && -s /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token ]]; then
+    
+    echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
+
+    cp /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token /home/${USER}/.vault-token
+
+    echo "Setting Dynamic Account Secret for deployment ${DEPLOYMENT_NAME}"
+    # First we read the existing account information, then we lookup the contents of the kubeconfigFile
+    # and append it as a kubeconfigContents element, lastly we append that to the kubernetes.account list
+    # and store that into the vault secret
+    yq r -j \
+        .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
+        jq --arg contents "$(yq r $(yq r .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0.kubeconfigFile) | sed -E ':a;N;$!ba;s/\r{0,1}\n/\n/g')" \
+        'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | \
+        vault kv put \
+        -address="https://${VAULT_ADDR}" \
+        secret/dynamic_accounts/spinnaker -
+    
+    echo "Configuring Spinnaker dynamic account for deployment ${DEPLOYMENT_NAME}"
+
+    cat <<DYN_CONFIG >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml
+spring:
+  profiles:
+    include: vault
+  cloud:
+    config:
+      server:
+        vault:
+          host: ${VAULT_ADDR}
+          port: 443
+          scheme: https
+          backend: secret/dynamic_accounts
+          kvVersion: 1
+          default-key: spinnaker
+          token: $(cat /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_ro_token)
+
+DYN_CONFIG
+
+    rm /home/${USER}/.vault-token
+else
+    echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
+fi
+cat <<SETTINGS_LOCAL >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
 window.spinnakerSettings.notifications.email.enabled = false;
 window.spinnakerSettings.notifications.bearychat.enabled = false;
 SETTINGS_LOCAL

@@ -112,7 +112,7 @@ module "k8s" {
   k8s_options               = var.default_k8s_options
   node_options              = var.default_node_options
   node_metadata             = var.default_node_metadata
-  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]  
+  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]
   client_certificate_config = var.default_client_certificate_config
   cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
   create_namespace          = var.default_create_namespace
@@ -221,8 +221,9 @@ module "k8s-spinnaker-agent" {
   node_options              = var.second_cluster_node_options
   node_pool_options         = var.second_cluster_node_pool_options
   client_certificate_config = var.default_client_certificate_config
-  cloud_nat                 = false                                                 # Will re-use the cloud nat created by the primary cluster
-  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
+  cloud_nat                 = false                                                # Will re-use the cloud nat created by the primary cluster
+  cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
+  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"] # Use the same network tags as primary cluster
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
   crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
@@ -273,8 +274,9 @@ module "k8s-sandbox-agent" {
   node_options              = var.second_cluster_node_options
   node_pool_options         = var.second_cluster_node_pool_options
   client_certificate_config = var.default_client_certificate_config
-  cloud_nat                 = false                                                 # Will re-use the cloud nat created by the primary cluster
-  node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"]  # Use the same network tags as primary cluster
+  cloud_nat                 = false                                                # Will re-use the cloud nat created by the primary cluster
+  cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
+  node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"] # Use the same network tags as primary cluster
   create_namespace          = var.default_create_namespace
   extras                    = var.extras
   crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
@@ -354,7 +356,7 @@ data "google_compute_address" "halyard_ip_address" {
 }
 
 data "http" "local_outgoing_ip_address" {
-  url = "https://ifconfig.co"
+  url = "https://ifconfig.me"
 }
 
 data "google_compute_address" "ui_ip_address" {
@@ -438,8 +440,16 @@ module "halyard-service-account" {
     "roles/container.admin",
     "roles/browser",
     "roles/container.clusterAdmin",
-    "roles/iam.serviceAccountUser"
+    "roles/iam.serviceAccountUser",
+    "roles/iam.serviceAccountTokenCreator"
   ]
+}
+
+resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
+  for_each      = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  crypto_key_id = lookup(module.vault_keys.crypto_key_id_map, each.key, "")
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:${module.halyard-service-account.service-account-email}"
 }
 
 module "certbot-service-account" {
@@ -473,6 +483,22 @@ module "vault_setup" {
   vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   cluster_region         = var.cluster_region
   crypto_key_id_map      = module.vault_keys.crypto_key_id_map
+}
+
+output "vault_keyring" {
+  value = google_kms_key_ring.vault_keyring.name
+}
+
+output "vault_crypto_key_id_map" {
+  value = module.vault_keys.crypto_key_id_map
+}
+
+output "vault_crypto_key_name_map" {
+  value = module.vault_keys.crypto_key_name_map
+}
+
+output "vault_hosts_map" {
+  value = module.spinnaker-dns.vault_hosts_map
 }
 
 output "vault_yml_files" {

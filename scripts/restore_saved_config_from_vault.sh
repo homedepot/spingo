@@ -56,7 +56,6 @@ vault read -field value secret/"$PROJECT"/local-vars-monitoring-alerting-gcp_pro
 
 # For DNS domain to manage
 vault read -field value secret/"$PROJECT"/local-vars-dns-cloud_dns_hostname > dns/var-cloud_dns_hostname.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-spinnaker-cloud_dns_hostname > spinnaker/var-cloud_dns_hostname.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-halyard-cloud_dns_hostname > halyard/var-cloud_dns_hostname.auto.tfvars
 
 # For DNS project

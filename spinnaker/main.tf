@@ -65,7 +65,7 @@ data "google_project" "project" {
 
 module "gke_keyring" {
   source                   = "./modules/kms_key_ring"
-  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => v["clusterRegion"]... }
+  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
   kms_key_ring_prefix      = "gke_keyring"
 }
 
@@ -201,7 +201,7 @@ module "certbot-service-account" {
 
 module "vault_keyring" {
   source                   = "./modules/kms_key_ring"
-  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => v["clusterRegion"]... }
+  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
   kms_key_ring_prefix      = "vault_keyring"
 }
 

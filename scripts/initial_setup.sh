@@ -280,7 +280,6 @@ while [ -z "$DOMAIN_TO_MANAGE" ]; do
 done
 
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "dns" "$PROJECT"
-terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
 # choose a project that will manage the DNS

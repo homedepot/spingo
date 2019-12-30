@@ -56,6 +56,35 @@ terraform_variable() {
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
+prompt_for_value_with_default() {
+    # $1 = cluster index number
+    # $2 = attribute key name from default cluster config json
+    # $3 = git root directory
+    # $4 = user readable name for value
+    DEFAULT_PROMPT_VALUE=""
+    DEFAULT_KEY="$2"
+    READ_PROMPT_BASE="Enter the $4 for #$1 and press [ENTER]"
+    while [ -z "$DEFAULT_PROMPT_VALUE" ]; do
+        DEFAULT_DEFAULT_PROMPT_VALUE=$(cat "${$3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$DEFAULT_KEY"'' 2>/dev/null)
+        printf %s "-----------------------------------------------------------------------------"  >&2
+        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_DEFAULT_PROMPT_VALUE})"
+        if [ -z "$DEFAULT_DEFAULT_PROMPT_VALUE" ]; then
+            READ_PROMPT="$READ_PROMPT_BASE"":"
+        else
+            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+        fi
+        printf %s "$READ_PROMPT"  >&2
+        read DEFAULT_PROMPT_VALUE
+        DEFAULT_PROMPT_VALUE="${DEFAULT_PROMPT_VALUE:-$DEFAULT_DEFAULT_PROMPT_VALUE}"
+        if [ -z "$DEFAULT_PROMPT_VALUE" ]; then 
+            printf %s "You must enter a $4" >&2
+        else 
+            printf %s "Selected $4 is $DEFAULT_PROMPT_VALUE" >&2
+        fi
+    done
+    echo "$DEFAULT_PROMPT_VALUE"
+}
+
 # Custom `select` implementation that allows *empty* input.
 # Pass the choices as individual arguments.
 # Output is the chosen item, or "", if the user just pressed ENTER.
@@ -226,29 +255,29 @@ SHIP_PLANS_JSON='{"ship_plans":{}}'
 n=1
 until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
-    DEFAULT_CLUSTER_NAME=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterPrefix' 2>/dev/null)
-    echo "-----------------------------------------------------------------------------"
-    echo "Enter the name of cluster #$n and press [ENTER] or just press [ENTER] for the default (${DEFAULT_CLUSTER_NAME}):"
-    read CLUSTER_NAME
-    CLUSTER_NAME="${CLUSTER_NAME:-$DEFAULT_CLUSTER_NAME}"
-    # choose a region to place the cluster into
-    echo "-----------------------------------------------------------------------------"
-    echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
-    echo "-----------------------------------------------------------------------------"
-    PS3="Enter the number for the Google Cloud Project Region to setup the Spinnaker cluster on (ctrl-c to exit) : ";
-    select region in $(gcloud compute regions list --format='value(name)' 2>/dev/null)
-    do
-        if [ "$region" == "" ]; then
-            echo "You must select a Google Cloud Project Region"
-        else
-            echo "-----------------------------------------------------------------------------"
-            echo "Google Cloud Project Region $region selected for Cluster $CLUSTER_NAME"
-            CLUSTER_REGION=$region
-            break;
-        fi
+    # $1 = cluster index number
+    # $2 = attribute key name from default cluster config json
+    # $3 = git root directory
+    # $4 = user readable name for value
+    CLUSTER_NAME=$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")
+    echo "the cluster name is $CLUSTER_NAME"
+    CLUSTER_REGION=""
+    while [ -z "$CLUSTER_REGION" ]; do
+        # choose a region to place the cluster into
+        echo "-----------------------------------------------------------------------------"
+        echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
+        echo "-----------------------------------------------------------------------------"
+        DEFAULT_CLUSTER_REGION=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)
+        PS3="Enter the number for the Cluster Region to setup the Spinnaker cluster on or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit) : ";
+        CLUSTER_REGION=$(selectWithDefault $(gcloud compute regions list --format='value(name)' 2>/dev/null))
+        CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
+    
+    echo "-----------------------------------------------------------------------------"
+    echo "Google Cloud Project Region $CLUSTER_REGION selected for Cluster $CLUSTER_NAME"
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
+    DEFAULT_DECK_SUBDOMAIN=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)
     echo "-----------------------------------------------------------------------------"
     echo "Enter the subdomain for deck to use for $CLUSTER_NAME and press [ENTER]:"
     read DECK_SUBDOMAIN

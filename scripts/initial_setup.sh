@@ -173,7 +173,7 @@ prompt_for_value() {
         echoerr " *****   $2   *****  $4"
         echoerr "-----------------------------------------------------------------------------"
         while [ -z "$READ_RESPONSE" ]; do
-            echoerr -n "$3"
+            echoerr "$3"
             read -r READ_RESPONSE
         done
         READ_RESPONSE="${READ_RESPONSE:-$5}"

@@ -82,7 +82,7 @@ prompt_for_value_with_default() {
             printf '%s\n' "Selected $4 is $PROMPT_VALUE" >&2
         fi
     done
-    echo "$DEFAULT_PROMPT_VALUE"
+    echo "$PROMPT_VALUE"
 }
 
 # Custom `select` implementation that allows *empty* input.

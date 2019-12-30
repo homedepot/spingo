@@ -226,7 +226,7 @@ SHIP_PLANS_JSON='{"ship_plans":{}}'
 n=1
 until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
-    DEFAULT_CLUSTER_NAME=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterPrefix' 2>/dev/null)
+    DEFAULT_CLUSTER_NAME=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterPrefix' 2>/dev/null)
     echo "-----------------------------------------------------------------------------"
     echo "Enter the name of cluster #$n and press [ENTER] or just press [ENTER] for the default (${DEFAULT_CLUSTER_NAME}):"
     read CLUSTER_NAME

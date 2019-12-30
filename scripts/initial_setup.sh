@@ -65,7 +65,9 @@ prompt_to_use_base_hostname_for_deck_or_get_value(){
     # $6 = is base hostname use available
     # $7 = base hostname chosen by user stored at DOMAIN_TO_MANAGE
     if [ "$6" == "true" ]; then
-        printf '%s\n' "There can be only one deployment that can use the base hostname $7 as the hostname for it's UI (deck)"
+        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+        printf '%s\n' " *****   There can be only one deployment that can use the base hostname $7 as the hostname for it's UI (deck) *****"  >&2
+        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
         PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
         PROMPT_VALUE=$(select_with_default "No" "Yes")
         if [ "$PROMPT_VALUE" == "Yes" ]; then

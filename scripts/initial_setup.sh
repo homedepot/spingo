@@ -70,35 +70,35 @@ prompt_for_value_with_default() {
         PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
         PROMPT_VALUE=$(select_with_default "No" "Yes")
         if [ "$PROMPT_VALUE" == "Yes" ]; then
-            return "$PROMPT_VALUE"
+            echo "$PROMPT_VALUE"
         fi
-    fi
-    
-    OPTIONAL_CLUSTER_NAME=""
-    if [ -z "$5" ]; then
-        OPTIONAL_CLUSTER_NAME="Cluster $5 "
-    fi
-    READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
-    while [ -z "$PROMPT_VALUE" ]; do
-        DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
-        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
-        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
-        if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
-            READ_PROMPT="$READ_PROMPT_BASE"":"
-        else
-            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+    else
+        OPTIONAL_CLUSTER_NAME=""
+        if [ -z "$5" ]; then
+            OPTIONAL_CLUSTER_NAME="Cluster $5 "
         fi
-        printf '%s\n' "$READ_PROMPT"  >&2
-        read PROMPT_VALUE
-        PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
-        if [ -z "$PROMPT_VALUE" ]; then 
-            printf '%s\n' "You must enter a $4" >&2
-        else
+        READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
+        while [ -z "$PROMPT_VALUE" ]; do
+            DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
             printf '%s\n' "-----------------------------------------------------------------------------"  >&2
-            printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
-        fi
-    done
-    echo "$PROMPT_VALUE"
+            DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
+            if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
+                READ_PROMPT="$READ_PROMPT_BASE"":"
+            else
+                READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+            fi
+            printf '%s\n' "$READ_PROMPT"  >&2
+            read PROMPT_VALUE
+            PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
+            if [ -z "$PROMPT_VALUE" ]; then 
+                printf '%s\n' "You must enter a $4" >&2
+            else
+                printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+                printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
+            fi
+        done
+        echo "$PROMPT_VALUE"
+    fi
 }
 
 # Custom `select` implementation that allows *empty* input.
@@ -133,9 +133,9 @@ select_with_default() {
 check_for_base_hostname_used() {
     RESULT=$(echo "$1" | jq '.ship_plans | to_entries | .[].value | select(.deckSubdomain == "") | .deckSubdomain == ""')
     if [ "$RESULT" == "true" ]; then
-        return "false"
+        echo "false"
     else
-        return "true"
+        echo "true"
     fi
 }
 

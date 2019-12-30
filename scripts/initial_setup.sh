@@ -74,12 +74,12 @@ prompt_for_value_with_default() {
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
         fi
         printf '%s\n' "$READ_PROMPT"  >&2
-        read DEFAULT_PROMPT_VALUE
-        DEFAULT_PROMPT_VALUE="${DEFAULT_PROMPT_VALUE:-$DEFAULT_DEFAULT_PROMPT_VALUE}"
-        if [ -z "$DEFAULT_PROMPT_VALUE" ]; then 
+        read PROMPT_VALUE
+        PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
+        if [ -z "$PROMPT_VALUE" ]; then 
             printf '%s\n' "You must enter a $4" >&2
         else 
-            printf '%s\n' "Selected $4 is $DEFAULT_PROMPT_VALUE" >&2
+            printf '%s\n' "Selected $4 is $PROMPT_VALUE" >&2
         fi
     done
     echo "$DEFAULT_PROMPT_VALUE"

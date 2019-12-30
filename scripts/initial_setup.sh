@@ -61,11 +61,15 @@ prompt_for_value_with_default() {
     # $2 = attribute key name from default cluster config json
     # $3 = git root directory
     # $4 = user readable name for value
+    # $5 = cluster name
     PROMPT_VALUE=""
-    DEFAULT_KEY="$2"
-    READ_PROMPT_BASE="Enter the $4 for #$1 and press [ENTER]"
+    OPTIONAL_CLUSTER_NAME=""
+    if [ -z "$5" ]; then
+        OPTIONAL_CLUSTER_NAME="Cluster $5 "
+    fi
+    READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
     while [ -z "$PROMPT_VALUE" ]; do
-        DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$DEFAULT_KEY"'' 2>/dev/null)
+        DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
         printf '%s\n' "-----------------------------------------------------------------------------"  >&2
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
         if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
@@ -78,8 +82,9 @@ prompt_for_value_with_default() {
         PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
         if [ -z "$PROMPT_VALUE" ]; then 
             printf '%s\n' "You must enter a $4" >&2
-        else 
-            printf '%s\n' "Selected $4 is $PROMPT_VALUE" >&2
+        else
+            printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+            printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
         fi
     done
     echo "$PROMPT_VALUE"
@@ -224,7 +229,7 @@ do
         echo "You must select a Managed DNS GCP Project"
     else
         echo "-----------------------------------------------------------------------------"
-        echo "Managed DNS Google Cloud Project $dns_project selected"
+        echo "Managed DNS Google Cloud Project selected : $dns_project"
         terraform_variable "managed_dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
         terraform_variable "gcp_project" "$dns_project" "$GIT_ROOT_DIR" "dns" "$PROJECT"
         vault write "secret/$PROJECT/dns_project_name" "value=$dns_project" >/dev/null 2>&1
@@ -246,7 +251,7 @@ do
         exit 1
     else
         echo "-----------------------------------------------------------------------------"
-        echo "Number of Spinnaker Deployments $cluster_count selected"
+        echo "Number of Spinnaker Deployments selected : $cluster_count"
         SELECTED_CLUSTER_COUNT=$cluster_count
         break;
     fi
@@ -255,10 +260,8 @@ SHIP_PLANS_JSON='{"ship_plans":{}}'
 n=1
 until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
-    # $1 = cluster index number
-    # $2 = attribute key name from default cluster config json
-    # $3 = git root directory
-    # $4 = user readable name for value
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   Cluster name   *****"
     CLUSTER_NAME=$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")
     CLUSTER_REGION=""
     while [ -z "$CLUSTER_REGION" ]; do
@@ -270,38 +273,29 @@ do
         READ_PROMPT_BASE="Enter the number for the Cluster Region for #$n and press [ENTER]"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit)"
         if [ -z "$DEFAULT_CLUSTER_REGION" ]; then
-            READ_PROMPT="$READ_PROMPT_BASE"":"
+            READ_PROMPT="$READ_PROMPT_BASE"" : "
         else
-            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
         fi
         PS3="$READ_PROMPT";
         CLUSTER_REGION=$(selectWithDefault $(gcloud compute regions list --format='value(name)' 2>/dev/null))
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
-    
     echo "-----------------------------------------------------------------------------"
     echo "Google Cloud Project Region $CLUSTER_REGION selected for Cluster $CLUSTER_NAME"
+    
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    DEFAULT_DECK_SUBDOMAIN=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)
-    echo "-----------------------------------------------------------------------------"
-    echo "Enter the subdomain for deck to use for $CLUSTER_NAME and press [ENTER]:"
-    read DECK_SUBDOMAIN
+    DECK_SUBDOMAIN=$(prompt_for_value_with_default "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME")
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
-    echo "-----------------------------------------------------------------------------"
-    echo "Enter the subdomain for gate to use for $CLUSTER_NAME and press [ENTER]:"
-    read GATE_SUBDOMAIN
+    GATE_SUBDOMAIN=$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for x509 is the address where automation like the spin CLI will use"
-    echo "-----------------------------------------------------------------------------"
-    echo "Enter the subdomain for x509 to use for $CLUSTER_NAME and press [ENTER]:"
-    read X509_SUBDOMAIN
+    X509_SUBDOMAIN=$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
-    echo "-----------------------------------------------------------------------------"
-    echo "Enter the subdomain for vault to use for $CLUSTER_NAME and press [ENTER]:"
-    read VAULT_SUBDOMAIN
+    VAULT_SUBDOMAIN=$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" --arg dsh "-" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')
     n=$[$n+1]
 done

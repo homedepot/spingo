@@ -68,7 +68,7 @@ prompt_for_value_with_default() {
     if [ "$6" == "true" ]; then
         printf '%s\n' "There can be only one deployment that can use the base hostname $7 as the hostname for it's UI (deck)"
         PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
-        PROMPT_VALUE=$(selectWithDefault "No" "Yes")
+        PROMPT_VALUE=$(select_with_default "No" "Yes")
         if [ "$PROMPT_VALUE" == "Yes" ]; then
             return "$PROMPT_VALUE"
         fi
@@ -105,8 +105,8 @@ prompt_for_value_with_default() {
 # Pass the choices as individual arguments.
 # Output is the chosen item, or "", if the user just pressed ENTER.
 # Example:
-#    choice=$(selectWithDefault 'one' 'two' 'three')
-selectWithDefault() {
+#    choice=$(select_with_default 'one' 'two' 'three')
+select_with_default() {
 
   local item i=0 numItems=$# 
 
@@ -128,6 +128,15 @@ selectWithDefault() {
   # Output the selected item, if any.
   [[ -n $index ]] && printf %s "${@: index:1}"
 
+}
+
+check_for_base_hostname_used() {
+    RESULT=$(echo "$1" | jq '.ship_plans | to_entries | .[].value | select(.deckSubdomain == "") | .deckSubdomain == ""')
+    if [ "$RESULT" == "true" ]; then
+        return "false"
+    else
+        return "true"
+    fi
 }
 
 CWD=$(pwd)
@@ -289,7 +298,7 @@ do
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
         fi
         PS3="$READ_PROMPT";
-        CLUSTER_REGION=$(selectWithDefault $(gcloud compute regions list --format='value(name)' 2>/dev/null))
+        CLUSTER_REGION=$(select_with_default $(gcloud compute regions list --format='value(name)' 2>/dev/null))
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
     echo "-----------------------------------------------------------------------------"
@@ -297,7 +306,7 @@ do
     
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    DECK_SUBDOMAIN=$(prompt_for_value_with_default "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" $(echo "$SHIP_PLANS_JSON" | jq '.ship_plans | to_entries | .[].value | select(.deckSubdomain == "") | .deckSubdomain == ""') "$DOMAIN_TO_MANAGE")
+    DECK_SUBDOMAIN=$(prompt_for_value_with_default "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" $(check_for_base_hostname_used "$SHIP_PLANS_JSON") "$DOMAIN_TO_MANAGE")
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
     GATE_SUBDOMAIN=$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")

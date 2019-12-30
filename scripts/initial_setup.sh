@@ -56,49 +56,61 @@ terraform_variable() {
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
+prompt_to_use_base_hostname_for_deck_or_get_value(){
+    # $1 = cluster index number
+    # $2 = attribute key name from default cluster config json
+    # $3 = git root directory
+    # $4 = user readable name for value
+    # $5 = cluster name
+    # $6 = is base hostname use available
+    # $7 = base hostname chosen by user stored at DOMAIN_TO_MANAGE
+    if [ "$6" == "true" ]; then
+        printf '%s\n' "There can be only one deployment that can use the base hostname $7 as the hostname for it's UI (deck)"
+        PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
+        PROMPT_VALUE=$(select_with_default "No" "Yes")
+        if [ "$PROMPT_VALUE" == "Yes" ]; then
+            echo ""
+        else
+            prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5"
+        fi
+    else
+        prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5"
+    fi
+    
+}
+
 prompt_for_value_with_default() {
     # $1 = cluster index number
     # $2 = attribute key name from default cluster config json
     # $3 = git root directory
     # $4 = user readable name for value
     # $5 = cluster name
-    # $6 = prompt to give option of empty hostname
-    # $7 = the entered hostname
-    PROMPT_VALUE=""
-    if [ "$6" == "true" ]; then
-        printf '%s\n' "There can be only one deployment that can use the base hostname $7 as the hostname for it's UI (deck)"
-        PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
-        PROMPT_VALUE=$(select_with_default "No" "Yes")
-        if [ "$PROMPT_VALUE" == "Yes" ]; then
-            echo "$PROMPT_VALUE"
-        fi
-    else
-        OPTIONAL_CLUSTER_NAME=""
-        if [ -z "$5" ]; then
-            OPTIONAL_CLUSTER_NAME="Cluster $5 "
-        fi
-        READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
-        while [ -z "$PROMPT_VALUE" ]; do
-            DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
-            printf '%s\n' "-----------------------------------------------------------------------------"  >&2
-            DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
-            if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
-                READ_PROMPT="$READ_PROMPT_BASE"":"
-            else
-                READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
-            fi
-            printf '%s\n' "$READ_PROMPT"  >&2
-            read PROMPT_VALUE
-            PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
-            if [ -z "$PROMPT_VALUE" ]; then 
-                printf '%s\n' "You must enter a $4" >&2
-            else
-                printf '%s\n' "-----------------------------------------------------------------------------"  >&2
-                printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
-            fi
-        done
-        echo "$PROMPT_VALUE"
+    OPTIONAL_CLUSTER_NAME=""
+    if [ -z "$5" ]; then
+        OPTIONAL_CLUSTER_NAME="Cluster $5 "
     fi
+    READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
+    while [ -z "$PROMPT_VALUE" ]; do
+        DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
+        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
+        if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
+            READ_PROMPT="$READ_PROMPT_BASE"":"
+        else
+            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+        fi
+        printf '%s\n' "$READ_PROMPT"  >&2
+        read PROMPT_VALUE
+        PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
+        if [ -z "$PROMPT_VALUE" ]; then 
+            printf '%s\n' "You must enter a $4" >&2
+        else
+            printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+            printf '%s\n' "Entered $4 is $PROMPT_VALUE" >&2
+        fi
+    done
+    echo "$PROMPT_VALUE"
+
 }
 
 # Custom `select` implementation that allows *empty* input.
@@ -306,7 +318,7 @@ do
     
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    DECK_SUBDOMAIN=$(prompt_for_value_with_default "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" $(check_for_base_hostname_used "$SHIP_PLANS_JSON") "$DOMAIN_TO_MANAGE")
+    DECK_SUBDOMAIN=$(prompt_to_use_base_hostname_for_deck "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" $(check_for_base_hostname_used "$SHIP_PLANS_JSON") "$DOMAIN_TO_MANAGE")
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
     GATE_SUBDOMAIN=$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")

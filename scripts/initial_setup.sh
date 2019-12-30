@@ -62,13 +62,14 @@ prompt_for_value_with_default() {
     # $3 = git root directory
     # $4 = user readable name for value
     # $5 = cluster name
+    # $6 = override empty selection erroring
     PROMPT_VALUE=""
     OPTIONAL_CLUSTER_NAME=""
     if [ -z "$5" ]; then
         OPTIONAL_CLUSTER_NAME="Cluster $5 "
     fi
     READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
-    while [ -z "$PROMPT_VALUE" ]; do
+    while [ -z "$PROMPT_VALUE" ] && [ "$6" != "true" ]; do
         DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
         printf '%s\n' "-----------------------------------------------------------------------------"  >&2
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
@@ -80,7 +81,7 @@ prompt_for_value_with_default() {
         printf '%s\n' "$READ_PROMPT"  >&2
         read PROMPT_VALUE
         PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
-        if [ -z "$PROMPT_VALUE" ]; then 
+        if [ -z "$PROMPT_VALUE" ] && [ "$6" != "true" ]; then 
             printf '%s\n' "You must enter a $4" >&2
         else
             printf '%s\n' "-----------------------------------------------------------------------------"  >&2
@@ -286,7 +287,7 @@ do
     
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    DECK_SUBDOMAIN=$(prompt_for_value_with_default "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME")
+    DECK_SUBDOMAIN=$(prompt_for_value_with_default "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "true")
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
     GATE_SUBDOMAIN=$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")

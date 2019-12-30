@@ -400,7 +400,8 @@ AUTO_QUICKSTART_HALYARD=$(prompt_for_value \
     "$AUTO_QUICKSTART_HALYARD" \
     "Halyard Auto Quickstart" \
     "Do you want to enable halyard auto initial quickstart or just press [ENTER] to use default (yes) ? : " \
-    "Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time")
+    "Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time" \
+    "yes")
 if [ "$AUTO_QUICKSTART_HALYARD" != "yes" ]; then
     terraform_variable "auto_start_halyard_quickstart" "false" "$GIT_ROOT_DIR" "halyard" "$PROJECT" ""
 else

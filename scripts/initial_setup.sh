@@ -61,25 +61,25 @@ prompt_for_value_with_default() {
     # $2 = attribute key name from default cluster config json
     # $3 = git root directory
     # $4 = user readable name for value
-    DEFAULT_PROMPT_VALUE=""
+    PROMPT_VALUE=""
     DEFAULT_KEY="$2"
     READ_PROMPT_BASE="Enter the $4 for #$1 and press [ENTER]"
-    while [ -z "$DEFAULT_PROMPT_VALUE" ]; do
-        DEFAULT_DEFAULT_PROMPT_VALUE=$(cat "${$3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$DEFAULT_KEY"'' 2>/dev/null)
-        printf %s "-----------------------------------------------------------------------------"  >&2
-        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_DEFAULT_PROMPT_VALUE})"
-        if [ -z "$DEFAULT_DEFAULT_PROMPT_VALUE" ]; then
+    while [ -z "$PROMPT_VALUE" ]; do
+        DEFAULT_PROMPT_VALUE=$(cat "${$3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$DEFAULT_KEY"'' 2>/dev/null)
+        printf '%s\n' "-----------------------------------------------------------------------------"  >&2
+        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
+        if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
             READ_PROMPT="$READ_PROMPT_BASE"":"
         else
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
         fi
-        printf %s "$READ_PROMPT"  >&2
+        printf '%s\n' "$READ_PROMPT"  >&2
         read DEFAULT_PROMPT_VALUE
         DEFAULT_PROMPT_VALUE="${DEFAULT_PROMPT_VALUE:-$DEFAULT_DEFAULT_PROMPT_VALUE}"
         if [ -z "$DEFAULT_PROMPT_VALUE" ]; then 
-            printf %s "You must enter a $4" >&2
+            printf '%s\n' "You must enter a $4" >&2
         else 
-            printf %s "Selected $4 is $DEFAULT_PROMPT_VALUE" >&2
+            printf '%s\n' "Selected $4 is $DEFAULT_PROMPT_VALUE" >&2
         fi
     done
     echo "$DEFAULT_PROMPT_VALUE"

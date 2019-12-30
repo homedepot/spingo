@@ -57,7 +57,7 @@ terraform_variable() {
     else
         QUOTE="$6"
     fi
-    echo -e "$1 = ${QUOTE}${2}${QUOTE} > "$3/$4/var-$1.auto.tfvars"
+    echo -e "$1 = ${QUOTE}${2}${QUOTE}" > "$3/$4/var-$1.auto.tfvars"
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 

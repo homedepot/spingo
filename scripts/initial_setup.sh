@@ -261,7 +261,7 @@ n=1
 until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
     echo "-----------------------------------------------------------------------------"
-    echo " *****   Cluster name   *****"
+    echo " *****   Cluster name for #$n  *****"
     CLUSTER_NAME=$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")
     CLUSTER_REGION=""
     while [ -z "$CLUSTER_REGION" ]; do

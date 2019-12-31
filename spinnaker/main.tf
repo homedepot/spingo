@@ -73,6 +73,7 @@ module "k8s" {
   crypto_key_id_map         = module.gke_keys.crypto_key_id_map
   ship_plans                = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
   cloudnat_name_map         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map))), concat(values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map)))
+  cloudnat_ips              = data.terraform_remote_state.static_ips.outputs.cloudnat_ips
 }
 
 module "google-managed" {

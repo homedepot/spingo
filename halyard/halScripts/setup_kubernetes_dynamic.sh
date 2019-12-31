@@ -18,6 +18,8 @@ need "base64"
 need "kubectl"
 need "gcloud"
 
+cp /${USER}/.gcp/spinnaker-cloudsql-account.json /${USER}/.gcp/secret
+
 %{ for deployment, details in deployments ~}
 
 echo "Getting credentials for cluster ${deployment}"
@@ -134,9 +136,21 @@ if [ "$?" -ne 0 ]; then
     die "Unable to talk to cluster ${deployment} using kubeconfig $CONFIG_FILE so cowardly exiting"
 fi
 
+if [[ ${deployment} == *-agent ]]; then
+    echo "No need to create instance cloudsql secret for agent cluster"
+else
+    echo "Creating Spinnaker namespace and cloudsql-instance-credentials secret"
+    kubectl --kubeconfig="$CONFIG_FILE" create ns spinnaker
+    kubectl --kubeconfig="$CONFIG_FILE" secret generic cloudsql-instance-credentials --from-file=/${USER}/.gcp/secret
+fi
+
 %{ endfor ~}
 
 if [ -f /${USER}/.kube/config ]; then
     echo "Renaming gcloud based kubeconfig file to use later if needed"
     mv /${USER}/.kube/config /${USER}/.kube/all.config
+fi
+
+if [ -f /${USER}/.gcp/secret ]; then
+    rm /${USER}/.gcp/secret
 fi

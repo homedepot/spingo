@@ -1,9 +1,16 @@
 #!/bin/bash
 
+die() { echo "$*" 1>&2 ; exit 1; }
+
 cd /home/${USER}
 
 echo "Auto running setupKubernetes.sh"
 ./setupKubernetes.sh
+
+if [ "$?" -ne 0 ]; then
+    die "Unable to setup Kubernetes so no point in continuing"
+fi
+
 echo "Auto running setupCertbot.sh"
 ./setupCertbot.sh
 echo "Auto running setupVault.sh"

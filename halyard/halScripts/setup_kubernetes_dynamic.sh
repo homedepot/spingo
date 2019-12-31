@@ -119,6 +119,12 @@ echo "  location: $CLUSTER_LOCATION" >> "$CONFIG_FILE"
 echo "  name: $CLUSTER_NAME" >> "$CONFIG_FILE"
 echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
 
+kubectl --kubeconfig="$CONFIG_FILE" get nodes
+
+if [ "$?" -ne 0 ]; then
+    die "Unable to talk to cluster ${deployment} using kubeconfig $CONFIG_FILE so cowardly exiting"
+fi
+
 %{ endfor ~}
 
 if [ -f /${USER}/.kube/config ]; then

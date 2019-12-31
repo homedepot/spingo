@@ -120,5 +120,5 @@ output "created_nodepool_map" {
 
 # KUBECONFIG
 
-}
+# }
 

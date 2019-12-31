@@ -340,7 +340,7 @@ data "template_file" "setupKubernetesMultiple" {
     SCRIPT_CONTENT = templatefile("./halScripts/setup_kubernetes_dynamic.sh", {
       PROJECT     = var.gcp_project
       USER        = var.service_account_name
-      deployments = data.terraform_remote_state.static_ips.outputs.ship_plans
+      deployments = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
     })
   }
 }

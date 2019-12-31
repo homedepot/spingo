@@ -6,7 +6,7 @@ data "google_compute_address" "existing_nat" {
 
 # Create a NAT router so the nodes can reach DockerHub, etc
 resource "google_compute_router" "router" {
-  for_each    = (var.private_cluster && var.cloud_nat) ? var.ship_plans : {}
+  for_each    = var.ship_plans
   name        = each.key
   network     = google_compute_network.vpc[each.key].self_link
   project     = var.project
@@ -19,7 +19,7 @@ resource "google_compute_router" "router" {
 }
 
 resource "google_compute_router_nat" "nat" {
-  for_each                           = (var.private_cluster && var.cloud_nat) ? var.ship_plans : {}
+  for_each                           = var.ship_plans
   name                               = each.key
   project                            = var.project
   router                             = google_compute_router.router[each.key].name
@@ -43,7 +43,7 @@ resource "google_compute_router_nat" "nat" {
 # Route traffic to the Masters through the default gateway. This fixes things like kubectl exec and logs
 ##########################################################
 resource "google_compute_route" "gtw_route" {
-  for_each         = (var.private_cluster && var.cloud_nat) ? var.ship_plans : {}
+  for_each         = var.ship_plans
   name             = each.key
   dest_range       = google_container_cluster.cluster[each.key].endpoint
   network          = google_compute_network.vpc[each.key].name

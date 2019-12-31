@@ -2,6 +2,8 @@
 
 cd /home/${USER}
 
+echo "Auto running setupKubernetes.sh"
+./setupKubernetes.sh
 echo "Auto running setupCertbot.sh"
 ./setupCertbot.sh
 echo "Auto running setupVault.sh"

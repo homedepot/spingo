@@ -150,6 +150,7 @@ data "template_file" "start_script" {
     SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
     SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
     SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
+    SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
     SCRIPT_HALPUSH       = base64encode(data.template_file.halpush.rendered)
     SCRIPT_HALGET        = base64encode(data.template_file.halget.rendered)
     SCRIPT_HALDIFF       = base64encode(data.template_file.haldiff.rendered)
@@ -325,6 +326,22 @@ data "template_file" "setupHalyardMultiple" {
     SCRIPT_CONTENT = templatefile("./halScripts/multipleScriptTemplateContent.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         script = data.template_file.setupHalyard[k].rendered
+        }
+      }
+    })
+  }
+}
+
+data "template_file" "setupKubernetesMultiple" {
+  template = file("./halScripts/multipleScriptTemplate.sh")
+
+  vars = {
+    SHEBANG = "#!/bin/bash"
+    SCRIPT_CONTENT = templatefile("./halScripts/setup_kubernetes_dynamic.sh", {
+      PROJECT = var.gcp_project
+      USER    = var.service_account_name
+      deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+
         }
       }
     })

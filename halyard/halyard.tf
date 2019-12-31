@@ -338,12 +338,9 @@ data "template_file" "setupKubernetesMultiple" {
   vars = {
     SHEBANG = "#!/bin/bash"
     SCRIPT_CONTENT = templatefile("./halScripts/setup_kubernetes_dynamic.sh", {
-      PROJECT = var.gcp_project
-      USER    = var.service_account_name
-      deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
-
-        }
-      }
+      PROJECT     = var.gcp_project
+      USER        = var.service_account_name
+      deployments = data.terraform_remote_state.static_ips.outputs.ship_plans
     })
   }
 }

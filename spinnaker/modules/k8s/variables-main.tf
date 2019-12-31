@@ -1,11 +1,6 @@
 # Required
 ##########################################################
 
-variable "region" {
-  type        = string
-  description = "The region to create the cluster in (automatically distributes masters and nodes across zones). See: https://cloud.google.com/kubernetes-engine/docs/concepts/regional-clusters"
-}
-
 # Optional
 ##########################################################
 variable "project" {

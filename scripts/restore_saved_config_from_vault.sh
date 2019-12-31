@@ -63,7 +63,6 @@ vault read -field value secret/"$PROJECT"/local-vars-spinnaker-managed_dns_gcp_p
 vault read -field value secret/"$PROJECT"/local-vars-dns-gcp_project > dns/var-gcp_project.auto.tfvars
 
 # For cluster region
-vault read -field value secret/"$PROJECT"/local-vars-spinnaker-cluster_region > spinnaker/var-cluster_region.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-static_ips-region > static_ips/var-region.auto.tfvars
 vault read -field value -format json secret/"$PROJECT"/local-vars-static_ips-ship_plans > static_ips/var-ship_plans.auto.tfvars.json
 

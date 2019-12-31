@@ -20,7 +20,19 @@ need "gcloud"
 
 %{ for deployment, details in deployments ~}
 
+echo "Getting credentials for cluster ${deployment}"
+
 gcloud container clusters get-credentials ${deployment} --region ${details.clusterRegion} --project ${PROJECT}
+
+sleep 1
+
+%{ endfor ~}
+
+echo "Done collecting credentials"
+
+%{ for deployment, details in deployments ~}
+
+kubectl config --kubeconfig=/${USER}/.kube/config use-context "gke_${PROJECT}_${details.clusterRegion}_${deployment}"
 
 NAMESPACE="default"
 ROLEBINDING="ClusterRoleBinding"
@@ -108,3 +120,8 @@ echo "  name: $CLUSTER_NAME" >> "$CONFIG_FILE"
 echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
 
 %{ endfor ~}
+
+if [ -f /${USER}/.kube/config ]; then
+    echo "Deleting gcloud based kubeconfig file to be replaced by "
+    rm /${USER}/.kube/config
+fi

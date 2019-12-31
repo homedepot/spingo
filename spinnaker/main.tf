@@ -57,11 +57,24 @@ data "google_client_config" "current" {
 data "google_project" "project" {
 }
 
-# resource "google_kms_key_ring" "gke_keyring" {
-#   for_each = { for k, v in values(data.terraform_remote_state.static_ips.outputs.ship_plans) : v["clusterRegion"] => v["clusterRegion"]... }
-#   name     = "gke_keyring_${each.key}"
-#   location = each.value
-# }
+module "k8s" {
+  source          = "./modules/k8s"
+  project         = var.gcp_project
+  private_cluster = true # This will disable public IPs from the nodes
+
+  networks_that_can_access_k8s_api = sort(compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.terraform_remote_state.static_ips.outputs.halyard_ip)]])))
+
+  oauth_scopes              = var.default_oauth_scopes
+  k8s_options               = var.default_k8s_options
+  node_options              = var.default_node_options
+  node_metadata             = var.default_node_metadata
+  client_certificate_config = var.default_client_certificate_config
+  create_namespace          = var.default_create_namespace
+  extras                    = var.extras
+  crypto_key_id_map         = module.gke_keys.crypto_key_id_map
+  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
+  cloudnat_name_map         = data.terraform_remote_state.static_ips.outputs.cloudnat_name_map
+}
 
 module "gke_keyring" {
   source                   = "./modules/kms_key_ring"

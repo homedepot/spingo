@@ -79,6 +79,10 @@ output "cloudnat_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.cloudnat[k].address }
 }
 
+output "cloudnat_name_map" {
+  value = { for k, v in var.ship_plans : k => google_compute_address.cloudnat[k].name }
+}
+
 output "halyard_ip" {
   value = google_compute_address.halyard.address
 }

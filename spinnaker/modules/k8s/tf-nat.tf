@@ -1,11 +1,3 @@
-# Create an external NAT IP
-resource "google_compute_address" "nat" {
-  for_each = (var.private_cluster && var.cloud_nat) ? var.ship_plans : {}
-  name     = "${each.key}-nat"
-  project  = var.project
-  region   = each.value["clusterRegion"]
-}
-
 data "google_compute_address" "existing_nat" {
   for_each = var.ship_plans
   name     = var.cloudnat_name_map[each.key]

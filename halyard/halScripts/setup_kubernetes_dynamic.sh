@@ -58,9 +58,9 @@ kubectl create sa spinnaker-user --namespace $NAMESPACE
 # Get related secret
 secret=$(kubectl get sa spinnaker-user --namespace $NAMESPACE -o json | jq -r '.secrets[].name')
 # Get ca.crt from secret
-kubectl get secret "$secret" --namespace $NAMESPACE -o json | jq -r '.data["ca.crt"]' | base64 "$BASE64_DECODE" > ca.crt
+kubectl get secret "$secret" --namespace $NAMESPACE -o json | jq -r '.data["ca.crt"]' | base64 --decode > ca.crt
 # Get service account token from secret
-user_token=$(kubectl get secret "$secret" --namespace $NAMESPACE -o json | jq -r '.data["token"]' | base64 "$BASE64_DECODE")
+user_token=$(kubectl get secret "$secret" --namespace $NAMESPACE -o json | jq -r '.data["token"]' | base64 --decode)
 # Get information from your kubectl config (current-context, server..)
 # get current context
 c=$(kubectl config current-context)
@@ -125,5 +125,5 @@ echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
 
 if [ -f /${USER}/.kube/config ]; then
     echo "Renaming gcloud based kubeconfig file to use later if needed"
-    mv /${USER}/.kube/all.config
+    mv /${USER}/.kube/config /${USER}/.kube/all.config
 fi

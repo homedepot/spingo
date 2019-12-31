@@ -141,7 +141,7 @@ if [[ ${deployment} == *-agent ]]; then
 else
     echo "Creating Spinnaker namespace and cloudsql-instance-credentials secret"
     kubectl --kubeconfig="$CONFIG_FILE" create ns spinnaker
-    kubectl --kubeconfig="$CONFIG_FILE" create secret generic cloudsql-instance-credentials --from-file=/${USER}/.gcp/secret
+    kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker create secret generic cloudsql-instance-credentials --from-file=/${USER}/.gcp/secret
 fi
 
 %{ endfor ~}

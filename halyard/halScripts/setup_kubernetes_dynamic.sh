@@ -1,5 +1,3 @@
-set -x
-
 if [ ! -d /${USER}/.kube ]; then
   mkdir /${USER}/.kube
 fi

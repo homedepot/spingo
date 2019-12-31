@@ -47,3 +47,7 @@ variable "client_certificate_config" {
   description = "Whether client certificate authorization is enabled for this cluster."
   default     = []
 }
+
+variable "cloudnat_ips" {
+  type        = list(string)
+}

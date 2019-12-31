@@ -53,6 +53,15 @@ fi
 kubectl get namespace $NAMESPACE &> /dev/null || die "namespace \"$NAMESPACE\" does not exist"
 # Create service account for user spinnaker-user
 kubectl create sa spinnaker-user --namespace $NAMESPACE
+
+n=0
+until [ $n -ge 20 ]
+do
+   kubectl get sa spinnaker-user --namespace $NAMESPACE -o json | jq -r '.secrets[].name' && break
+   n=$[$n+1]
+   echo "K8s service account not ready yet for deployment ${deployment} retrying..."
+   sleep 6
+done
 # Get related secret
 secret=$(kubectl get sa spinnaker-user --namespace $NAMESPACE -o json | jq -r '.secrets[].name')
 # Get ca.crt from secret

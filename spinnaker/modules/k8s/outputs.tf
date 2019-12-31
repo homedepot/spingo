@@ -2,11 +2,6 @@ output "cluster_name_map" {
   value = { for k, v in var.ship_plans : k => google_container_cluster.cluster[k].name }
 }
 
-output "kubeconfig" {
-  sensitive = true
-  value     = var.enable_legacy_kubeconfig ? local.legacy_kubeconfig : local.gcloud_kubeconfig
-}
-
 output "endpoint_map" {
   value = { for k, v in var.ship_plans : k => google_container_cluster.cluster[k].endpoint }
 }

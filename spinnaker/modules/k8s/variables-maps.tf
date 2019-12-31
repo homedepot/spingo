@@ -110,7 +110,7 @@ variable "ship_plans" {
 }
 
 variable "cloudnat_name_map" {
-  type = map(map(string))
+  type = map(string)
 }
 
 variable "crypto_key_id_map" {

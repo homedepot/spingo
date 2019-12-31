@@ -173,7 +173,7 @@ resource "google_redis_instance" "cache" {
   redis_version      = "REDIS_4_0"
   display_name       = "${each.value["clusterPrefix"]} memorystore redis cache"
   redis_configs      = var.redis_config
-  authorized_network = lookup(var.authorized_networks_redis, each.key, "")
+  authorized_network = var.authorized_networks_redis[each.key]
   region             = each.value["clusterRegion"]
 }
 

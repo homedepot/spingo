@@ -75,6 +75,13 @@ module "k8s" {
   cloudnat_name_map         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map))), concat(values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map)))
 }
 
+module "google-managed" {
+  source                    = "./modules/google-managed"
+  gcp_project               = var.gcp_project
+  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
+  authorized_networks_redis = module.k8s.network_link_map
+}
+
 module "gke_keyring" {
   source                   = "./modules/kms_key_ring"
   kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }

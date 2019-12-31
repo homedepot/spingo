@@ -6,7 +6,7 @@
 
 locals {
   private_cluster = var.private_cluster ? ["private"] : []
-  auth_list       = flatten([var.networks_that_can_access_k8s_api, formatlist("%s/32", data.google_compute_address.existing_nat[0].address)])
+  auth_list       = flatten([var.networks_that_can_access_k8s_api, formatlist("%s/32", data.google_compute_address.existing_nat[*].address)])
 }
 
 data "google_project" "project" {

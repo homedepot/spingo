@@ -66,7 +66,8 @@ module "k8s" {
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
-  node_options              = var.default_node_options
+  node_options_map          = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat([ for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans): var.default_node_options ], [ for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans): var.second_cluster_node_options ]))
+  node_pool_options_map     = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat([ for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans): var.default_node_pool_options ], [ for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans): var.second_cluster_node_pool_options ]))
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
   extras                    = var.extras

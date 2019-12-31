@@ -148,39 +148,39 @@ resource "google_container_node_pool" "primary_pool" {
   location           = each.value["clusterRegion"]
   project            = var.project
   version            = var.node_version == "" ? data.google_container_engine_versions.master[each.value["clusterRegion"]].latest_master_version : var.node_version
-  initial_node_count = var.node_pool_options["autoscaling_nodes_min"]
+  initial_node_count = var.node_pool_options_map[each.key]["autoscaling_nodes_min"]
 
   autoscaling {
-    min_node_count = var.node_pool_options["autoscaling_nodes_min"]
-    max_node_count = var.node_pool_options["autoscaling_nodes_max"]
+    min_node_count = var.node_pool_options_map[each.key]["autoscaling_nodes_min"]
+    max_node_count = var.node_pool_options_map[each.key]["autoscaling_nodes_max"]
   }
 
   management {
-    auto_repair  = var.node_pool_options["auto_repair"]
-    auto_upgrade = var.node_pool_options["auto_upgrade"]
+    auto_repair  = var.node_pool_options_map[each.key]["auto_repair"]
+    auto_upgrade = var.node_pool_options_map[each.key]["auto_upgrade"]
   }
 
-  max_pods_per_node = var.node_pool_options["max_pods_per_node"]
+  max_pods_per_node = var.node_pool_options_map[each.key]["max_pods_per_node"]
 
   node_config {
-    disk_size_gb = var.node_options["disk_size"]
-    disk_type    = var.node_options["disk_type"]
+    disk_size_gb = var.node_options_map[each.key]["disk_size"]
+    disk_type    = var.node_options_map[each.key]["disk_type"]
 
     # Forces new resource due to computing count :/
     # guest_accelerator {
-    #   count = "${length(var.node_options["guest_accelerator"])}"
-    #   type = "${var.node_options["guest_accelerator"]}"
+    #   count = "${length(var.node_options_map[each.key]["guest_accelerator"])}"
+    #   type = "${var.node_options_map[each.key]["guest_accelerator"]}"
     # }
-    image_type = var.node_options["image"]
+    image_type = var.node_options_map[each.key]["image"]
 
     # labels = "${var.node_labels}" # Forces new resource due to computing count :/
     local_ssd_count = var.extras["local_ssd_count"]
-    machine_type    = var.node_options["machine_type"]
+    machine_type    = var.node_options_map[each.key]["machine_type"]
     metadata        = var.node_metadata
 
     # minimum_cpu_platform = "" # TODO
     oauth_scopes    = var.oauth_scopes
-    preemptible     = var.node_options["preemptible"]
+    preemptible     = var.node_options_map[each.key]["preemptible"]
     service_account = var.service_account == "" ? google_service_account.sa[each.key].email : var.service_account
     tags            = [each.key]
 

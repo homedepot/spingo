@@ -51,6 +51,10 @@ variable "node_options" {
   }
 }
 
+variable "node_options_map" {
+  type = map(any)
+}
+
 # Map: Node Pool options
 ###############################
 variable "node_pool_options" {
@@ -64,6 +68,10 @@ variable "node_pool_options" {
     autoscaling_nodes_max = 3    # Maximum number of nodes to create in each zone. Must be >= autoscaling_nodes_min.
     max_pods_per_node     = 110  # The maximum number of pods per node in this node pool. Note this setting is currently in Beta: https://www.terraform.io/docs/providers/google/r/container_node_pool.html#max_pods_per_node
   }
+}
+
+variable "node_pool_options_map" {
+  type = map(any)
 }
 
 # Map: Extra Options

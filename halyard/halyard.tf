@@ -150,7 +150,7 @@ data "template_file" "start_script" {
     SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
     SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
     SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
-    SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
+    SCRIPT_KUBERNETES    = base64encode(data.template_file.setupKubernetesMultiple.rendered)
     SCRIPT_HALPUSH       = base64encode(data.template_file.halpush.rendered)
     SCRIPT_HALGET        = base64encode(data.template_file.halget.rendered)
     SCRIPT_HALDIFF       = base64encode(data.template_file.haldiff.rendered)

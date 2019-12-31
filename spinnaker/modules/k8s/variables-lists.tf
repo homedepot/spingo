@@ -49,5 +49,5 @@ variable "client_certificate_config" {
 }
 
 variable "cloudnat_ips" {
-  type        = list(string)
+  type = list(string)
 }

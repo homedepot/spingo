@@ -50,9 +50,6 @@ resource "google_compute_route" "gtw_route" {
   next_hop_gateway = "default-internet-gateway"
   priority         = 700
   project          = var.project
-  tags = split(
-    ",",
-    length(var.node_tags) == 0 ? var.name : join(",", var.node_tags),
-  )
+  tags = [replace(each.key, "-agent", ""]
 }
 

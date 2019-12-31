@@ -69,7 +69,6 @@ module "k8s" {
   node_options              = var.default_node_options
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
-  create_namespace          = var.default_create_namespace
   extras                    = var.extras
   crypto_key_id_map         = module.gke_keys.crypto_key_id_map
   ship_plans                = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))

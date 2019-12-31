@@ -1,9 +1,5 @@
 # Required
 ##########################################################
-variable "name" {
-  type        = string
-  description = "Name to use as a prefix to all the resources."
-}
 
 variable "region" {
   type        = string

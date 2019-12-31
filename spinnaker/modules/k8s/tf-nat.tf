@@ -1,7 +1,7 @@
 data "google_compute_address" "existing_nat" {
   for_each = var.ship_plans
   name     = var.cloudnat_name_map[each.key]
-  region   = var.region
+  region   = each.value["clusterRegion"]
 }
 
 # Create a NAT router so the nodes can reach DockerHub, etc

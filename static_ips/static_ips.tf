@@ -51,13 +51,13 @@ resource "google_compute_address" "halyard" {
   region = var.region
 }
 
-resource "local_file" "foo" {
-  content = templatefile("./cluster_tf_template.tpl", {
-    deployments        = var.ship_plans
-    halyard_ip_address = google_compute_address.halyard.address
-  })
-  filename = "${path.module}/../spinnaker/main_clusters.tf"
-}
+# resource "local_file" "foo" {
+#   content = templatefile("./cluster_tf_template.tpl", {
+#     deployments        = var.ship_plans
+#     halyard_ip_address = google_compute_address.halyard.address
+#   })
+#   filename = "${path.module}/../spinnaker/main_clusters.tf"
+# }
 
 output "ui_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.ui[k].address }

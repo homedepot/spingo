@@ -124,6 +124,6 @@ echo "$INDENTED_CLUSTER_ADMIN_GROUPS" >> "$CONFIG_FILE"
 %{ endfor ~}
 
 if [ -f /${USER}/.kube/config ]; then
-    echo "Deleting gcloud based kubeconfig file to be replaced by "
-    rm /${USER}/.kube/config
+    echo "Renaming gcloud based kubeconfig file to use later if needed"
+    mv /${USER}/.kube/all.config
 fi

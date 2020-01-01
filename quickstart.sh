@@ -6,7 +6,7 @@ setup_and_run_tf(){
     n=0
     until [ $n -ge 20 ]
     do
-        ATTEMPT="try"
+        ATTEMPT="success"
         terraform init && break
         ATTEMPT="fail"
         n=$[$n+1]
@@ -17,7 +17,20 @@ setup_and_run_tf(){
         echo "terraform init of $DIR failed. Unable to run terraform commands. Cowardly exiting"
         exit 1
     fi
-    terraform apply -auto-approve  || { echo "terraform apply of $DIR failed. Unable to run terraform commands. Cowardly exiting" ; exit 1; }
+    n=0
+    until [ $n -ge 20 ]
+    do
+        ATTEMPT="success"
+        terraform apply -auto-approve && break
+        ATTEMPT="fail"
+        n=$[$n+1]
+        echo "Unable to run apply command on terraform directory $DIR retrying..."
+        sleep 6
+    done
+    if [ "$ATTEMPT" == "fail" ]; then
+        echo "terraform apply -auto-approve of $DIR failed. Unable to run terraform commands. Cowardly exiting"
+        exit 1
+    fi
     cd ..
 }
 

@@ -66,16 +66,23 @@ else
 fi
 
 setup_and_run_tf "dns"
-echoerr "-----------------------------------------------------------------------------"
-echoerr " *****   Google Cloud DNS Setup ***** Setup instructions can be found here https://github.com/homedepot/spingo#setup-managed-dns-through-cloud-dns"
-echoerr "-----------------------------------------------------------------------------"
-PS3="Have you completed the setup of Google Cloud DNS nameservers into your domain configuration or just press [ENTER] to choose the default (Yes) ? : "
-DNS_IS_SETUP=$(select_with_default "Yes" "No")
-DNS_IS_SETUP=${DNS_IS_SETUP:-Yes}
-if [ "$DNS_IS_SETUP" != "Yes" ]; then
-    echo "Unable to continue without Google Cloud DNS being setup as Let's Encrypt requires it"
-    exit 1
+DNS_HOSTNAME=$(terraform output google_dns_managed_zone_hostname)
+DIG_CHECK=$(dig "$DNS_HOSTNAME" ns +short)
+if [ "$DIG_CHECK" == "" ]; then
+    echoerr "-----------------------------------------------------------------------------"
+    echoerr " *****   Google Cloud DNS Setup ***** Setup instructions can be found here https://github.com/homedepot/spingo#setup-managed-dns-through-cloud-dns"
+    echoerr "-----------------------------------------------------------------------------"
+    PS3="Have you completed the setup of Google Cloud DNS nameservers into your domain configuration or just press [ENTER] to choose the default (Yes) ? : "
+    DNS_IS_SETUP=$(select_with_default "Yes" "No")
+    DNS_IS_SETUP=${DNS_IS_SETUP:-Yes}
+    if [ "$DNS_IS_SETUP" != "Yes" ]; then
+        echo "Unable to continue without Google Cloud DNS being setup as Let's Encrypt requires it"
+        exit 1
+    fi
+else
+    echo "DNS base hostname appears to have nameserver setup so continuing on"
 fi
+
 setup_and_run_tf "static_ips"
 setup_and_run_tf "spinnaker"
 setup_and_run_tf "halyard"

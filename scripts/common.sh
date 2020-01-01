@@ -52,3 +52,9 @@ prompt_for_value() {
         echo "$1"
     fi
 }
+
+die() { echo "$*" 1>&2 ; exit 1; }
+
+need() {
+    command -v "$1" &>/dev/null || die "Binary '$1' is missing but required"
+}

@@ -265,7 +265,7 @@ do
         break;
     fi
 done
-SHIP_PLANS_JSON='{"ship_plans":{}}'
+SHIP_PLANS_JSON="$(< "$GIT_ROOT_DIR"/scripts/empty_cluster_config.json)"
 n=1
 until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do

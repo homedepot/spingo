@@ -42,11 +42,11 @@ output "instace_urls_map" {
 }
 
 output "service_account_map" {
-  value = var.service_account == "" ? { for k, v in var.ship_plans : k => google_service_account.sa[k].email } : { for k, v in var.ship_plans : k => var.service_account }
+  value = var.service_account == "" ? { for k, v in var.ship_plans_without_agent : k => google_service_account.sa[k].email } : { for k, v in var.ship_plans : k => var.service_account }
 }
 
 output "service_account_key_map" {
-  value = var.service_account == "" ? { for k, v in var.ship_plans : k => google_service_account_key.sa_key[k].private_key } : { for k, v in var.ship_plans : k => "" }
+  value = var.service_account == "" ? { for k, v in var.ship_plans_without_agent : k => google_service_account_key.sa_key[k].private_key } : { for k, v in var.ship_plans : k => "" }
 }
 
 output "cloud_nat_adddress_map" {

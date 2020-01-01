@@ -36,7 +36,7 @@ GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
 cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
 
 # shellcheck source="$GIT_ROOT_DIR"/scripts/common.sh
-. "$GIT_ROOT_DIR"/scripts/common.sh
+source "$GIT_ROOT_DIR"/scripts/common.sh
 
 terraform_override() {
     # $1 = terraform bucket name
@@ -102,7 +102,7 @@ prompt_for_value_with_default() {
     fi
     READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
     while [ -z "$PROMPT_VALUE" ]; do
-        DEFAULT_PROMPT_VALUE=$(cat "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
+        DEFAULT_PROMPT_VALUE=$(< "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
         echoerr "-----------------------------------------------------------------------------"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
         if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
@@ -271,14 +271,14 @@ until [ $n -gt $SELECTED_CLUSTER_COUNT ]
 do
     echo "-----------------------------------------------------------------------------"
     echo " *****   Cluster name for #$n  *****"
-    CLUSTER_NAME=$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")
+    CLUSTER_NAME="$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")"
     CLUSTER_REGION=""
     while [ -z "$CLUSTER_REGION" ]; do
         # choose a region to place the cluster into
         echo "-----------------------------------------------------------------------------"
         echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
         echo "-----------------------------------------------------------------------------"
-        DEFAULT_CLUSTER_REGION=$(cat "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)
+        DEFAULT_CLUSTER_REGION="$(< "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)"
         READ_PROMPT_BASE="Enter the number for the Cluster Region for #$n and press [ENTER]"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit)"
         if [ -z "$DEFAULT_CLUSTER_REGION" ]; then
@@ -287,7 +287,7 @@ do
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
         fi
         PS3="$READ_PROMPT";
-        CLUSTER_REGION="$(select_with_default $(gcloud compute regions list --format='value(name)' 2>/dev/null))"
+        CLUSTER_REGION="$(select_with_default "$(gcloud compute regions list --format='value(name)' 2>/dev/null)")"
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
     echo "-----------------------------------------------------------------------------"
@@ -295,17 +295,17 @@ do
     
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    DECK_SUBDOMAIN=$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" $(check_for_base_hostname_used "$SHIP_PLANS_JSON") "$DOMAIN_TO_MANAGE")
+    DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used $SHIP_PLANS_JSON)" "$DOMAIN_TO_MANAGE")"
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
-    GATE_SUBDOMAIN=$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")
+    GATE_SUBDOMAIN="$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")"
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for x509 is the address where automation like the spin CLI will use"
-    X509_SUBDOMAIN=$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")
+    X509_SUBDOMAIN="$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")"
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
-    VAULT_SUBDOMAIN=$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")
-    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" --arg dsh "-" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')
+    VAULT_SUBDOMAIN="$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")"
+    SHIP_PLANS_JSON="$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" --arg dsh "-" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')"
     n=$[$n+1]
 done
 
@@ -330,22 +330,22 @@ do
     fi
 done
 
-GOOGLE_OAUTH_CLIENT_ID=$(prompt_for_value \
+GOOGLE_OAUTH_CLIENT_ID="$(prompt_for_value \
     "$GOOGLE_OAUTH_CLIENT_ID" \
     "Google OAuth Client ID" \
     "What is the Google OAuth Client ID? : " \
-    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")
-GOOGLE_OAUTH_CLIENT_SECRET=$(prompt_for_value \
+    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")"
+GOOGLE_OAUTH_CLIENT_SECRET="$(prompt_for_value \
     "$GOOGLE_OAUTH_CLIENT_SECRET" \
     "Google OAuth Client Secret" \
     "What is the Google OAuth Client Secret? : " \
-    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")
+    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")"
 
 echoerr "-----------------------------------------------------------------------------"
 echoerr " *****   Halyard Auto Quickstart ***** Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time"
 echoerr "-----------------------------------------------------------------------------"
 PS3="Do you want to enable halyard auto initial quickstart or just press [ENTER] to use default (Yes) ? : "
-AUTO_QUICKSTART_HALYARD=$(select_with_default "No" "Yes")
+AUTO_QUICKSTART_HALYARD="$(select_with_default "No" "Yes")"
 AUTO_QUICKSTART_HALYARD=${AUTO_QUICKSTART_HALYARD:-Yes}
 if [ "$AUTO_QUICKSTART_HALYARD" == "Yes" ]; then
     terraform_variable "auto_start_halyard_quickstart" "true" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
@@ -404,9 +404,9 @@ echo "enabling cloudkms.googleapis.com - Needed for Vault"
 gcloud services enable cloudkms.googleapis.com
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
-SA_EMAIL=$(gcloud iam service-accounts list \
+SA_EMAIL="$(gcloud iam service-accounts list \
       --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)')
+      --format='value(email)')"
 if [ -n "$SA_EMAIL" ]; then
     echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
 else
@@ -418,9 +418,9 @@ fi
 while [ -z "$SA_EMAIL" ]; do
   echo "waiting for service account to be fully created..."
   sleep 1
-  SA_EMAIL=$(gcloud iam service-accounts list \
+  SA_EMAIL="$(gcloud iam service-accounts list \
       --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)')
+      --format='value(email)')"
 done
 
 echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
@@ -442,10 +442,10 @@ roles=(
     'roles/cloudkms.admin'
 )
 
-EXISTING_ROLES=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')
+EXISTING_ROLES="$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')"
 
 for role in "${roles[@]}"; do
-    EXISTING_ROLE_CHECK=$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')
+    EXISTING_ROLE_CHECK="$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')"
     if [ -z "$EXISTING_ROLE_CHECK" ]; then
         echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
         
@@ -463,7 +463,7 @@ done
 
 vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
 
-EXISTING_KEY=$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")
+EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")"
 if [ -z "$EXISTING_KEY" ]; then
     echo "generating keys for $SERVICE_ACCOUNT_NAME"
     gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \

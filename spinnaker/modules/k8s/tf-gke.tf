@@ -182,7 +182,7 @@ resource "google_container_node_pool" "primary_pool" {
     oauth_scopes    = var.oauth_scopes
     preemptible     = var.node_options_map[each.key]["preemptible"]
     service_account = var.service_account == "" ? google_service_account.sa[each.key].email : var.service_account
-    tags            = [each.key]
+    tags            = [replace(each.key, "-agent", "")]
 
     workload_metadata_config {
       node_metadata = var.extras["metadata_config"]

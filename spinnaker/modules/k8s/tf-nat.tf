@@ -1,6 +1,6 @@
 data "google_compute_address" "existing_nat" {
-  for_each = var.ship_plans_without_agent
-  name     = var.cloudnat_name_map[each.key]
+  for_each = var.ship_plans
+  name     = var.cloudnat_name_map[replace(each.key, "-agent", "")]
   region   = each.value["clusterRegion"]
 }
 
@@ -50,6 +50,6 @@ resource "google_compute_route" "gtw_route" {
   next_hop_gateway = "default-internet-gateway"
   priority         = 700
   project          = var.project
-  tags             = [replace(each.key, "-agent", "")]
+  tags             = [each.key]
 }
 

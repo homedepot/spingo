@@ -22,15 +22,15 @@ output "client_key_map" {
 }
 
 output "network_name_map" {
-  value = { for k, v in var.ship_plans_without_agent : k => google_compute_network.vpc[k].name }
+  value = { for k, v in var.ship_plans : k => google_compute_network.vpc[k].name }
 }
 
 output "network_link_map" {
-  value = { for k, v in var.ship_plans_without_agent : k => google_compute_network.vpc[k].self_link }
+  value = { for k, v in var.ship_plans : k => google_compute_network.vpc[k].self_link }
 }
 
 output "subnet_name_map" {
-  value = { for k, v in var.ship_plans_without_agent : k => google_compute_subnetwork.subnet[k].name }
+  value = { for k, v in var.ship_plans : k => google_compute_subnetwork.subnet[k].name }
 }
 
 output "k8s_ip_ranges" {
@@ -50,7 +50,7 @@ output "service_account_key_map" {
 }
 
 output "cloud_nat_adddress_map" {
-  value = { for k, v in var.ship_plans_without_agent : k => data.google_compute_address.existing_nat[k].address }
+  value = { for k, v in var.ship_plans : k => data.google_compute_address.existing_nat[k].address }
 }
 
 output "created_nodepool_map" {

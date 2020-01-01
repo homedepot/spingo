@@ -479,12 +479,12 @@ done
 echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
 
 roles=(
+    'roles/storage.admin'
     'roles/resourcemanager.projectIamAdmin'
     'roles/iam.serviceAccountAdmin'
     'roles/iam.serviceAccountKeyAdmin'
     'roles/compute.admin'
     'roles/container.admin'
-    'roles/storage.admin'
     'roles/iam.serviceAccountUser'
     'roles/dns.admin'
     'roles/redis.admin'

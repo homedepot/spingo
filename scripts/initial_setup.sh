@@ -295,7 +295,7 @@ do
     
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used $SHIP_PLANS_JSON)" "$DOMAIN_TO_MANAGE")"
+    DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used "$SHIP_PLANS_JSON")" "$DOMAIN_TO_MANAGE")"
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
     GATE_SUBDOMAIN="$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")"

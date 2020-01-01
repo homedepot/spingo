@@ -87,21 +87,29 @@ do
 done
 
 n=0
-until [ $n -ge 20 ]
+until [ $n -ge 60 ]
 do
+   ATTEMPT="success"
    spin application save --file=/home/${USER}/spingoAdminApplication.json && break
+   ATTEMPT="fail"
    n=$[$n+1]
    echo "Unable to create application through x509 cert for deployment ${deployment} retrying..."
    sleep 6
 done
 
-n=0
-until [ $n -ge 20 ]
-do
-   spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json && break
-   n=$[$n+1]
-   echo "Unable to create pipeline through x509 cert for deployment ${deployment} retrying..."
-   sleep 6
-done
+if [ "$ATTEMPT" == "success" ]; then
+    n=0
+    until [ $n -ge 20 ]
+    do
+        ATTEMPT="success"
+        spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json && break
+        ATTEMPT="fail"
+        n=$[$n+1]
+        echo "Unable to create pipeline through x509 cert for deployment ${deployment} retrying..."
+        sleep 6
+    done
+else
+    echo "Unable to add pipeline becuase application was unable to save"
+fi
 
 %{ endfor ~}

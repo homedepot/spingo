@@ -8,10 +8,30 @@ setup_and_run_tf(){
     cd ..
 }
 
-if ! ./scripts/initial_setup.sh
-then
-    echo "Initial setup failed so cowardly exiting"
-    exit 1
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo "Usage: $0 -s|--skip-initial-setup to skip initial setup"
+      exit
+      ;;
+    -s|--skip-initial-setup)
+      SKIP_INITIAL_SETUP="true"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+if [ "$SKIP_INITIAL_SETUP" == "true" ]; then
+    echo "Skipping initial setup at user request"
+else
+    if ! ./scripts/initial_setup.sh
+    then
+        echo "Initial setup failed so cowardly exiting"
+        exit 1
+    fi
 fi
 
 setup_and_run_tf "dns"

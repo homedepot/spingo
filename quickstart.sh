@@ -7,7 +7,7 @@ cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exitin
 . scripts/common.sh
 
 setup_and_run_tf(){
-    DIR="$1"
+    DIR="$GIT_ROOT_DIR/$1"
     cd "$DIR" || { echo "cd to $DIR failed. Unable to run terraform commands. Cowardly exiting" ; return; }
     n=0
     until [ $n -ge 20 ]
@@ -37,7 +37,6 @@ setup_and_run_tf(){
         echo "terraform apply -auto-approve of $DIR failed. Unable to run terraform commands. Cowardly exiting"
         exit 1
     fi
-    cd ..
 }
 
 while test $# -gt 0; do

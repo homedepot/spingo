@@ -306,7 +306,7 @@ do
     echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
     VAULT_SUBDOMAIN="$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")"
     SHIP_PLANS_JSON="$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" --arg dsh "-" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, wildcardDomain: $wd, gateSubdomain: $gt, deckSubdomain: $dk, x509Subdomain: $x509, vaultSubdomain: $vlt } }')"
-    n=$[$n+1]
+    n=$(($n+1))
 done
 
 terraform_variable "region" "$CLUSTER_REGION" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"

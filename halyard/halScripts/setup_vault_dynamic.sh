@@ -63,7 +63,7 @@ do
   kubectl -n kube-system get po -l=name=tiller \
   --kubeconfig="${details.kubeConfig}" \
   -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
-   n=$[$n+1]
+   n=$(($n+1))
    echo "Tiller is not ready yet for deployment ${deployment} waiting..."
    sleep 6
 done
@@ -84,7 +84,7 @@ do
   kubectl -n vault get po -l=app.kubernetes.io/name=vault \
   --kubeconfig="${details.kubeConfig}" \
   -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
-   n=$[$n+1]
+   n=$(($n+1))
    echo "Vault is not yet installed for deployment ${deployment} waiting..."
    sleep 6
 done
@@ -169,7 +169,7 @@ do
    vault status \
     -address="https://${details.vaultAddr}" \
     -format=json && break
-   n=$[$n+1]
+   n=$(($n+1))
    echo "Vault is not yet up and running for deployment ${deployment} waiting..."
    sleep 6
 done

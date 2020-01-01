@@ -60,7 +60,7 @@ n=0
 until [ $n -ge 20 ]
 do
    kubectl get sa spinnaker-user --namespace $NAMESPACE -o json | jq -r '.secrets[].name' && break
-   n=$[$n+1]
+   n=$(($n+1))
    echo "K8s service account not ready yet for deployment ${deployment} retrying..."
    sleep 6
 done

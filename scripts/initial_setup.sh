@@ -372,7 +372,7 @@ vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_RO
 echo "-----------------------------------------------------------------------------"
 echo " *****   Google Cloud Project Zone    *****"
 echo "-----------------------------------------------------------------------------"
-PS3="Enter the number for the Google Cloud Project Zone place the Halyard and Certbot VMs into (ctrl-c to exit) : ";
+PS3="Enter the number for the Google Cloud Project Zone to place the Halyard VM into (ctrl-c to exit) : ";
 select zone in $(gcloud compute zones list --format='value(name)' --filter='region='"$(gcloud compute regions list --filter="name=$CLUSTER_REGION" --format='value(selfLink)' 2>/dev/null)" 2>/dev/null)
 do
     if [ "$zone" == "" ]; then

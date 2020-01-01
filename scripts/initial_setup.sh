@@ -31,6 +31,12 @@ need "git"
 need "cut"
 need "jq"
 
+CWD=$(pwd)
+GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
+
+. scripts/common.sh
+
 terraform_override() {
     # $1 = terraform bucket name
     # $2 = terraform backend prefix
@@ -51,13 +57,8 @@ terraform_variable() {
     # $3 = git root directory
     # $4 = terraform sub-project directory
     # $5 = GCP project name
-    # $6 = override quotes
-    if [ -z "$6" ]; then
-        QUOTE="\""
-    else
-        QUOTE="$6"
-    fi
-    echo -e "$1 = ${QUOTE}${2}${QUOTE}" > "$3/$4/var-$1.auto.tfvars"
+
+    echo -e "$1 = \"${2}\"" > "$3/$4/var-$1.auto.tfvars"
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
@@ -69,6 +70,7 @@ prompt_to_use_base_hostname_for_deck_or_get_value(){
     # $5 = cluster name
     # $6 = is base hostname use available
     # $7 = base hostname chosen by user stored at DOMAIN_TO_MANAGE
+
     if [ "$6" == "true" ]; then
         echoerr "-----------------------------------------------------------------------------"
         echoerr " *****   There can be only one deployment that can use the base hostname $7 as it's hostname for it's UI (deck) *****"
@@ -92,6 +94,7 @@ prompt_for_value_with_default() {
     # $3 = git root directory
     # $4 = user readable name for value
     # $5 = cluster name
+    
     OPTIONAL_CLUSTER_NAME=""
     if [ -z "$5" ]; then
         OPTIONAL_CLUSTER_NAME="Cluster $5 "
@@ -120,39 +123,6 @@ prompt_for_value_with_default() {
 
 }
 
-# Custom `select` implementation that allows *empty* input.
-# Pass the choices as individual arguments.
-# Output is the chosen item, or "", if the user just pressed ENTER.
-# Example:
-#    choice=$(select_with_default 'one' 'two' 'three')
-select_with_default() {
-
-  local item i=0 numItems=$# 
-
-  # Print numbered menu items, based on the arguments passed.
-  for item; do         # Short for: for item in "$@"; do
-    printf '%s\n' "$((++i))) $item"
-  done >&2 # Print to stderr, as `select` does.
-
-  # Prompt the user for the index of the desired item.
-  while :; do
-    printf %s "${PS3-#? }" >&2 # Print the prompt string to stderr, as `select` does.
-    read -r index
-    # Make sure that the input is either empty or that a valid index was entered.
-    [[ -z $index ]] && break  # empty input
-    (( index >= 1 && index <= numItems )) 2>/dev/null || { echo "Invalid selection. Please try again." >&2; continue; }
-    break
-  done
-
-  # Output the selected item, if any.
-  [[ -n $index ]] && printf %s "${@: index:1}"
-
-}
-
-echoerr () {
-    printf '%s\n' "$1" >&2
-}
-
 check_for_base_hostname_used() {
     RESULT=$(echo "$1" | jq '.ship_plans | to_entries | .[].value | select(.deckSubdomain == "") | .deckSubdomain == ""')
     if [ "$RESULT" == "true" ]; then
@@ -161,32 +131,6 @@ check_for_base_hostname_used() {
         echo "true"
     fi
 }
-
-prompt_for_value() {
-    # $1 = value of existing env var to check
-    # $2 = Human name of field to input
-    # $3 = Prompt message
-    # $4 = optional Extra help instructions
-    # $5 = optional default answer
-    if [ "$1" == "" ]; then
-        echoerr "-----------------------------------------------------------------------------"
-        echoerr " *****   $2   *****  $4"
-        echoerr "-----------------------------------------------------------------------------"
-        while [ -z "$READ_RESPONSE" ]; do
-            echoerr "$3"
-            read -r READ_RESPONSE
-            READ_RESPONSE="${READ_RESPONSE:-$5}"
-        done
-        echo "$READ_RESPONSE"
-    else
-        echoerr "Found $2 as environment variable so moving on"
-        echo "$1"
-    fi
-}
-
-CWD=$(pwd)
-GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
-cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
 
 echo "-----------------------------------------------------------------------------"
 CURR_PROJ=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
@@ -395,17 +339,19 @@ GOOGLE_OAUTH_CLIENT_SECRET=$(prompt_for_value \
     "Google OAuth Client Secret" \
     "What is the Google OAuth Client Secret? : " \
     "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")
-AUTO_QUICKSTART_HALYARD=$(prompt_for_value \
-    "$AUTO_QUICKSTART_HALYARD" \
-    "Halyard Auto Quickstart" \
-    "Do you want to enable halyard auto initial quickstart or just press [ENTER] to use default (yes) ? : " \
-    "Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time" \
-    "yes")
-if [ "$AUTO_QUICKSTART_HALYARD" == "yes" ]; then
-    terraform_variable "auto_start_halyard_quickstart" "true" "$GIT_ROOT_DIR" "halyard" "$PROJECT" ""
+
+echoerr "-----------------------------------------------------------------------------"
+echoerr " *****   Halyard Auto Quickstart ***** Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time"
+echoerr "-----------------------------------------------------------------------------"
+PS3="Do you want to enable halyard auto initial quickstart or just press [ENTER] to use default (Yes) ? : "
+AUTO_QUICKSTART_HALYARD=$(select_with_default "No" "Yes")
+AUTO_QUICKSTART_HALYARD=${AUTO_QUICKSTART_HALYARD:-Yes}
+if [ "$AUTO_QUICKSTART_HALYARD" == "Yes" ]; then
+    terraform_variable "auto_start_halyard_quickstart" "true" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 else
-    terraform_variable "auto_start_halyard_quickstart" "false" "$GIT_ROOT_DIR" "halyard" "$PROJECT" ""
+    terraform_variable "auto_start_halyard_quickstart" "false" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 fi
+
 if [ -z "$SLACK_BOT_TOKEN" ]; then
     PS3="Do you want to setup Slack automatically and already have a token or just press [ENTER] for (No)? : "
     USE_SLACK=$(select_with_default "No" "Yes")

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+CWD=$(pwd)
+GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
+
+. scripts/common.sh
+
 setup_and_run_tf(){
     DIR="$1"
     cd "$DIR" || { echo "cd to $DIR failed. Unable to run terraform commands. Cowardly exiting" ; return; }
@@ -61,8 +67,20 @@ else
 fi
 
 setup_and_run_tf "dns"
+echoerr "-----------------------------------------------------------------------------"
+echoerr " *****   Google Cloud DNS Setup ***** Setup instructions can be found here https://github.com/homedepot/spingo#setup-managed-dns-through-cloud-dns"
+echoerr "-----------------------------------------------------------------------------"
+PS3="Have you completed the setup of Google Cloud DNS nameservers into your domain configuration or just press [ENTER] to choose the default (Yes) ? : "
+DNS_IS_SETUP=$(select_with_default "Yes" "No")
+DNS_IS_SETUP=${DNS_IS_SETUP:-Yes}
+if [ "$DNS_IS_SETUP" != "Yes" ]; then
+    echo "Unable to continue without Google Cloud DNS being setup as Let's Encrypt requires it"
+    exit 1
+fi
 setup_and_run_tf "static_ips"
 setup_and_run_tf "spinnaker"
 setup_and_run_tf "halyard"
 
 echo "Quickstart complete"
+
+cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

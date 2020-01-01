@@ -35,7 +35,8 @@ CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
 cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
 
-. scripts/common.sh
+# shellcheck source="$GIT_ROOT_DIR"/scripts/common.sh
+. "$GIT_ROOT_DIR"/scripts/common.sh
 
 terraform_override() {
     # $1 = terraform bucket name
@@ -94,7 +95,7 @@ prompt_for_value_with_default() {
     # $3 = git root directory
     # $4 = user readable name for value
     # $5 = cluster name
-    
+
     OPTIONAL_CLUSTER_NAME=""
     if [ -z "$5" ]; then
         OPTIONAL_CLUSTER_NAME="Cluster $5 "
@@ -110,7 +111,7 @@ prompt_for_value_with_default() {
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
         fi
         echoerr "$READ_PROMPT"  >&2
-        read PROMPT_VALUE
+        read -r PROMPT_VALUE
         PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
         if [ -z "$PROMPT_VALUE" ]; then 
             echoerr "You must enter a $4"
@@ -286,7 +287,7 @@ do
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
         fi
         PS3="$READ_PROMPT";
-        CLUSTER_REGION=$(select_with_default $(gcloud compute regions list --format='value(name)' 2>/dev/null))
+        CLUSTER_REGION="$(select_with_default $(gcloud compute regions list --format='value(name)' 2>/dev/null))"
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
     echo "-----------------------------------------------------------------------------"
@@ -406,7 +407,7 @@ echo "creating $SERVICE_ACCOUNT_NAME service account"
 SA_EMAIL=$(gcloud iam service-accounts list \
       --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
       --format='value(email)')
-if [ ! -z "$SA_EMAIL" ]; then
+if [ -n "$SA_EMAIL" ]; then
     echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
 else
     gcloud iam service-accounts create \
@@ -443,14 +444,14 @@ roles=(
 
 EXISTING_ROLES=$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')
 
-for role in ${roles[@]}; do
+for role in "${roles[@]}"; do
     EXISTING_ROLE_CHECK=$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')
     if [ -z "$EXISTING_ROLE_CHECK" ]; then
         echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
-        gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+        
+        if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
             --member serviceAccount:"$SA_EMAIL" \
-            --role="$role"
-        if [ "$?" -ne 0 ]; then
+            --role="$role"; then
             echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
         else
             echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"

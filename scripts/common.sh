@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Custom `select` implementation that allows *empty* input.
 # Pass the choices as individual arguments.
 # Output is the chosen item, or "", if the user just pressed ENTER.

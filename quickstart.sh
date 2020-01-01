@@ -17,7 +17,7 @@ setup_and_run_tf(){
         ATTEMPT="success"
         terraform init && break
         ATTEMPT="fail"
-        n=$(($n+1))
+        n=$((n+1))
         echo "Unable to initialize terraform directory $DIR retrying..."
         sleep 6
     done
@@ -31,7 +31,7 @@ setup_and_run_tf(){
         ATTEMPT="success"
         terraform apply -auto-approve && break
         ATTEMPT="fail"
-        n=$(($n+1))
+        n=$((n+1))
         echo "Unable to run apply command on terraform directory $DIR retrying..."
         sleep 6
     done

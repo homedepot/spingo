@@ -81,7 +81,7 @@ do
   kubectl -n spinnaker get po -l=app.kubernetes.io/name=gate \
   --kubeconfig="/${USER}/.kube/${deployment}.config" \
   -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
-   n=$(($n+1))
+   n=$((n+1))
    echo "Gate is not yet up and running for deployment ${deployment} waiting..."
    sleep 6
 done
@@ -92,7 +92,7 @@ do
    ATTEMPT="success"
    spin application save --file=/home/${USER}/spingoAdminApplication.json && break
    ATTEMPT="fail"
-   n=$(($n+1))
+   n=$((n+1))
    echo "Unable to create application through x509 cert for deployment ${deployment} retrying..."
    sleep 6
 done
@@ -104,7 +104,7 @@ if [ "$ATTEMPT" == "success" ]; then
         ATTEMPT="success"
         spin pipeline save --file=/home/${USER}/onboardingNotificationsPipeline.json && break
         ATTEMPT="fail"
-        n=$(($n+1))
+        n=$((n+1))
         echo "Unable to create pipeline through x509 cert for deployment ${deployment} retrying..."
         sleep 6
     done

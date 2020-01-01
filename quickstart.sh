@@ -4,7 +4,7 @@ CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
 cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
 
-# shellcheck source="$GIT_ROOT_DIR"/scripts/common.sh
+# shellcheck disable=SC1091
 source "$GIT_ROOT_DIR"/scripts/common.sh
 
 setup_and_run_tf(){

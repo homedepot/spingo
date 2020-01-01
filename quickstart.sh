@@ -3,7 +3,20 @@
 setup_and_run_tf(){
     DIR="$1"
     cd "$DIR" || { echo "cd to $DIR failed. Unable to run terraform commands. Cowardly exiting" ; return; }
-    terraform init || { echo "terraform init of $DIR failed. Unable to run terraform commands. Cowardly exiting" ; exit 1; }
+    n=0
+    until [ $n -ge 20 ]
+    do
+        ATTEMPT="try"
+        terraform init && break
+        ATTEMPT="fail"
+        n=$[$n+1]
+        echo "Unable to initialize terraform directory $DIR retrying..."
+        sleep 6
+    done
+    if [ "$ATTEMPT" == "fail" ]; then
+        echo "terraform init of $DIR failed. Unable to run terraform commands. Cowardly exiting"
+        exit 1
+    fi
     terraform apply -auto-approve  || { echo "terraform apply of $DIR failed. Unable to run terraform commands. Cowardly exiting" ; exit 1; }
     cd ..
 }

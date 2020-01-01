@@ -102,7 +102,7 @@ prompt_for_value_with_default() {
     fi
     READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
     while [ -z "$PROMPT_VALUE" ]; do
-        DEFAULT_PROMPT_VALUE=$(< "${3}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
+        DEFAULT_PROMPT_VALUE=$(< "${3}/scripts/default_cluster_config.json" jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
         echoerr "-----------------------------------------------------------------------------"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
         if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
@@ -278,7 +278,7 @@ do
         echo "-----------------------------------------------------------------------------"
         echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
         echo "-----------------------------------------------------------------------------"
-        DEFAULT_CLUSTER_REGION="$(< "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" | jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)"
+        DEFAULT_CLUSTER_REGION="$(< "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)"
         READ_PROMPT_BASE="Enter the number for the Cluster Region for #$n and press [ENTER]"
         DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit)"
         if [ -z "$DEFAULT_CLUSTER_REGION" ]; then

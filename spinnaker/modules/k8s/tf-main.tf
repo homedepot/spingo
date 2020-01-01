@@ -10,7 +10,7 @@ data "google_client_config" "gcloud" {
 # VPCs
 ##########################################################
 resource "google_compute_network" "vpc" {
-  for_each                = var.ship_plans
+  for_each                = var.ship_plans_without_agent
   name                    = each.key
   project                 = var.project
   auto_create_subnetworks = "false"
@@ -19,7 +19,7 @@ resource "google_compute_network" "vpc" {
 # Subnets
 ##########################################################
 resource "google_compute_subnetwork" "subnet" {
-  for_each                 = var.ship_plans
+  for_each                 = var.ship_plans_without_agent
   name                     = each.key
   project                  = var.project
   network                  = google_compute_network.vpc[each.key].name # https://github.com/terraform-providers/terraform-provider-google/issues/1792
@@ -43,14 +43,14 @@ resource "google_compute_subnetwork" "subnet" {
 # Create a Service Account for the GKE Nodes by default
 ##########################################################
 resource "google_service_account" "sa" {
-  for_each     = var.ship_plans
+  for_each     = var.ship_plans_without_agent
   account_id   = each.key
   display_name = "${each.key} SA"
   project      = var.project
 }
 
 resource "google_kms_crypto_key_iam_member" "gke_sa_iam_kms" {
-  for_each      = var.ship_plans
+  for_each      = var.ship_plans_without_agent
   crypto_key_id = var.crypto_key_id_map[each.key]
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.project.number}@container-engine-robot.iam.gserviceaccount.com"
@@ -58,7 +58,7 @@ resource "google_kms_crypto_key_iam_member" "gke_sa_iam_kms" {
 
 # Create a Service Account key by default
 resource "google_service_account_key" "sa_key" {
-  for_each           = var.ship_plans
+  for_each           = var.ship_plans_without_agent
   depends_on         = [google_project_iam_member.iam]
   service_account_id = google_service_account.sa[each.key].name
 }
@@ -66,7 +66,7 @@ resource "google_service_account_key" "sa_key" {
 locals {
 
   deployments = [
-    for val in keys(var.ship_plans) : {
+    for val in keys(var.ship_plans_without_agent) : {
       key      = val
       sa_email = google_service_account.sa[val].email
     }

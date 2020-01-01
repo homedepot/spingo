@@ -97,9 +97,9 @@ variable "timeouts" {
   description = "Configurable timeout values for the various cluster operations."
 
   default = {
-    create = "20m" # The default timeout for a cluster create operation.
-    update = "30m" # The default timeout for a cluster update operation.
-    delete = "20m" # The default timeout for a cluster delete operation.
+    create = "40m" # The default timeout for a cluster create operation.
+    update = "60m" # The default timeout for a cluster update operation.
+    delete = "40m" # The default timeout for a cluster delete operation.
   }
 }
 
@@ -113,6 +113,11 @@ variable "node_metadata" {
 }
 
 variable "ship_plans" {
+  type        = map(map(string))
+  description = "The object that describes all of the clusters that need to be built by Spingo"
+}
+
+variable "ship_plans_without_agent" {
   type        = map(map(string))
   description = "The object that describes all of the clusters that need to be built by Spingo"
 }

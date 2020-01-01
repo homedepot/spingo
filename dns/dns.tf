@@ -17,3 +17,11 @@ resource "google_dns_managed_zone" "project_zone" {
   description = "Managed by Terraform created by Spingo"
   dns_name    = "${var.cloud_dns_hostname}."
 }
+
+output "google_dns_managed_zone_hostname" {
+  value = var.cloud_dns_hostname
+}
+
+output "google_dns_managed_zone_nameservers" {
+  value = google_dns_managed_zone.project_zone.name_servers
+}

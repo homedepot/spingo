@@ -152,11 +152,12 @@ check_for_base_hostname_used() {
 check_for_hostname_used() {
     # $1 = current SHIP_PLANS_JSON content
     # $2 = hostname to check if already used
-    RESULT=$(echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn')
-    if [ "$RESULT" == "true" ]; then
-        echo "true"
-    else
+
+    # returns true when there are no subdomains that match the hostname to check
+    if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep -v "true"; then
         echo "false"
+    else
+        echo "true"
     fi
 }
 

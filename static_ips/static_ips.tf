@@ -47,7 +47,7 @@ resource "google_compute_address" "cloudnat" {
 
 # The static IP address for Halyard is being provisioned here so that the Halyard VM can be destroyed without loosing the IP which has to be added to k8s master whitelist
 resource "google_compute_address" "halyard" {
-  name   = "halyard_external_ip"
+  name   = "halyard-external-ip" # needs to be dashes to satisfy regex within provider
   region = var.region
 }
 

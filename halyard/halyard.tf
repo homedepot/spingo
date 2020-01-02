@@ -439,10 +439,6 @@ data "vault_generic_secret" "front50_db_migrate_user_password" {
   path     = "secret/${var.gcp_project}/front50_db_migrate_user_password/${each.key}"
 }
 
-data "google_compute_address" "halyard_external_ip" {
-  name = "halyard_external_ip"
-}
-
 data "vault_generic_secret" "slack_token" {
   path = "secret/${var.gcp_project}/slack-token"
 }
@@ -475,7 +471,7 @@ resource "google_compute_instance" "halyard_spin_vm" {
     network = "default"
 
     access_config {
-      nat_ip = data.google_compute_address.halyard_external_ip.address
+      nat_ip = data.terraform_remote_state.static_ips.outputs.halyard_ip
     }
   }
 

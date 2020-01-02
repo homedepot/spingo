@@ -153,7 +153,9 @@ check_for_hostname_used() {
     # $1 = current SHIP_PLANS_JSON content
     # $2 = hostname to check if already used
 
-    # returns true when there are no subdomains that match the hostname to check
+    echoerr "current SHIP_PLANS_JSON : "$(echo "$1" | jq '.')""
+    echoerr "hostname to check $2"
+    echoerr "jq answer : "$(jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true")""
     if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
         echo "true"
     else

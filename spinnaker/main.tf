@@ -186,6 +186,16 @@ module "onboarding_pubsub_service_account" {
   roles                  = ["roles/storage.admin", "roles/pubsub.subscriber"]
 }
 
+module "spinnaker_onboarding_service_account" {
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "spinnaker-onboarding"
+  service_account_prefix = ""
+  bucket_name            = module.halyard_storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = []
+  create_and_store_key   = false
+}
+
 module "halyard_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-halyard"

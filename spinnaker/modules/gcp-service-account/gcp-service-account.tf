@@ -10,15 +10,18 @@ resource "google_project_iam_member" "roles" {
 }
 
 resource "google_service_account_key" "svc_key" {
+  for_each           = var.create_and_store_key ? { enabled = true } : {}
   service_account_id = google_service_account.service_account.name
 }
 
 resource "vault_generic_secret" "service_account_key" {
+  for_each  = var.create_and_store_key ? { enabled = true } : {}
   path      = "secret/${var.gcp_project}/${var.service_account_name}"
   data_json = base64decode(google_service_account_key.svc_key.private_key)
 }
 
 resource "google_storage_bucket_object" "service_account_key_storage" {
+  for_each     = var.create_and_store_key ? { enabled = true } : {}
   name         = ".gcp/${var.service_account_name}.json"
   content      = base64decode(google_service_account_key.svc_key.private_key)
   bucket       = var.bucket_name
@@ -42,9 +45,9 @@ output "service_account_email" {
 }
 
 output "service_account_json" {
-  value = google_service_account_key.svc_key.private_key
+  value = var.create_and_store_key ? google_service_account_key.svc_key["enabled"].private_key : ""
 }
 
 output "service_account_key_path" {
-  value = vault_generic_secret.service_account_key.path
+  value = var.create_and_store_key ? vault_generic_secret.service_account_key["enabled"].path : ""
 }

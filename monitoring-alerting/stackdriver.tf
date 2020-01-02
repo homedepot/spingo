@@ -47,7 +47,7 @@ resource "google_monitoring_uptime_check_config" "gate" {
     type = "uptime_url"
     labels = {
       project_id = var.gcp_project
-      host       = data.terraform_remote_state.spinnaker.outputs.spinnaker-api_hosts_map[each.key]
+      host       = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_hosts_map[each.key]
     }
   }
 

@@ -72,7 +72,7 @@ output "cloudnat_ips_map" {
 }
 
 output "cloudnat_ips" {
-  value = [ for k, v in var.ship_plans : google_compute_address.cloudnat[k].address ]
+  value = [for k, v in var.ship_plans : google_compute_address.cloudnat[k].address]
 }
 
 output "cloudnat_name_map" {

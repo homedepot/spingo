@@ -1,6 +1,6 @@
 resource "google_sql_database_instance" "cloudsql" {
   for_each         = var.ship_plans
-  name             = "${each.value["clusterPrefix"]}-${random_string.db-name[each.key].result}-mysql"
+  name             = "${each.value["clusterPrefix"]}-${random_string.db_name[each.key].result}-mysql"
   database_version = "MYSQL_5_7"
   region           = each.value["clusterRegion"]
 
@@ -26,9 +26,9 @@ resource "google_sql_database_instance" "cloudsql" {
   }
 }
 
-resource "google_sql_database_instance" "cloudsql-failover" {
+resource "google_sql_database_instance" "cloudsql_failover" {
   for_each             = var.ship_plans
-  name                 = "${each.value["clusterPrefix"]}-${random_string.db-name[each.key].result}-mysql-failover"
+  name                 = "${each.value["clusterPrefix"]}-${random_string.db_name[each.key].result}-mysql-failover"
   region               = each.value["clusterRegion"]
   database_version     = "MYSQL_5_7"
   master_instance_name = google_sql_database_instance.cloudsql[each.key].name
@@ -72,93 +72,93 @@ resource "google_sql_database" "front50" {
   collation = "utf8mb4_unicode_ci"
 }
 
-resource "google_sql_user" "orca-service-user" {
+resource "google_sql_user" "orca_service_user" {
   for_each = var.ship_plans
   name     = "orca_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
-  password = random_string.orca-db-service-user-password[each.key].result
+  password = random_string.orca_db_service_user_password[each.key].result
 }
 
-resource "google_sql_user" "clouddriver-service-user" {
+resource "google_sql_user" "clouddriver_service_user" {
   for_each = var.ship_plans
   name     = "clouddriver_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
-  password = random_string.clouddriver-db-service-user-password[each.key].result
+  password = random_string.clouddriver_db_service_user_password[each.key].result
 }
 
 
-resource "google_sql_user" "front50-service-user" {
+resource "google_sql_user" "front50_service_user" {
   for_each = var.ship_plans
   name     = "front50_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
-  password = random_string.front50-db-service-user-password[each.key].result
+  password = random_string.front50_db_service_user_password[each.key].result
 }
 
-resource "google_sql_user" "orca-migrate-user" {
+resource "google_sql_user" "orca_migrate_user" {
   for_each = var.ship_plans
   name     = "orca_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
-  password = random_string.orca-db-migrate-user-password[each.key].result
+  password = random_string.orca_db_migrate_user_password[each.key].result
 }
 
-resource "google_sql_user" "clouddriver-migrate-user" {
+resource "google_sql_user" "clouddriver_migrate_user" {
   for_each = var.ship_plans
   name     = "clouddriver_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
-  password = random_string.clouddriver-db-migrate-user-password[each.key].result
+  password = random_string.clouddriver_db_migrate_user_password[each.key].result
 }
 
 
-resource "google_sql_user" "front50-migrate-user" {
+resource "google_sql_user" "front50_migrate_user" {
   for_each = var.ship_plans
   name     = "front50_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
   instance = google_sql_database_instance.cloudsql[each.key].name
-  password = random_string.front50-db-migrate-user-password[each.key].result
+  password = random_string.front50_db_migrate_user_password[each.key].result
 }
 
-resource "random_string" "orca-db-service-user-password" {
+resource "random_string" "orca_db_service_user_password" {
   for_each = var.ship_plans
   length   = 12
   special  = false
 }
 
-resource "random_string" "orca-db-migrate-user-password" {
+resource "random_string" "orca_db_migrate_user_password" {
   for_each = var.ship_plans
   length   = 12
   special  = false
 }
 
-resource "random_string" "clouddriver-db-service-user-password" {
+resource "random_string" "clouddriver_db_service_user_password" {
   for_each = var.ship_plans
   length   = 12
   special  = false
 }
 
-resource "random_string" "clouddriver-db-migrate-user-password" {
+resource "random_string" "clouddriver_db_migrate_user_password" {
   for_each = var.ship_plans
   length   = 12
   special  = false
 }
 
-resource "random_string" "front50-db-service-user-password" {
+resource "random_string" "front50_db_service_user_password" {
   for_each = var.ship_plans
   length   = 12
   special  = false
 }
 
-resource "random_string" "front50-db-migrate-user-password" {
+resource "random_string" "front50_db_migrate_user_password" {
   for_each = var.ship_plans
   length   = 12
   special  = false
 }
 
-resource "random_string" "db-name" {
+resource "random_string" "db_name" {
   for_each = var.ship_plans
   length   = 4
   special  = false
@@ -177,7 +177,7 @@ resource "google_redis_instance" "cache" {
   region             = each.value["clusterRegion"]
 }
 
-resource "vault_generic_secret" "redis-connection" {
+resource "vault_generic_secret" "redis_connection" {
   for_each = var.ship_plans
   path     = "secret/${var.gcp_project}/redis/${each.key}"
 
@@ -187,68 +187,68 @@ EOF
 
 }
 
-resource "vault_generic_secret" "orca-db-service-user-password" {
+resource "vault_generic_secret" "orca_db_service_user_password" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/orca-db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/orca_db_service_user_password/${each.key}"
 
   data_json = <<-EOF
-              {"password":"${random_string.orca-db-service-user-password[each.key].result}"}
+              {"password":"${random_string.orca_db_service_user_password[each.key].result}"}
 EOF
 
 }
 
-resource "vault_generic_secret" "spinnaker-db-migrate-user-password" {
+resource "vault_generic_secret" "orca_db_migrate_user_password" {
   for_each = var.ship_plans
   path     = "secret/${var.gcp_project}/orca-db-migrate-user-password/${each.key}"
 
   data_json = <<-EOF
-              {"password":"${random_string.orca-db-migrate-user-password[each.key].result}"}
+              {"password":"${random_string.orca_db_migrate_user_password[each.key].result}"}
 EOF
 
 }
 
-resource "vault_generic_secret" "clouddriver-db-service-user-password" {
+resource "vault_generic_secret" "clouddriver_db_service_user_password" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/clouddriver_db_service_user_password/${each.key}"
 
   data_json = <<-EOF
-              {"password":"${random_string.clouddriver-db-service-user-password[each.key].result}"}
+              {"password":"${random_string.clouddriver_db_service_user_password[each.key].result}"}
 EOF
 
 }
 
-resource "vault_generic_secret" "clouddriver-db-migrate-user-password" {
+resource "vault_generic_secret" "clouddriver_db_migrate_user_password" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/clouddriver_db_migrate_user_password/${each.key}"
 
   data_json = <<-EOF
-              {"password":"${random_string.clouddriver-db-migrate-user-password[each.key].result}"}
+              {"password":"${random_string.clouddriver_db_migrate_user_password[each.key].result}"}
 EOF
 
 }
 
-resource "vault_generic_secret" "front50-db-service-user-password" {
+resource "vault_generic_secret" "front50_db_service_user_password" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/front50-db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/front50_db_service_user_password/${each.key}"
 
   data_json = <<-EOF
-              {"password":"${random_string.front50-db-service-user-password[each.key].result}"}
+              {"password":"${random_string.front50_db_service_user_password[each.key].result}"}
 EOF
 
 }
 
-resource "vault_generic_secret" "front50-db-migrate-user-password" {
+resource "vault_generic_secret" "front50_db_migrate_user_password" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/front50-db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/front50_db_migrate_user_password/${each.key}"
 
   data_json = <<-EOF
-              {"password":"${random_string.front50-db-migrate-user-password[each.key].result}"}
+              {"password":"${random_string.front50_db_migrate_user_password[each.key].result}"}
 EOF
 
 }
-resource "vault_generic_secret" "spinnaker-db-address" {
+resource "vault_generic_secret" "db_address" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/db-address/${each.key}"
+  path     = "secret/${var.gcp_project}/db_address/${each.key}"
 
   data_json = <<-EOF
               {"address":"${google_sql_database_instance.cloudsql[each.key].connection_name}"}
@@ -265,5 +265,5 @@ output "google_sql_database_instance_names_map" {
 }
 
 output "google_sql_database_failover_instance_names_map" {
-  value = { for k, v in var.ship_plans : k => google_sql_database_instance.cloudsql-failover[k].name }
+  value = { for k, v in var.ship_plans : k => google_sql_database_instance.cloudsql_failover[k].name }
 }

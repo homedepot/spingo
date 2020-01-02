@@ -1,12 +1,12 @@
 provider "vault" {
 }
 
-data "vault_generic_secret" "terraform-account" {
+data "vault_generic_secret" "terraform_account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 provider "google" {
-  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
@@ -15,7 +15,7 @@ provider "google" {
 
 provider "google" {
   alias       = "dns-zone"
-  credentials = data.vault_generic_secret.terraform-account.data[var.managed_dns_gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.managed_dns_gcp_project]
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.managed_dns_gcp_project
@@ -23,7 +23,7 @@ provider "google" {
 }
 
 provider "google-beta" {
-  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
 
   # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
@@ -78,7 +78,7 @@ module "k8s" {
   cloudnat_ips              = data.terraform_remote_state.static_ips.outputs.cloudnat_ips
 }
 
-module "google-managed" {
+module "google_managed" {
   source                    = "./modules/google-managed"
   gcp_project               = var.gcp_project
   ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
@@ -99,34 +99,34 @@ module "gke_keys" {
   crypto_key_name_prefix     = "gke_key"
 }
 
-module "halyard-storage" {
+module "halyard_storage" {
   source      = "./modules/gcp-bucket"
   bucket_name = "${var.gcp_project}-halyard-bucket"
 }
 
 # to retrieve the keys for this for use outside of terraform, run 
 # `vault read -format json -field=data secret/spinnaker-gcs-account > somefile.json`
-module "spinnaker-gcp-service-account" {
+module "spinnaker_gcp_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-gcs-account"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/storage.admin", "roles/browser"]
 }
 
-module "spinnaker-gcp-cloudsql-service-account" {
+module "spinnaker_gcp_cloudsql_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-cloudsql-account"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/cloudsql.client"]
 }
 
-module "spinnaker-gcp-fiat-service-account" {
+module "spinnaker_gcp_fiat_service_account" {
   source                 = "./modules/gcp-service-account"
   service_account_name   = "spinnaker-fiat"
   service_account_prefix = ""
-  bucket_name            = module.halyard-storage.bucket_name
+  bucket_name            = module.halyard_storage.bucket_name
   gcp_project            = var.gcp_project
   roles                  = []
 }
@@ -135,7 +135,7 @@ data "http" "local_outgoing_ip_address" {
   url = "https://ifconfig.me"
 }
 
-module "spinnaker-dns" {
+module "spinnaker_dns" {
   source             = "./modules/dns"
   gcp_project        = var.managed_dns_gcp_project
   ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
@@ -149,7 +149,7 @@ module "spinnaker-dns" {
   }
 }
 
-module "onboarding-storage" {
+module "onboarding_storage" {
   source      = "./modules/gcp-bucket"
   bucket_name = "${var.gcp_project}-spinnaker-onboarding"
 }
@@ -162,7 +162,7 @@ resource "google_project_iam_custom_role" "onboarding_role" {
 }
 
 resource "google_storage_bucket_iam_binding" "binding" {
-  bucket = module.onboarding-storage.bucket_name
+  bucket = module.onboarding_storage.bucket_name
   role   = "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
 
   members = [
@@ -173,23 +173,23 @@ resource "google_storage_bucket_iam_binding" "binding" {
 module "onboarding_gke" {
   source                     = "./modules/onboarding"
   gcp_project                = var.gcp_project
-  onboarding_bucket_resource = module.onboarding-storage.bucket_resource
+  onboarding_bucket_resource = module.onboarding_storage.bucket_resource
   storage_object_name_prefix = "gke"
 }
 
-module "onboarding-pubsub-service-account" {
+module "onboarding_pubsub_service_account" {
   source                 = "./modules/gcp-service-account"
   service_account_name   = "onboarding-pub-sub"
   service_account_prefix = ""
-  bucket_name            = module.halyard-storage.bucket_name
+  bucket_name            = module.halyard_storage.bucket_name
   gcp_project            = var.gcp_project
   roles                  = ["roles/storage.admin", "roles/pubsub.subscriber"]
 }
 
-module "halyard-service-account" {
+module "halyard_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-halyard"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles = [
     "roles/storage.admin",
@@ -206,13 +206,13 @@ resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
   for_each      = data.terraform_remote_state.static_ips.outputs.ship_plans
   crypto_key_id = lookup(module.vault_keys.crypto_key_id_map, each.key, "")
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${module.halyard-service-account.service-account-email}"
+  member        = "serviceAccount:${module.halyard_service_account.service_account_email}"
 }
 
-module "certbot-service-account" {
+module "certbot_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "certbot"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/dns.admin"]
 }
@@ -253,7 +253,7 @@ output "vault_crypto_key_name_map" {
 }
 
 output "vault_hosts_map" {
-  value = module.spinnaker-dns.vault_hosts_map
+  value = module.spinnaker_dns.vault_hosts_map
 }
 
 output "vault_yml_files_map" {
@@ -265,39 +265,39 @@ output "vault_bucket_name_map" {
 }
 
 output "created_onboarding_bucket_name" {
-  value = module.onboarding-storage.bucket_name
+  value = module.onboarding_storage.bucket_name
 }
 
 output "spinnaker_fiat_account_unique_id" {
-  value = module.spinnaker-gcp-fiat-service-account.service-account-id
+  value = module.spinnaker_gcp_fiat_service_account.service_account_id
 }
 
 output "redis_instance_link_map" {
-  value = module.google-managed.redis_instance_link_map
+  value = module.google_managed.redis_instance_link_map
 }
 
 output "the_gcp_project" {
   value = var.gcp_project
 }
 
-output "spinnaker-ui_hosts_map" {
-  value = module.spinnaker-dns.ui_hosts_map
+output "spinnaker_ui_hosts_map" {
+  value = module.spinnaker_dns.ui_hosts_map
 }
 
-output "spinnaker-api_hosts_map" {
-  value = module.spinnaker-dns.api_hosts_map
+output "spinnaker_api_hosts_map" {
+  value = module.spinnaker_dns.api_hosts_map
 }
 
-output "spinnaker-api_x509_hosts_map" {
-  value = module.spinnaker-dns.api_x509_hosts_map
+output "spinnaker_api_x509_hosts_map" {
+  value = module.spinnaker_dns.api_x509_hosts_map
 }
 
 output "google_sql_database_instance_names_map" {
-  value = module.google-managed.google_sql_database_instance_names_map
+  value = module.google_managed.google_sql_database_instance_names_map
 }
 
 output "google_sql_database_failover_instance_names_map" {
-  value = module.google-managed.google_sql_database_failover_instance_names_map
+  value = module.google_managed.google_sql_database_failover_instance_names_map
 }
 
 output "created_onboarding_topic_name" {
@@ -309,17 +309,17 @@ output "created_onboarding_subscription_name" {
 }
 
 output "created_onboarding_service_account_name" {
-  value = module.onboarding-pubsub-service-account.service-account-display-name
+  value = module.onboarding_pubsub_service_account.service_account_display_name
 }
 
 output "spinnaker_halyard_service_account_email" {
-  value = module.halyard-service-account.service-account-email
+  value = module.halyard_service_account.service_account_email
 }
 
 output "spinnaker_halyard_service_account_display_name" {
-  value = module.halyard-service-account.service-account-display-name
+  value = module.halyard_service_account.service_account_display_name
 }
 
 output "spinnaker_halyard_service_account_key_path" {
-  value = module.halyard-service-account.service-account-key-path
+  value = module.halyard_service_account.service_account_key_path
 }

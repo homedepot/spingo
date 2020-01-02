@@ -26,7 +26,7 @@ resource "google_dns_record_set" "api" {
   rrdatas      = [var.api_ip_addresses[each.key]]
 }
 
-resource "google_dns_record_set" "api-x509" {
+resource "google_dns_record_set" "api_x509" {
   # see the vars file to an explination about this count thing
   for_each     = var.ship_plans
   name         = "${each.value["x509Subdomain"]}.${each.value["wildcardDomain"]}."

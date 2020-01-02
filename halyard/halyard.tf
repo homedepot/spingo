@@ -32,11 +32,11 @@ data "terraform_remote_state" "static_ips" {
   }
 }
 
-data "vault_generic_secret" "keystore-pass" {
-  path = "secret/${var.gcp_project}/keystore-pass"
+data "vault_generic_secret" "keystore_pass" {
+  path = "secret/${var.gcp_project}/keystore_pass"
 }
 
-data "vault_generic_secret" "halyard-svc-key" {
+data "vault_generic_secret" "halyard_svc_key" {
   path = data.terraform_remote_state.spinnaker.outputs.spinnaker_halyard_service_account_key_path
 }
 
@@ -81,7 +81,7 @@ data "template_file" "make_update_keystore_script" {
 
   vars = {
     DNS           = var.cloud_dns_hostname
-    KEYSTORE_PASS = data.vault_generic_secret.keystore-pass.data["value"]
+    KEYSTORE_PASS = data.vault_generic_secret.keystore_pass.data["value"]
     PROJECT       = var.gcp_project
     USER          = var.service_account_name
     CERTBOT_EMAIL = var.certbot_email
@@ -101,7 +101,7 @@ data "template_file" "setup_onboarding" {
     HALYARD_COMMANDS = templatefile("./halScripts/onboarding-halyard.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         clientIP        = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
-        clientHostnames = data.terraform_remote_state.spinnaker.outputs.spinnaker-api_x509_hosts_map[k]
+        clientHostnames = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_x509_hosts_map[k]
         kubeConfig      = "/${var.service_account_name}/.kube/${k}.config"
         }
       }
@@ -118,7 +118,7 @@ data "template_file" "cert_script" {
     USER              = var.service_account_name
     DOMAIN            = replace(var.gcp_admin_email, "/^.*@/", "")
     DNS_DOMAIN        = var.cloud_dns_hostname
-    WILDCARD_KEYSTORE = data.vault_generic_secret.keystore-pass.data["value"]
+    WILDCARD_KEYSTORE = data.vault_generic_secret.keystore_pass.data["value"]
   }
 }
 
@@ -146,7 +146,7 @@ data "template_file" "start_script" {
     BUCKET               = "${var.gcp_project}${var.bucket_name}"
     PROJECT              = var.gcp_project
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
-    REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard-svc-key.data))
+    REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard_svc_key.data))
     SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
     SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
     SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
@@ -177,7 +177,7 @@ data "template_file" "start_script" {
       USER = var.service_account_name
     }))
     SCRIPT_SLACK = base64encode(templatefile("./halScripts/setupSlack.sh", {
-      TOKEN_FROM_SLACK = data.vault_generic_secret.slack-token.data["value"]
+      TOKEN_FROM_SLACK = data.vault_generic_secret.slack_token.data["value"]
       deployments      = [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : s]
     }))
     SCRIPT_QUICKSTART = base64encode(templatefile("./halScripts/quickstart.sh", {
@@ -248,7 +248,7 @@ data "template_file" "setupSSL" {
     DNS             = var.cloud_dns_hostname
     SPIN_UI_IP      = data.google_compute_address.ui[each.key].address
     SPIN_API_IP     = data.google_compute_address.api[each.key].address
-    KEYSTORE_PASS   = data.vault_generic_secret.keystore-pass.data["value"]
+    KEYSTORE_PASS   = data.vault_generic_secret.keystore_pass.data["value"]
     KUBE_COMMANDS   = data.template_file.k8ssl[each.key].rendered
     DEPLOYMENT_NAME = each.key
   }
@@ -283,8 +283,8 @@ data "template_file" "setupOAuth" {
   vars = {
     USER                = var.service_account_name
     API_URL             = "https://${data.vault_generic_secret.spinnaker_api_address[each.key].data["url"]}"
-    OAUTH_CLIENT_ID     = data.vault_generic_secret.gcp-oauth.data["client-id"]
-    OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp-oauth.data["client-secret"]
+    OAUTH_CLIENT_ID     = data.vault_generic_secret.gcp_oauth.data["client-id"]
+    OAUTH_CLIENT_SECRET = data.vault_generic_secret.gcp_oauth.data["client-secret"]
     DOMAIN              = replace(var.gcp_admin_email, "/^.*@/", "")
     ADMIN_EMAIL         = var.gcp_admin_email
     DEPLOYMENT_NAME     = each.key
@@ -303,14 +303,14 @@ data "template_file" "setupHalyard" {
     ADMIN_GROUP                     = var.spinnaker_admin_group
     SPIN_UI_IP                      = data.google_compute_address.ui[each.key].address
     SPIN_API_IP                     = data.google_compute_address.api[each.key].address
-    SPIN_REDIS_ADDR                 = data.vault_generic_secret.vault-redis[each.key].data["address"]
-    DB_CONNECTION_NAME              = data.vault_generic_secret.db-address[each.key].data["address"]
-    DB_SERVICE_USER_PASSWORD        = data.vault_generic_secret.db-service-user-password[each.key].data["password"]
-    DB_MIGRATE_USER_PASSWORD        = data.vault_generic_secret.db-migrate-user-password[each.key].data["password"]
-    DB_CLOUDDRIVER_SVC_PASSWORD     = data.vault_generic_secret.clouddriver-db-service-user-password[each.key].data["password"]
-    DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver-db-migrate-user-password[each.key].data["password"]
-    DB_FRONT50_SVC_PASSWORD         = data.vault_generic_secret.front50-db-service-user-password[each.key].data["password"]
-    DB_FRONT50_MIGRATE_PASSWORD     = data.vault_generic_secret.front50-db-migrate-user-password[each.key].data["password"]
+    SPIN_REDIS_ADDR                 = data.vault_generic_secret.vault_redis[each.key].data["address"]
+    DB_CONNECTION_NAME              = data.vault_generic_secret.db_address[each.key].data["address"]
+    DB_SERVICE_USER_PASSWORD        = data.vault_generic_secret.orca_db_service_user_password[each.key].data["password"]
+    DB_MIGRATE_USER_PASSWORD        = data.vault_generic_secret.orca_db_migrate_user_password[each.key].data["password"]
+    DB_CLOUDDRIVER_SVC_PASSWORD     = data.vault_generic_secret.clouddriver_db_service_user_password[each.key].data["password"]
+    DB_CLOUDDRIVER_MIGRATE_PASSWORD = data.vault_generic_secret.clouddriver_db_migrate_user_password[each.key].data["password"]
+    DB_FRONT50_SVC_PASSWORD         = data.vault_generic_secret.front50_db_service_user_password[each.key].data["password"]
+    DB_FRONT50_MIGRATE_PASSWORD     = data.vault_generic_secret.front50_db_migrate_user_password[each.key].data["password"]
     DEPLOYMENT_NAME                 = each.key
     DEPLOYMENT_INDEX                = index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), each.key)
     VAULT_ADDR                      = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map[each.key]
@@ -399,62 +399,61 @@ data "google_compute_address" "api" {
   name     = "api-${each.key}"
 }
 
-data "vault_generic_secret" "vault-redis" {
+data "vault_generic_secret" "vault_redis" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
   path     = "secret/${var.gcp_project}/redis/${each.key}"
 }
 
-data "vault_generic_secret" "db-address" {
+data "vault_generic_secret" "db_address" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/db-address/${each.key}"
+  path     = "secret/${var.gcp_project}/db_address/${each.key}"
 }
 
-data "vault_generic_secret" "db-service-user-password" {
+data "vault_generic_secret" "orca_db_service_user_password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/orca-db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/orca_db_service_user_password/${each.key}"
 }
 
-data "vault_generic_secret" "db-migrate-user-password" {
+data "vault_generic_secret" "orca_db_migrate_user_password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/orca-db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/orca_db_migrate_user_password/${each.key}"
 }
 
-data "vault_generic_secret" "clouddriver-db-service-user-password" {
+data "vault_generic_secret" "clouddriver_db_service_user_password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/clouddriver_db_service_user_password/${each.key}"
 }
 
-data "vault_generic_secret" "clouddriver-db-migrate-user-password" {
+data "vault_generic_secret" "clouddriver_db_migrate_user_password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/clouddriver_db_migrate_user_password/${each.key}"
 }
 
-data "vault_generic_secret" "front50-db-service-user-password" {
+data "vault_generic_secret" "front50_db_service_user_password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/front50-db-service-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/front50_db_service_user_password/${each.key}"
 }
 
-data "vault_generic_secret" "front50-db-migrate-user-password" {
+data "vault_generic_secret" "front50_db_migrate_user_password" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  path     = "secret/${var.gcp_project}/front50-db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/front50_db_migrate_user_password/${each.key}"
 }
 
-data "google_compute_address" "halyard-external-ip" {
-  name = "halyard-external-ip"
+data "google_compute_address" "halyard_external_ip" {
+  name = "halyard_external_ip"
 }
 
-data "vault_generic_secret" "slack-token" {
+data "vault_generic_secret" "slack_token" {
   path = "secret/${var.gcp_project}/slack-token"
 }
 
 #This is manually put into vault and created manually
 #Get OAUTH secrets
-data "vault_generic_secret" "gcp-oauth" {
+data "vault_generic_secret" "gcp_oauth" {
   path = "secret/${var.gcp_project}/gcp-oauth"
 }
 
-resource "google_compute_instance" "halyard-spin-vm" {
-  count        = 1 // Adjust as desired
+resource "google_compute_instance" "halyard_spin_vm" {
   name         = "halyard-thd-spinnaker"
   machine_type = "n1-standard-4"
 
@@ -476,7 +475,7 @@ resource "google_compute_instance" "halyard-spin-vm" {
     network = "default"
 
     access_config {
-      nat_ip = data.google_compute_address.halyard-external-ip.address
+      nat_ip = data.google_compute_address.halyard_external_ip.address
     }
   }
 
@@ -489,5 +488,5 @@ resource "google_compute_instance" "halyard-spin-vm" {
 }
 
 output "halyard_command" {
-  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard-spin-vm[0].name}\""
+  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard_spin_vm.name}\""
 }

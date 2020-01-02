@@ -408,15 +408,15 @@ else
 fi
 
 if [ -z "$SLACK_BOT_TOKEN" ]; then
-    PS3="Do you want to setup Slack automatically and already have a token or just press [ENTER] for (No)? : "
+    PS3="Do you want to setup Slack automatically and already have a token? or just press [ENTER] for (Yes) : "
     USE_SLACK=$(select_with_default "No" "Yes")
-    USE_SLACK=${USE_SLACK:-No}
+    USE_SLACK=${USE_SLACK:-Yes}
     if [ "$USE_SLACK" == "No" ]; then
         SLACK_BOT_TOKEN=$(prompt_for_value \
         "" \
         "Slack Bot Token" \
         "What is your Slack Bot Token?" \
-        "Setup using instructions found here https://github.com/homedepot/spingo#if-you-are-going-to-use-slack-integration-skip-to-next-section-if-not")
+        "Setup using instructions found here https://github.com/homedepot/spingo#slack-integration")
     else
         SLACK_BOT_TOKEN="no-slack"
     fi

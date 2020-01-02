@@ -338,9 +338,9 @@ do
         GATE_SUBDOMAIN="$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$GATE_SUBDOMAIN")
         echo "Checking result : $HOSTNAME_USED"
-        if [ "$HOSTNAME_USED" == "true" ]; then
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
             echoerr "A hostname can only be used once per project and $GATE_SUBDOMAIN has already been used, please choose another hostname"
-            GATE_SUBDOMAIN=""
+            unset GATE_SUBDOMAIN
         fi
     done
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" '. | .ship_plans += { ($nm + $dsh + $reg): { deckSubdomain: $dk, gateSubdomain: $gt } }')
@@ -352,9 +352,9 @@ do
         X509_SUBDOMAIN="$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$X509_SUBDOMAIN")
         echo "Checking result : $HOSTNAME_USED"
-        if [ "$HOSTNAME_USED" == "true" ]; then
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
             echoerr "A hostname can only be used once per project and $X509_SUBDOMAIN has already been used, please choose another hostname"
-            X509_SUBDOMAIN=""
+            unset X509_SUBDOMAIN
         fi
     done
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" '. | .ship_plans += { ($nm + $dsh + $reg): { deckSubdomain: $dk, gateSubdomain: $gt, x509Subdomain: $x509 } }')
@@ -366,7 +366,7 @@ do
         VAULT_SUBDOMAIN="$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$VAULT_SUBDOMAIN")
         echo "Checking result : $HOSTNAME_USED"
-        if [ "$HOSTNAME_USED" == "true" ]; then
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
             echoerr "A hostname can only be used once per project and $VAULT_SUBDOMAIN has already been used, please choose another hostname"
             VAULT_SUBDOMAIN=""
         fi

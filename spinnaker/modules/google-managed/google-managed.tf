@@ -199,7 +199,7 @@ EOF
 
 resource "vault_generic_secret" "orca_db_migrate_user_password" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/orca-db-migrate-user-password/${each.key}"
+  path     = "secret/${var.gcp_project}/orca_db_migrate_user_password/${each.key}"
 
   data_json = <<-EOF
               {"password":"${random_string.orca_db_migrate_user_password[each.key].result}"}

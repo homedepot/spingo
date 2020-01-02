@@ -211,7 +211,7 @@ if ! vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
         echo "storing user defined keystore password within vault"
         KEY_PASS="$USER_KEY_PASS"
     fi
-    vault write secret/"$PROJECT"/keystore-pass "value=$KEY_PASS"
+    vault write secret/"$PROJECT"/keystore_pass "value=$KEY_PASS"
 fi
 
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-spinnaker" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"

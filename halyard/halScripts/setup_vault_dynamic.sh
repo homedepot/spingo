@@ -63,7 +63,7 @@ do
   kubectl -n kube-system get po -l=name=tiller \
   --kubeconfig="${details.kubeConfig}" \
   -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
-   n=$[$n+1]
+   n=$((n+1))
    echo "Tiller is not ready yet for deployment ${deployment} waiting..."
    sleep 6
 done
@@ -84,7 +84,7 @@ do
   kubectl -n vault get po -l=app.kubernetes.io/name=vault \
   --kubeconfig="${details.kubeConfig}" \
   -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
-   n=$[$n+1]
+   n=$((n+1))
    echo "Vault is not yet installed for deployment ${deployment} waiting..."
    sleep 6
 done
@@ -105,8 +105,8 @@ echo "Getting vault root token for deployment ${deployment}"
 
 gsutil cat gs://${details.vaultBucket}/root-token.enc | base64 -d | gcloud kms decrypt \
       --key=${details.vaultKmsKey} \
-      --keyring=${VAULT_KMS_RING} \
-      --location=${CLUSTER_REGION} \
+      --keyring=${details.vaultKmsKeyRingName} \
+      --location=${details.clusterRegion} \
       --ciphertext-file='-' \
       --plaintext-file='-' > /home/${USER}/.vault-token
 
@@ -169,7 +169,7 @@ do
    vault status \
     -address="https://${details.vaultAddr}" \
     -format=json && break
-   n=$[$n+1]
+   n=$((n+1))
    echo "Vault is not yet up and running for deployment ${deployment} waiting..."
    sleep 6
 done
@@ -266,7 +266,7 @@ vault write \
     project_id="${PROJECT}" \
     type="gce" \
     policies="spinnaker-kv-ro" \
-    bound_regions="${CLUSTER_REGION}"
+    bound_regions="${details.clusterRegion}"
 
 echo "Ending Vault GCP Auth (GCE) for deployment ${deployment}"
 

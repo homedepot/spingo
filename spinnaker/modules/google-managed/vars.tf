@@ -3,17 +3,9 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-variable "cluster_region" {
-  type = string
-}
-
 variable "authorized_networks_redis" {
   description = "The networks (self-link) that can connect to the memorystore instance"
-  type        = list(string)
-}
-
-variable "cluster_config" {
-  type = map(string)
+  type        = map(string)
 }
 
 variable "redis_config" {
@@ -28,4 +20,9 @@ variable "redis_config" {
 variable "cloudsql_machine_type" {
   type    = string
   default = "db-n1-standard-2"
+}
+
+variable "ship_plans" {
+  type        = map(map(string))
+  description = "The object that describes all of the clusters that need to be built by Spingo"
 }

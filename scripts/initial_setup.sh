@@ -29,6 +29,15 @@ need "gcloud"
 need "openssl"
 need "git"
 need "cut"
+need "jq"
+
+CWD=$(pwd)
+GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
+cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
+
+# shellcheck source=scripts/common.sh
+# shellcheck disable=SC1091
+source "$GIT_ROOT_DIR"/scripts/common.sh
 
 terraform_override() {
     # $1 = terraform bucket name
@@ -51,13 +60,105 @@ terraform_variable() {
     # $4 = terraform sub-project directory
     # $5 = GCP project name
 
-    echo -e "$1 = \"$2\"" > "$3/$4/var-$1.auto.tfvars"
+    echo -e "$1 = \"${2}\"" > "$3/$4/var-$1.auto.tfvars"
     vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
 }
 
-CWD=$(pwd)
-GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
-cd "$GIT_ROOT_DIR" || { echo "failed to change directory to $GIT_ROOT_DIR exiting"; exit 1; }
+prompt_to_use_base_hostname_for_deck_or_get_value(){
+    # $1 = cluster index number
+    # $2 = attribute key name from default cluster config json
+    # $3 = git root directory
+    # $4 = user readable name for value
+    # $5 = cluster name
+    # $6 = is base hostname use available
+    # $7 = base hostname chosen by user stored at DOMAIN_TO_MANAGE
+    # $8 = current SHIP_PLANS_JSON content
+    RETURN_VALUE=""
+    if [ "$6" == "true" ]; then
+        echoerr "-----------------------------------------------------------------------------"
+        echoerr " *****   There can be only one deployment that can use the base hostname $7 as it's hostname for it's UI (deck) *****"
+        echoerr "-----------------------------------------------------------------------------"
+        PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
+        PROMPT_VALUE=$(select_with_default "No" "Yes")
+        if [ "$PROMPT_VALUE" == "Yes" ]; then
+            RETURN_VALUE=""
+        else
+            while [ -z "$RETURN_VALUE" ]; do
+                RETURN_VALUE="$(prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5")"
+                HOSTNAME_USED="$(check_for_hostname_used "$8" "$RETURN_VALUE")"
+                if [ "$HOSTNAME_USED" == "true" ]; then
+                    echoerr "A hostname can only be used once per project and $RETURN_VALUE has already been used, please choose another hostname"
+                    RETURN_VALUE=""
+                fi
+            done
+        fi
+    else
+        while [ -z "$RETURN_VALUE" ]; do
+            RETURN_VALUE="$(prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5")"
+            HOSTNAME_USED="$(check_for_hostname_used "$8" "$RETURN_VALUE")"
+            if [ "$HOSTNAME_USED" == "true" ]; then
+                echoerr "A hostname can only be used once per project and $RETURN_VALUE has already been used, please choose another hostname"
+                RETURN_VALUE=""
+            fi
+        done
+    fi
+    echo "$RETURN_VALUE"
+}
+
+prompt_for_value_with_default() {
+    # $1 = cluster index number
+    # $2 = attribute key name from default cluster config json
+    # $3 = git root directory
+    # $4 = user readable name for value
+    # $5 = cluster name
+
+    OPTIONAL_CLUSTER_NAME=""
+    if [ -z "$5" ]; then
+        OPTIONAL_CLUSTER_NAME="Cluster $5 "
+    fi
+    READ_PROMPT_BASE="Enter the $4 for #$1 ${OPTIONAL_CLUSTER_NAME}and press [ENTER]"
+    while [ -z "$PROMPT_VALUE" ]; do
+        DEFAULT_PROMPT_VALUE=$(< "${3}/scripts/default_cluster_config.json" jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$1"'-1] | .key as $the_key | $plans | .[$the_key].'"$2"'' 2>/dev/null)
+        echoerr "-----------------------------------------------------------------------------"
+        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_PROMPT_VALUE})"
+        if [ -z "$DEFAULT_PROMPT_VALUE" ]; then
+            READ_PROMPT="$READ_PROMPT_BASE"":"
+        else
+            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"":"
+        fi
+        echoerr "$READ_PROMPT"  >&2
+        read -r PROMPT_VALUE
+        PROMPT_VALUE="${PROMPT_VALUE:-$DEFAULT_PROMPT_VALUE}"
+        if [ -z "$PROMPT_VALUE" ]; then 
+            echoerr "You must enter a $4"
+        else
+            echoerr "-----------------------------------------------------------------------------"
+            echoerr "Entered $4 is $PROMPT_VALUE"
+        fi
+    done
+    echo "$PROMPT_VALUE"
+
+}
+
+check_for_base_hostname_used() {
+    RESULT=$(echo "$1" | jq '.ship_plans | to_entries | .[].value | select(.deckSubdomain == "") | .deckSubdomain == ""')
+    if [ "$RESULT" == "true" ]; then
+        echo "false"
+    else
+        echo "true"
+    fi
+}
+
+check_for_hostname_used() {
+    # $1 = current SHIP_PLANS_JSON content
+    # $2 = hostname to check if already used
+
+    if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
+        echo "true"
+    else
+        echo "false"
+    fi
+}
 
 echo "-----------------------------------------------------------------------------"
 CURR_PROJ=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
@@ -76,6 +177,10 @@ do
     fi
 done
 
+echo "Enabling required Google Cloud APIs. This could take several minutes."
+echo "enabling compute.googleapis.com service"
+gcloud services enable compute.googleapis.com
+
 VAULT_RESPONSE=$(vault status -format json | jq -r '. | select(.initialized == true and .sealed == false) | .initialized')
 if [[ "$VAULT_RESPONSE" != "true" ]]; then
   echo "not logged into vault!"
@@ -84,97 +189,10 @@ if [[ "$VAULT_RESPONSE" != "true" ]]; then
   exit 1
 fi
 
-echo "Enabling required Google Cloud APIs. This could take several minutes."
-echo "enabling compute.googleapis.com service"
-gcloud services enable compute.googleapis.com
-echo "enabling iam.googleapis.com service"
-gcloud services enable iam.googleapis.com
-echo "enabling sqladmin.googleapis.com service"
-gcloud services enable sqladmin.googleapis.com
-echo "enabling cloudresourcemanager.googleapis.com"
-gcloud services enable cloudresourcemanager.googleapis.com
-echo "enabling container.googleapis.com"
-gcloud services enable container.googleapis.com
-echo "enabling dns.googleapis.com"
-gcloud services enable dns.googleapis.com
-echo "enabling redis.googleapis.com"
-gcloud services enable redis.googleapis.com
-echo "enabling admin.googleapis.com - Needed for Google OAuth"
-gcloud services enable admin.googleapis.com
-echo "enabling cloudkms.googleapis.com - Needed for Vault"
-gcloud services enable cloudkms.googleapis.com
-
 USER_EMAIL="$(gcloud config list --format 'value(core.account)')"
 TERRAFORM_REMOTE_GCS_NAME="$PROJECT-tf"
 SERVICE_ACCOUNT_NAME="terraform-account"
 SERVICE_ACCOUNT_DEST="terraform-account.json"
-
-echo "creating $SERVICE_ACCOUNT_NAME service account"
-gcloud iam service-accounts create \
-    "$SERVICE_ACCOUNT_NAME" \
-    --display-name "$SERVICE_ACCOUNT_NAME"
-
-while [ -z "$SA_EMAIL" ]; do
-  echo "waiting for service account to be fully created..."
-  sleep 1
-  SA_EMAIL=$(gcloud iam service-accounts list \
-      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)')
-done
-
-echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
-
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/resourcemanager.projectIamAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.serviceAccountAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.serviceAccountKeyAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/compute.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/container.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/storage.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.serviceAccountUser'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/dns.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/redis.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/cloudsql.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/monitoring.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/iam.roleAdmin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/pubsub.admin'
-gcloud --no-user-output-enabled projects add-iam-policy-binding  "$PROJECT" \
-    --member serviceAccount:"$SA_EMAIL" \
-    --role='roles/cloudkms.admin'
-
-echo "generating keys for $SERVICE_ACCOUNT_NAME"
-gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
-    --iam-account "$SA_EMAIL"
-
-vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
-
-echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
-vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
 
 echo "create the bucket that will store the Terraform State"
 BUCKET_CHECK=$(gsutil mb -p "$PROJECT" gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
@@ -195,7 +213,7 @@ while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
     echo "Inner Bucket Check : $BUCKET_CHECK"
 done
 
-if ! vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
+if ! vault read -field "value" secret/"$PROJECT"/keystore_pass >/dev/null 2>&1
   then
     echo "-----------------------------------------------------------------------------"
     echo " *****   There is no keystore password stored within vault. Please enter a password you want to use or leave blank to create a random one."
@@ -208,18 +226,13 @@ if ! vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
         echo "storing user defined keystore password within vault"
         KEY_PASS="$USER_KEY_PASS"
     fi
-    vault write secret/"$PROJECT"/keystore-pass "value=$KEY_PASS"
+    vault write secret/"$PROJECT"/keystore_pass "value=$KEY_PASS"
 fi
-cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
-cp "$SERVICE_ACCOUNT_DEST" ./halyard
-cp "$SERVICE_ACCOUNT_DEST" ./dns
-cp "$SERVICE_ACCOUNT_DEST" ./static_ips
-cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
-rm "$SERVICE_ACCOUNT_DEST"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-hal-vm" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
-terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "np-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
+
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-spinnaker" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-halyard" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-dns" "$GIT_ROOT_DIR" "dns" "$PROJECT"
+terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-static-ips" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
 terraform_override "$TERRAFORM_REMOTE_GCS_NAME" "spingo-monitoring" "$GIT_ROOT_DIR" "monitoring-alerting" "$PROJECT"
 
 terraform_variable "gcp_project" "$PROJECT" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
@@ -239,7 +252,6 @@ while [ -z "$DOMAIN_TO_MANAGE" ]; do
 done
 
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "dns" "$PROJECT"
-terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
 # choose a project that will manage the DNS
@@ -253,7 +265,7 @@ do
         echo "You must select a Managed DNS GCP Project"
     else
         echo "-----------------------------------------------------------------------------"
-        echo "Managed DNS Google Cloud Project $dns_project selected"
+        echo "Managed DNS Google Cloud Project selected : $dns_project"
         terraform_variable "managed_dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
         terraform_variable "gcp_project" "$dns_project" "$GIT_ROOT_DIR" "dns" "$PROJECT"
         vault write "secret/$PROJECT/dns_project_name" "value=$dns_project" >/dev/null 2>&1
@@ -261,30 +273,106 @@ do
     fi
 done
 
-# choose a region to place the cluster into
+# choose how many clusters to create
 echo "-----------------------------------------------------------------------------"
-echo " *****   Google Cloud Project Region    *****"
+echo " *****   How Many Spinnaker Deployments?   *****"
 echo "-----------------------------------------------------------------------------"
-PS3="Enter the number for the Google Cloud Project Region to setup the Spinnaker cluster on (ctrl-c to exit) : ";
-select region in $(gcloud compute regions list --format='value(name)' 2>/dev/null)
+PS3="Enter the number of Spinnaker Deployments to create inside project $PROJECT (choose the number for Exit to exit) : ";
+select cluster_count in 1 2 3 4 Exit
 do
-    if [ "$region" == "" ]; then
-        echo "You must select a Google Cloud Project Region"
+    if [ "$cluster_count" == "" ]; then
+        echo "You must select a Managed DNS GCP Project"
+    elif [ "$cluster_count" == "Exit" ]; then
+        echo "Exiting at user request"
+        exit 1
     else
         echo "-----------------------------------------------------------------------------"
-        echo "Google Cloud Project Region $region selected"
-        terraform_variable "cluster_region" "$region" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
-        terraform_variable "region" "$region" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
+        echo "Number of Spinnaker Deployments selected : $cluster_count"
+        SELECTED_CLUSTER_COUNT=$cluster_count
         break;
     fi
 done
+SHIP_PLANS_JSON="$(< "$GIT_ROOT_DIR"/scripts/empty_cluster_config.json)"
+n=1
+until [ $n -gt $SELECTED_CLUSTER_COUNT ]
+do
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   Cluster name for #$n  *****"
+    CLUSTER_NAME="$(prompt_for_value_with_default "$n" "clusterPrefix" "$GIT_ROOT_DIR" "cluster name")"
+    CLUSTER_REGION=""
+    while [ -z "$CLUSTER_REGION" ]; do
+        # choose a region to place the cluster into
+        echo "-----------------------------------------------------------------------------"
+        echo " *****   Google Cloud Project Region for Cluster $CLUSTER_NAME   *****"
+        echo "-----------------------------------------------------------------------------"
+        DEFAULT_CLUSTER_REGION="$(< "${GIT_ROOT_DIR}/scripts/default_cluster_config.json" jq -r '.ship_plans as $plans | .ship_plans | to_entries['"$n"'-1] | .key as $the_key | $plans | .[$the_key].clusterRegion' 2>/dev/null)"
+        READ_PROMPT_BASE="Enter the number for the Cluster Region for #$n and press [ENTER]"
+        DEFAULT_CHOICE_PROMPT=" or just press [ENTER] for the default (${DEFAULT_CLUSTER_REGION})(ctrl-c to exit)"
+        if [ -z "$DEFAULT_CLUSTER_REGION" ]; then
+            READ_PROMPT="$READ_PROMPT_BASE"" : "
+        else
+            READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
+        fi
+        PS3="$READ_PROMPT";
+        CLUSTER_REGION="$(select_with_default "$(gcloud compute regions list --format='value(name)' 2>/dev/null)")"
+        CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
+    done
+    echo "-----------------------------------------------------------------------------"
+    echo "Google Cloud Project Region $CLUSTER_REGION selected for Cluster $CLUSTER_NAME"
+    SHIP_PLANS_JSON="$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg } }')"
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
+    DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used "$SHIP_PLANS_JSON")" "$DOMAIN_TO_MANAGE" "$SHIP_PLANS_JSON")"
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk } }')
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
+    GATE_SUBDOMAIN=""
+    while [ -z "$GATE_SUBDOMAIN" ]; do
+        GATE_SUBDOMAIN="$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")"
+        HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$GATE_SUBDOMAIN")
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
+            echoerr "A hostname can only be used once per project and $GATE_SUBDOMAIN has already been used, please choose another hostname"
+            unset GATE_SUBDOMAIN
+        fi
+    done
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk, gateSubdomain: $gt } }')
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for x509 is the address where automation like the spin CLI will use"
+    X509_SUBDOMAIN=""
+    while [ -z "$X509_SUBDOMAIN" ]; do
+        X509_SUBDOMAIN="$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")"
+        HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$X509_SUBDOMAIN")
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
+            echoerr "A hostname can only be used once per project and $X509_SUBDOMAIN has already been used, please choose another hostname"
+            unset X509_SUBDOMAIN
+        fi
+    done
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk, gateSubdomain: $gt, x509Subdomain: $x509 } }')
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
+    VAULT_SUBDOMAIN=""
+    while [ -z "$VAULT_SUBDOMAIN" ]; do
+        VAULT_SUBDOMAIN="$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")"
+        HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$VAULT_SUBDOMAIN")
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
+            echoerr "A hostname can only be used once per project and $VAULT_SUBDOMAIN has already been used, please choose another hostname"
+            VAULT_SUBDOMAIN=""
+        fi
+    done
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk, gateSubdomain: $gt, x509Subdomain: $x509, vaultSubdomain: $vlt, wildcardDomain: $wd } }')
+    n=$((n+1))
+done
 
-# choose a zone to place the Halyard and Certbot VMs into
+terraform_variable "region" "$CLUSTER_REGION" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
+echo "$SHIP_PLANS_JSON" > "$GIT_ROOT_DIR"/static_ips/var-ship_plans.auto.tfvars.json
+vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_ROOT_DIR/static_ips/var-ship_plans.auto.tfvars.json" >/dev/null 2>&1
+
+# choose a zone to place the Halyard VMs into
 echo "-----------------------------------------------------------------------------"
 echo " *****   Google Cloud Project Zone    *****"
 echo "-----------------------------------------------------------------------------"
-PS3="Enter the number for the Google Cloud Project Zone place the Halyard and Certbot VMs into (ctrl-c to exit) : ";
-select zone in $(gcloud compute zones list --format='value(name)' --filter='region='"$(gcloud compute regions list --filter="name=$region" --format='value(selfLink)' 2>/dev/null)" 2>/dev/null)
+PS3="Enter the number for the Google Cloud Project Zone to place the Halyard VM into (ctrl-c to exit) : ";
+select zone in $(gcloud compute zones list --format='value(name)' --filter='region='"$(gcloud compute regions list --filter="name=$CLUSTER_REGION" --format='value(selfLink)' 2>/dev/null)" 2>/dev/null)
 do
     if [ "$zone" == "" ]; then
         echo "You must select a Google Cloud Project Zone"
@@ -296,11 +384,46 @@ do
     fi
 done
 
-echo "setting up default values for user inputted values within vault"
-# override these for presentation
-GOOGLE_OAUTH_CLIENT_ID="${GOOGLE_OAUTH_CLIENT_ID:-replace-me}"
-GOOGLE_OAUTH_CLIENT_SECRET="${GOOGLE_OAUTH_CLIENT_SECRET:-replace-me}"
-SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-replace-me}"
+GOOGLE_OAUTH_CLIENT_ID="$(prompt_for_value \
+    "$GOOGLE_OAUTH_CLIENT_ID" \
+    "Google OAuth Client ID" \
+    "What is the Google OAuth Client ID? : " \
+    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")"
+GOOGLE_OAUTH_CLIENT_SECRET="$(prompt_for_value \
+    "$GOOGLE_OAUTH_CLIENT_SECRET" \
+    "Google OAuth Client Secret" \
+    "What is the Google OAuth Client Secret? : " \
+    "Setup using instructions found here https://github.com/homedepot/spingo#google-oauth-authentication-setup")"
+
+echoerr "-----------------------------------------------------------------------------"
+echoerr " *****   Halyard Auto Quickstart ***** Auto Quickstart sets up the Spinnaker(s) as soon as the Halyard VM starts up the fist time"
+echoerr "-----------------------------------------------------------------------------"
+PS3="Do you want to enable halyard auto initial quickstart or just press [ENTER] to use default (Yes) ? : "
+AUTO_QUICKSTART_HALYARD="$(select_with_default "No" "Yes")"
+AUTO_QUICKSTART_HALYARD=${AUTO_QUICKSTART_HALYARD:-Yes}
+if [ "$AUTO_QUICKSTART_HALYARD" == "Yes" ]; then
+    terraform_variable "auto_start_halyard_quickstart" "true" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+else
+    terraform_variable "auto_start_halyard_quickstart" "false" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+fi
+
+if [ -z "$SLACK_BOT_TOKEN" ]; then
+    PS3="Do you want to setup Slack automatically and already have a token or just press [ENTER] for (No)? : "
+    USE_SLACK=$(select_with_default "No" "Yes")
+    USE_SLACK=${USE_SLACK:-No}
+    if [ "$USE_SLACK" == "No" ]; then
+        SLACK_BOT_TOKEN=$(prompt_for_value \
+        "" \
+        "Slack Bot Token" \
+        "What is your Slack Bot Token?" \
+        "Setup using instructions found here https://github.com/homedepot/spingo#if-you-are-going-to-use-slack-integration-skip-to-next-section-if-not")
+    else
+        SLACK_BOT_TOKEN="no-slack"
+    fi
+else
+    echo "Found Slack Bot Token in environment variable so moving on"
+fi
+
 vault write secret/"$PROJECT"/gcp-oauth "client-id=$GOOGLE_OAUTH_CLIENT_ID" "client-secret=$GOOGLE_OAUTH_CLIENT_SECRET" >/dev/null 2>&1
 vault write secret/"$PROJECT"/slack-token "value=$SLACK_BOT_TOKEN" >/dev/null 2>&1
 echo "-----------------------------------------------------------------------------"
@@ -313,5 +436,105 @@ done
 terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+
+
+
+echo "Enabling required Google Cloud APIs. This could take several minutes."
+echo "enabling iam.googleapis.com service"
+gcloud services enable iam.googleapis.com
+echo "enabling sqladmin.googleapis.com service"
+gcloud services enable sqladmin.googleapis.com
+echo "enabling cloudresourcemanager.googleapis.com"
+gcloud services enable cloudresourcemanager.googleapis.com
+echo "enabling container.googleapis.com"
+gcloud services enable container.googleapis.com
+echo "enabling dns.googleapis.com"
+gcloud services enable dns.googleapis.com
+echo "enabling redis.googleapis.com"
+gcloud services enable redis.googleapis.com
+echo "enabling admin.googleapis.com - Needed for Google OAuth"
+gcloud services enable admin.googleapis.com
+echo "enabling cloudkms.googleapis.com - Needed for Vault"
+gcloud services enable cloudkms.googleapis.com
+
+echo "creating $SERVICE_ACCOUNT_NAME service account"
+SA_EMAIL="$(gcloud iam service-accounts list \
+      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+      --format='value(email)')"
+if [ -n "$SA_EMAIL" ]; then
+    echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
+else
+    gcloud iam service-accounts create \
+        "$SERVICE_ACCOUNT_NAME" \
+        --display-name "$SERVICE_ACCOUNT_NAME"
+fi
+
+while [ -z "$SA_EMAIL" ]; do
+  echo "waiting for service account to be fully created..."
+  sleep 1
+  SA_EMAIL="$(gcloud iam service-accounts list \
+      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+      --format='value(email)')"
+done
+
+echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
+
+roles=(
+    'roles/storage.admin'
+    'roles/resourcemanager.projectIamAdmin'
+    'roles/iam.serviceAccountAdmin'
+    'roles/iam.serviceAccountKeyAdmin'
+    'roles/compute.admin'
+    'roles/container.admin'
+    'roles/iam.serviceAccountUser'
+    'roles/dns.admin'
+    'roles/redis.admin'
+    'roles/cloudsql.admin'
+    'roles/monitoring.admin'
+    'roles/iam.roleAdmin'
+    'roles/pubsub.admin'
+    'roles/cloudkms.admin'
+)
+
+EXISTING_ROLES="$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')"
+
+for role in "${roles[@]}"; do
+    EXISTING_ROLE_CHECK="$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')"
+    if [ -z "$EXISTING_ROLE_CHECK" ]; then
+        echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
+        
+        if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+            --member serviceAccount:"$SA_EMAIL" \
+            --role="$role"; then
+            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+        else
+            echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+        fi
+    else
+        echo "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"
+    fi
+done
+
+vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
+
+EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")"
+if [ -z "$EXISTING_KEY" ]; then
+    echo "generating keys for $SERVICE_ACCOUNT_NAME"
+    gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
+        --iam-account "$SA_EMAIL"
+    echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
+    vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
+else
+    echo "key already exists in vault for $SERVICE_ACCOUNT_NAME so no need to create it again"
+    echo "$EXISTING_KEY" > "$SERVICE_ACCOUNT_DEST"
+fi
+
+cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
+cp "$SERVICE_ACCOUNT_DEST" ./halyard
+cp "$SERVICE_ACCOUNT_DEST" ./dns
+cp "$SERVICE_ACCOUNT_DEST" ./static_ips
+cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
+rm "$SERVICE_ACCOUNT_DEST"
+
 echo "setup complete"
 cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

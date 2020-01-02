@@ -18,4 +18,8 @@ ${HALYARD_COMMANDS}
 
 /home/${USER}/configureToCurrentDeployment.sh
 
-echo "Onboarding Automation configured and ready"
+if [ "$ATTEMPT" == "success" ]; then
+    echo "Onboarding Automation configured and ready"
+else
+    echo "Automatic application/pipeline creation using x509 failed"
+fi

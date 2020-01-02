@@ -43,10 +43,10 @@ cp "$SERVICE_ACCOUNT_NAME".json ./dns
 # cp "$DNS_SERVICE_ACCOUNT_NAME".json ./dns/"$SERVICE_ACCOUNT_NAME".json
 
 # For overrides.tf
-vault read -field value secret/"$PROJECT"/local-override-np-hal-vm > halyard/override.tf
-vault read -field value secret/"$PROJECT"/local-override-np-dns > dns/override.tf
-vault read -field value secret/"$PROJECT"/local-override-np > spinnaker/override.tf
-vault read -field value secret/"$PROJECT"/local-override-np-static-ips > static_ips/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-halyard > halyard/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-dns > dns/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-spinnaker > spinnaker/override.tf
+vault read -field value secret/"$PROJECT"/local-override-spingo-static-ips > static_ips/override.tf
 
 # GCP Project name
 vault read -field value secret/"$PROJECT"/local-vars-spinnaker-gcp_project > spinnaker/var-gcp_project.auto.tfvars
@@ -56,7 +56,6 @@ vault read -field value secret/"$PROJECT"/local-vars-monitoring-alerting-gcp_pro
 
 # For DNS domain to manage
 vault read -field value secret/"$PROJECT"/local-vars-dns-cloud_dns_hostname > dns/var-cloud_dns_hostname.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-spinnaker-cloud_dns_hostname > spinnaker/var-cloud_dns_hostname.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-halyard-cloud_dns_hostname > halyard/var-cloud_dns_hostname.auto.tfvars
 
 # For DNS project
@@ -64,12 +63,12 @@ vault read -field value secret/"$PROJECT"/local-vars-spinnaker-managed_dns_gcp_p
 vault read -field value secret/"$PROJECT"/local-vars-dns-gcp_project > dns/var-gcp_project.auto.tfvars
 
 # For cluster region
-vault read -field value secret/"$PROJECT"/local-vars-spinnaker-cluster_region > spinnaker/var-cluster_region.auto.tfvars
 vault read -field value secret/"$PROJECT"/local-vars-static_ips-region > static_ips/var-region.auto.tfvars
+vault read -field value -format json secret/"$PROJECT"/local-vars-static_ips-ship_plans > static_ips/var-ship_plans.auto.tfvars.json
 
 # For halyard VM zone
 vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_zone > halyard/var-gcp_zone.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-halyard-certbot_email > halyard/local-vars-halyard-certbot_email.auto.tfvars
+vault read -field value secret/"$PROJECT"/local-vars-halyard-certbot_email > halyard/var-certbot_email.auto.tfvars
 
 # For GCP Org Admin Email
 vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_admin_email > halyard/var-gcp_admin_email.auto.tfvars

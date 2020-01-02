@@ -1,87 +1,8 @@
-resource "vault_generic_secret" "redis-connection" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/redis/${count.index}"
-
-  data_json = <<-EOF
-              {"address":"${google_redis_instance.cache[count.index].host}:${google_redis_instance.cache[count.index].port}"}
-EOF
-
-}
-
-resource "vault_generic_secret" "spinnaker-db-service-user-password" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/db-service-user-password/${count.index}"
-
-  data_json = <<-EOF
-              {"password":"${random_string.spinnaker-db-service-user-password[count.index].result}"}
-EOF
-
-}
-
-resource "vault_generic_secret" "spinnaker-db-migrate-user-password" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/db-migrate-user-password/${count.index}"
-
-  data_json = <<-EOF
-              {"password":"${random_string.spinnaker-db-migrate-user-password[count.index].result}"}
-EOF
-
-}
-
-resource "vault_generic_secret" "clouddriver-db-service-user-password" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/clouddriver-db-service-user-password/${count.index}"
-
-  data_json = <<-EOF
-              {"password":"${random_string.clouddriver-db-service-user-password[count.index].result}"}
-EOF
-
-}
-
-resource "vault_generic_secret" "clouddriver-db-migrate-user-password" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/clouddriver-db-migrate-user-password/${count.index}"
-
-  data_json = <<-EOF
-              {"password":"${random_string.clouddriver-db-migrate-user-password[count.index].result}"}
-EOF
-
-}
-
-resource "vault_generic_secret" "front50-db-service-user-password" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/front50-db-service-user-password/${count.index}"
-
-  data_json = <<-EOF
-              {"password":"${random_string.front50-db-service-user-password[count.index].result}"}
-EOF
-
-}
-
-resource "vault_generic_secret" "front50-db-migrate-user-password" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/front50-db-migrate-user-password/${count.index}"
-
-  data_json = <<-EOF
-              {"password":"${random_string.front50-db-migrate-user-password[count.index].result}"}
-EOF
-
-}
-resource "vault_generic_secret" "spinnaker-db-address" {
-  count = length(var.cluster_config)
-  path  = "secret/${var.gcp_project}/db-address/${count.index}"
-
-  data_json = <<-EOF
-              {"address":"${google_sql_database_instance.spinnaker-mysql[count.index].connection_name}"}
-EOF
-
-}
-
-resource "google_sql_database_instance" "spinnaker-mysql" {
-  count            = length(var.cluster_config)
-  name             = "${var.cluster_config[count.index]}-${random_string.spinnaker-db-name[count.index].result}-mysql"
+resource "google_sql_database_instance" "cloudsql" {
+  for_each         = var.ship_plans
+  name             = "${each.value["clusterPrefix"]}-${random_string.db_name[each.key].result}-mysql"
   database_version = "MYSQL_5_7"
-  region           = var.cluster_region
+  region           = each.value["clusterRegion"]
 
   settings {
     # Second-generation instance tiers are based on the machine
@@ -105,12 +26,12 @@ resource "google_sql_database_instance" "spinnaker-mysql" {
   }
 }
 
-resource "google_sql_database_instance" "spinnaker-mysql-failover" {
-  count                = length(var.cluster_config)
-  name                 = "${var.cluster_config[count.index]}-${random_string.spinnaker-db-name[count.index].result}-mysql-failover"
-  region               = var.cluster_region
+resource "google_sql_database_instance" "cloudsql_failover" {
+  for_each             = var.ship_plans
+  name                 = "${each.value["clusterPrefix"]}-${random_string.db_name[each.key].result}-mysql-failover"
+  region               = each.value["clusterRegion"]
   database_version     = "MYSQL_5_7"
-  master_instance_name = google_sql_database_instance.spinnaker-mysql[count.index].name
+  master_instance_name = google_sql_database_instance.cloudsql[each.key].name
 
   replica_configuration {
     failover_target = "true"
@@ -128,142 +49,221 @@ resource "google_sql_database_instance" "spinnaker-mysql-failover" {
 }
 
 resource "google_sql_database" "orca" {
-  count     = length(var.cluster_config)
+  for_each  = var.ship_plans
   name      = "orca"
-  instance  = google_sql_database_instance.spinnaker-mysql[count.index].name
+  instance  = google_sql_database_instance.cloudsql[each.key].name
   charset   = "utf8mb4"
   collation = "utf8mb4_unicode_ci"
 }
 
 resource "google_sql_database" "clouddriver" {
-  count     = length(var.cluster_config)
+  for_each  = var.ship_plans
   name      = "clouddriver"
-  instance  = google_sql_database_instance.spinnaker-mysql[count.index].name
+  instance  = google_sql_database_instance.cloudsql[each.key].name
   charset   = "utf8mb4"
   collation = "utf8mb4_unicode_ci"
 }
 
 resource "google_sql_database" "front50" {
-  count     = length(var.cluster_config)
+  for_each  = var.ship_plans
   name      = "front50"
-  instance  = google_sql_database_instance.spinnaker-mysql[count.index].name
+  instance  = google_sql_database_instance.cloudsql[each.key].name
   charset   = "utf8mb4"
   collation = "utf8mb4_unicode_ci"
 }
 
-resource "google_sql_user" "spinnaker-service-user" {
-  count    = length(var.cluster_config)
+resource "google_sql_user" "orca_service_user" {
+  for_each = var.ship_plans
   name     = "orca_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
-  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
-  password = random_string.spinnaker-db-service-user-password[count.index].result
+  instance = google_sql_database_instance.cloudsql[each.key].name
+  password = random_string.orca_db_service_user_password[each.key].result
 }
 
-resource "google_sql_user" "clouddriver-service-user" {
-  count    = length(var.cluster_config)
+resource "google_sql_user" "clouddriver_service_user" {
+  for_each = var.ship_plans
   name     = "clouddriver_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
-  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
-  password = random_string.clouddriver-db-service-user-password[count.index].result
+  instance = google_sql_database_instance.cloudsql[each.key].name
+  password = random_string.clouddriver_db_service_user_password[each.key].result
 }
 
 
-resource "google_sql_user" "front50-service-user" {
-  count    = length(var.cluster_config)
+resource "google_sql_user" "front50_service_user" {
+  for_each = var.ship_plans
   name     = "front50_service"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
-  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
-  password = random_string.front50-db-service-user-password[count.index].result
+  instance = google_sql_database_instance.cloudsql[each.key].name
+  password = random_string.front50_db_service_user_password[each.key].result
 }
 
-resource "google_sql_user" "spinnaker-migrate-user" {
-  count    = length(var.cluster_config)
+resource "google_sql_user" "orca_migrate_user" {
+  for_each = var.ship_plans
   name     = "orca_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
-  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
-  password = random_string.spinnaker-db-migrate-user-password[count.index].result
+  instance = google_sql_database_instance.cloudsql[each.key].name
+  password = random_string.orca_db_migrate_user_password[each.key].result
 }
 
-resource "google_sql_user" "clouddriver-migrate-user" {
-  count    = length(var.cluster_config)
+resource "google_sql_user" "clouddriver_migrate_user" {
+  for_each = var.ship_plans
   name     = "clouddriver_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
-  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
-  password = random_string.clouddriver-db-migrate-user-password[count.index].result
+  instance = google_sql_database_instance.cloudsql[each.key].name
+  password = random_string.clouddriver_db_migrate_user_password[each.key].result
 }
 
 
-resource "google_sql_user" "front50-migrate-user" {
-  count    = length(var.cluster_config)
+resource "google_sql_user" "front50_migrate_user" {
+  for_each = var.ship_plans
   name     = "front50_migrate"
   host     = "%" # google provider as of v2.5.1 requires the host variable but only on destroy so here it is
-  instance = google_sql_database_instance.spinnaker-mysql[count.index].name
-  password = random_string.front50-db-migrate-user-password[count.index].result
+  instance = google_sql_database_instance.cloudsql[each.key].name
+  password = random_string.front50_db_migrate_user_password[each.key].result
 }
 
-resource "random_string" "spinnaker-db-service-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
+resource "random_string" "orca_db_service_user_password" {
+  for_each = var.ship_plans
+  length   = 12
+  special  = false
 }
 
-resource "random_string" "clouddriver-db-service-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
+resource "random_string" "orca_db_migrate_user_password" {
+  for_each = var.ship_plans
+  length   = 12
+  special  = false
 }
 
-resource "random_string" "front50-db-service-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
+resource "random_string" "clouddriver_db_service_user_password" {
+  for_each = var.ship_plans
+  length   = 12
+  special  = false
 }
 
-resource "random_string" "spinnaker-db-migrate-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
+resource "random_string" "clouddriver_db_migrate_user_password" {
+  for_each = var.ship_plans
+  length   = 12
+  special  = false
 }
 
-resource "random_string" "clouddriver-db-migrate-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
+resource "random_string" "front50_db_service_user_password" {
+  for_each = var.ship_plans
+  length   = 12
+  special  = false
 }
 
-resource "random_string" "front50-db-migrate-user-password" {
-  count   = length(var.cluster_config)
-  length  = 12
-  special = false
+resource "random_string" "front50_db_migrate_user_password" {
+  for_each = var.ship_plans
+  length   = 12
+  special  = false
 }
 
-resource "random_string" "spinnaker-db-name" {
-  count   = length(var.cluster_config)
-  length  = 4
-  special = false
-  upper   = false
+resource "random_string" "db_name" {
+  for_each = var.ship_plans
+  length   = 4
+  special  = false
+  upper    = false
 }
 
 resource "google_redis_instance" "cache" {
-  count              = length(var.cluster_config)
-  name               = "${var.cluster_config[count.index]}-ha-memory-cache"
+  for_each           = var.ship_plans
+  name               = "${each.value["clusterPrefix"]}-ha-memory-cache"
   tier               = "STANDARD_HA"
   memory_size_gb     = 1
   redis_version      = "REDIS_4_0"
-  display_name       = "${var.cluster_config[count.index]} memorystore redis cache"
+  display_name       = "${each.value["clusterPrefix"]} memorystore redis cache"
   redis_configs      = var.redis_config
-  authorized_network = element(var.authorized_networks_redis, count.index)
-  region             = var.cluster_region
+  authorized_network = var.authorized_networks_redis[each.key]
+  region             = each.value["clusterRegion"]
 }
 
-output "redis_instance_link" {
-  value = google_redis_instance.cache.*.name
+resource "vault_generic_secret" "redis_connection" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/redis/${each.key}"
+
+  data_json = <<-EOF
+              {"address":"${google_redis_instance.cache[each.key].host}:${google_redis_instance.cache[each.key].port}"}
+EOF
+
 }
 
-output "google_sql_database_instance_names" {
-  value = google_sql_database_instance.spinnaker-mysql.*.name
+resource "vault_generic_secret" "orca_db_service_user_password" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/orca_db_service_user_password/${each.key}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.orca_db_service_user_password[each.key].result}"}
+EOF
+
 }
 
-output "google_sql_database_failover_instance_names" {
-  value = google_sql_database_instance.spinnaker-mysql-failover.*.name
+resource "vault_generic_secret" "orca_db_migrate_user_password" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/orca_db_migrate_user_password/${each.key}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.orca_db_migrate_user_password[each.key].result}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "clouddriver_db_service_user_password" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/clouddriver_db_service_user_password/${each.key}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.clouddriver_db_service_user_password[each.key].result}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "clouddriver_db_migrate_user_password" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/clouddriver_db_migrate_user_password/${each.key}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.clouddriver_db_migrate_user_password[each.key].result}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "front50_db_service_user_password" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/front50_db_service_user_password/${each.key}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.front50_db_service_user_password[each.key].result}"}
+EOF
+
+}
+
+resource "vault_generic_secret" "front50_db_migrate_user_password" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/front50_db_migrate_user_password/${each.key}"
+
+  data_json = <<-EOF
+              {"password":"${random_string.front50_db_migrate_user_password[each.key].result}"}
+EOF
+
+}
+resource "vault_generic_secret" "db_address" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/db_address/${each.key}"
+
+  data_json = <<-EOF
+              {"address":"${google_sql_database_instance.cloudsql[each.key].connection_name}"}
+EOF
+
+}
+
+output "redis_instance_link_map" {
+  value = { for k, v in var.ship_plans : k => google_redis_instance.cache[k].name }
+}
+
+output "google_sql_database_instance_names_map" {
+  value = { for k, v in var.ship_plans : k => google_sql_database_instance.cloudsql[k].name }
+}
+
+output "google_sql_database_failover_instance_names_map" {
+  value = { for k, v in var.ship_plans : k => google_sql_database_instance.cloudsql_failover[k].name }
 }

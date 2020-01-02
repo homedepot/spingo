@@ -3,12 +3,8 @@
 ######################################################################################
 
 variable "terraform_account" {
-  type = string
-}
-
-variable "cluster_region" {
-  type        = string
-  description = "GCP region, e.g. us-east1"
+  type    = string
+  default = "terraform-account"
 }
 
 variable "gcp_project" {
@@ -19,11 +15,6 @@ variable "gcp_project" {
 variable "managed_dns_gcp_project" {
   type        = string
   description = "GCP project name where the DNS managed zone lives"
-}
-
-variable "cloud_dns_hostname" {
-  type        = string
-  description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
 }
 
 variable "default_node_options" {
@@ -49,6 +40,19 @@ variable "second_cluster_node_options" {
     image        = "COS"
     machine_type = "n1-standard-1"
     preemptible  = false
+  }
+}
+
+variable "default_node_pool_options" {
+  type        = map(string)
+  description = "Options to configure the default Node Pool created for the cluster."
+
+  default = {
+    auto_repair           = true # Whether the nodes will be automatically repaired.
+    auto_upgrade          = true # Whether the nodes will be automatically upgraded.
+    autoscaling_nodes_min = 1    # Minimum number of nodes to create in each zone. Must be >=1 and <= autoscaling_nodes_max.
+    autoscaling_nodes_max = 3    # Maximum number of nodes to create in each zone. Must be >= autoscaling_nodes_min.
+    max_pods_per_node     = 110  # The maximum number of pods per node in this node pool. Note this setting is currently in Beta: https://www.terraform.io/docs/providers/google/r/container_node_pool.html#max_pods_per_node
   }
 }
 

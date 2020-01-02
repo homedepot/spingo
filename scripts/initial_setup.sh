@@ -154,7 +154,7 @@ check_for_hostname_used() {
     # $2 = hostname to check if already used
 
     echo "$1" > /tmp/myjson.json
-    cat /tmp/myjson.json
+    echoerr "$(cat /tmp/myjson.json)"
     echoerr "hostname to check $2"
     if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
         echo "true"

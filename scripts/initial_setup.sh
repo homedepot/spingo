@@ -213,7 +213,7 @@ while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
     echo "Inner Bucket Check : $BUCKET_CHECK"
 done
 
-if ! vault read -field "value" secret/"$PROJECT"/keystore-pass >/dev/null 2>&1
+if ! vault read -field "value" secret/"$PROJECT"/keystore_pass >/dev/null 2>&1
   then
     echo "-----------------------------------------------------------------------------"
     echo " *****   There is no keystore password stored within vault. Please enter a password you want to use or leave blank to create a random one."

@@ -321,10 +321,12 @@ do
     echo "-----------------------------------------------------------------------------"
     echo "Google Cloud Project Region $CLUSTER_REGION selected for Cluster $CLUSTER_NAME"
     SHIP_PLANS_JSON="$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" '. | .ship_plans += { ($nm + $dsh + $reg): { } }')"
+    echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
     DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used "$SHIP_PLANS_JSON")" "$DOMAIN_TO_MANAGE" "$SHIP_PLANS_JSON")"
-    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" '.ship_plans[($nm + $dsh + $reg)] | . + {deckSubdomain: $dk}')
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" '.ship_plans[($nm + $dsh + $reg)] | . * {deckSubdomain: $dk}')
+    echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
     while [ -z "$GATE_SUBDOMAIN" ]; do
@@ -335,7 +337,8 @@ do
             GATE_SUBDOMAIN=""
         fi
     done
-    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg gt "$GATE_SUBDOMAIN" '.ship_plans[($nm + $dsh + $reg)] | . + {gateSubdomain: $gt}')
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg gt "$GATE_SUBDOMAIN" '.ship_plans[($nm + $dsh + $reg)] | . * {gateSubdomain: $gt}')
+    echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for x509 is the address where automation like the spin CLI will use"
     while [ -z "$X509_SUBDOMAIN" ]; do
@@ -346,7 +349,8 @@ do
             X509_SUBDOMAIN=""
         fi
     done
-    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg x509 "$X509_SUBDOMAIN" '.ship_plans[($nm + $dsh + $reg)] | . + {x509Subdomain: $x509}')
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg x509 "$X509_SUBDOMAIN" '.ship_plans[($nm + $dsh + $reg)] | . * {x509Subdomain: $x509}')
+    echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
     while [ -z "$VAULT_SUBDOMAIN" ]; do
@@ -357,7 +361,8 @@ do
             VAULT_SUBDOMAIN=""
         fi
     done
-    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '.ship_plans[($nm + $dsh + $reg)] | . + {vaultSubdomain: $vlt, wildcardDomain: $wd}')
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '.ship_plans[($nm + $dsh + $reg)] | . * {vaultSubdomain: $vlt, wildcardDomain: $wd}')
+    echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     n=$((n+1))
 done
 

@@ -72,7 +72,8 @@ prompt_to_use_base_hostname_for_deck_or_get_value(){
     # $5 = cluster name
     # $6 = is base hostname use available
     # $7 = base hostname chosen by user stored at DOMAIN_TO_MANAGE
-
+    # $8 = current SHIP_PLANS_JSON content
+    RETURN_VALUE=""
     if [ "$6" == "true" ]; then
         echoerr "-----------------------------------------------------------------------------"
         echoerr " *****   There can be only one deployment that can use the base hostname $7 as it's hostname for it's UI (deck) *****"
@@ -80,14 +81,28 @@ prompt_to_use_base_hostname_for_deck_or_get_value(){
         PS3="Do you want this deployment $5 to use the base hostname for deck or just press [ENTER] to choose the default (No) : "
         PROMPT_VALUE=$(select_with_default "No" "Yes")
         if [ "$PROMPT_VALUE" == "Yes" ]; then
-            echo ""
+            RETURN_VALUE=""
         else
-            prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5"
+            while [ -z "$RETURN_VALUE" ]; do
+                RETURN_VALUE="$(prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5")"
+                HOSTNAME_USED="$(check_for_hostname_used "$8" "$RETURN_VALUE")"
+                if [ "$HOSTNAME_USED" == "true" ]; then
+                    echoerr "A hostname can only be used once per project and $RETURN_VALUE has already been used, please choose another hostname"
+                    RETURN_VALUE=""
+                fi
+            done
         fi
     else
-        prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5"
+        while [ -z "$RETURN_VALUE" ]; do
+            RETURN_VALUE="$(prompt_for_value_with_default "$1" "$2" "$3" "$4" "$5")"
+            HOSTNAME_USED="$(check_for_hostname_used "$8" "$RETURN_VALUE")"
+            if [ "$HOSTNAME_USED" == "true" ]; then
+                echoerr "A hostname can only be used once per project and $RETURN_VALUE has already been used, please choose another hostname"
+                RETURN_VALUE=""
+            fi
+        done
     fi
-    
+    echo "$RETURN_VALUE"
 }
 
 prompt_for_value_with_default() {
@@ -135,7 +150,7 @@ check_for_base_hostname_used() {
 }
 
 check_for_hostname_used() {
-    # $1 = current SHIP_PLANS_JSON
+    # $1 = current SHIP_PLANS_JSON content
     # $2 = hostname to check if already used
     RESULT=$(echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn')
     if [ "$RESULT" == "true" ]; then
@@ -307,14 +322,7 @@ do
     
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
-    while [ -z "$DECK_SUBDOMAIN" ]; do
-        DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used "$SHIP_PLANS_JSON")" "$DOMAIN_TO_MANAGE")"
-        HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$DECK_SUBDOMAIN")
-        if [ "$HOSTNAME_USED" == "true" ]; then
-            echoerr "A hostname can only be used once per project and $DECK_SUBDOMAIN has already been used, please choose another hostname"
-            DECK_SUBDOMAIN=""
-        fi
-    done
+    DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used "$SHIP_PLANS_JSON")" "$DOMAIN_TO_MANAGE" "$SHIP_PLANS_JSON")"  
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
     while [ -z "$GATE_SUBDOMAIN" ]; do

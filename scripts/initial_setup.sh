@@ -337,6 +337,7 @@ do
     while [ -z "$GATE_SUBDOMAIN" ]; do
         GATE_SUBDOMAIN="$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$GATE_SUBDOMAIN")
+        echo "Checking result : $HOSTNAME_USED"
         if [ "$HOSTNAME_USED" == "true" ]; then
             echoerr "A hostname can only be used once per project and $GATE_SUBDOMAIN has already been used, please choose another hostname"
             GATE_SUBDOMAIN=""
@@ -350,6 +351,7 @@ do
     while [ -z "$X509_SUBDOMAIN" ]; do
         X509_SUBDOMAIN="$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$X509_SUBDOMAIN")
+        echo "Checking result : $HOSTNAME_USED"
         if [ "$HOSTNAME_USED" == "true" ]; then
             echoerr "A hostname can only be used once per project and $X509_SUBDOMAIN has already been used, please choose another hostname"
             X509_SUBDOMAIN=""
@@ -363,6 +365,7 @@ do
     while [ -z "$VAULT_SUBDOMAIN" ]; do
         VAULT_SUBDOMAIN="$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$VAULT_SUBDOMAIN")
+        echo "Checking result : $HOSTNAME_USED"
         if [ "$HOSTNAME_USED" == "true" ]; then
             echoerr "A hostname can only be used once per project and $VAULT_SUBDOMAIN has already been used, please choose another hostname"
             VAULT_SUBDOMAIN=""

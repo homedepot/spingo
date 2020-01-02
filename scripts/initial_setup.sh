@@ -156,9 +156,11 @@ check_for_hostname_used() {
     echo "$1" > /tmp/myjson.json
     echoerr "$(cat /tmp/myjson.json)"
     echoerr "hostname to check $2"
-    if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
+    if < /tmp/myjson.json jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
+        echoerr "already exists"
         echo "true"
     else
+        echoerr "does not exist"
         echo "false"
     fi
 }

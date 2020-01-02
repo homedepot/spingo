@@ -17,13 +17,13 @@ resource "google_service_account_key" "svc_key" {
 resource "vault_generic_secret" "service_account_key" {
   for_each  = var.create_and_store_key ? { enabled = true } : {}
   path      = "secret/${var.gcp_project}/${var.service_account_name}"
-  data_json = base64decode(google_service_account_key.svc_key.private_key)
+  data_json = base64decode(google_service_account_key.svc_key["enabled"].private_key)
 }
 
 resource "google_storage_bucket_object" "service_account_key_storage" {
   for_each     = var.create_and_store_key ? { enabled = true } : {}
   name         = ".gcp/${var.service_account_name}.json"
-  content      = base64decode(google_service_account_key.svc_key.private_key)
+  content      = base64decode(google_service_account_key.svc_key["enabled"].private_key)
   bucket       = var.bucket_name
   content_type = "application/json"
 }

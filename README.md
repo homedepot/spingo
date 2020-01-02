@@ -60,7 +60,7 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
     - If you selected to NOT auto run halyard `quickstart` then after you see `setup complete` you can close out of `showlog` by pressing ctrl-c
 1. Run the `spingo` command to sudo into the shared user account
     - If you selected to NOT auto run halyard then after you see a user prompt like this `spinnaker@halyard-thd-spinnaker:~$` you will either need to run `./quickstart.sh` or run each of the pre-populated scripts that the `./quickstart` script is configured to run in that order
-1. Once all the scripts are completed you should be able to log into Spinnaker and visit the [workloads page inside the Google Cloud Console](https://console.cloud.google.com/kubernetes/workload) and see all the deployments for Spinnaker
+1. Once all the scripts are completed you should be able to log into Spinnaker and visit the [workloads page inside the Google Cloud Console](https://console.cloud.google.com/kubernetes/workload) and see all the Spinnaker kubernetes deployments by cluster
 
 ### Setup Monitoring and Alerting
 <a id="markdown-setup-monitoring-and-alerting" name="setup-monitoring-and-alerting"></a>

@@ -154,10 +154,10 @@ check_for_hostname_used() {
     # $2 = hostname to check if already used
 
     # returns true when there are no subdomains that match the hostname to check
-    if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep -v "true"; then
-        echo "false"
-    else
+    if echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
         echo "true"
+    else
+        echo "false"
     fi
 }
 

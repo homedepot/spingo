@@ -154,13 +154,13 @@ check_for_hostname_used() {
     # $2 = hostname to check if already used
 
     echo "$1" > /tmp/myjson.json
-    echoerr "$(cat /tmp/myjson.json)"
-    echoerr "hostname to check $2"
+    #echoerr "$(cat /tmp/myjson.json)" # uncomment this line for future debugging
+    #echoerr "hostname to check $2" # uncomment this line for future debugging
     if < /tmp/myjson.json jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn' | grep "true"; then
-        echoerr "already exists"
+        echoerr "hostname already exists"
         echo "true"
     else
-        echoerr "does not exist"
+        echoerr "hostname does not already exist"
         echo "false"
     fi
 }
@@ -325,7 +325,7 @@ do
     echo "-----------------------------------------------------------------------------"
     echo "Google Cloud Project Region $CLUSTER_REGION selected for Cluster $CLUSTER_NAME"
     SHIP_PLANS_JSON="$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" '. | .ship_plans += { ($nm + $dsh + $reg): { } }')"
-    echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
+    #echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""# uncomment this line for future debugging
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for deck is the address where users will go to interact with Spinnaker in a browser"
     DECK_SUBDOMAIN="$(prompt_to_use_base_hostname_for_deck_or_get_value "$n" "deckSubdomain" "$GIT_ROOT_DIR" "deck subdomain" "$CLUSTER_NAME" "$(check_for_base_hostname_used "$SHIP_PLANS_JSON")" "$DOMAIN_TO_MANAGE" "$SHIP_PLANS_JSON")"

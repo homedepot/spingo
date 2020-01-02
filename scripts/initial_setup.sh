@@ -154,9 +154,9 @@ check_for_hostname_used() {
     # $2 = hostname to check if already used
     RESULT=$(echo "$1" | jq --arg hn "$2" '.ship_plans | to_entries | .[].value | to_entries | map(select(.key | match("subdomain";"i"))) | .[] | select(.value == $hn) | .value == $hn')
     if [ "$RESULT" == "true" ]; then
-        echo "false"
-    else
         echo "true"
+    else
+        echo "false"
     fi
 }
 

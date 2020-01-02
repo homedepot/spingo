@@ -4,9 +4,9 @@ resource "google_service_account" "service_account" {
 }
 
 resource "google_project_iam_member" "roles" {
-  count  = length(var.roles)
-  role   = element(var.roles, count.index)
-  member = "serviceAccount:${google_service_account.service_account.email}"
+  for_each = { for r in var.roles : r => r }
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.service_account.email}"
 }
 
 resource "google_service_account_key" "svc_key" {

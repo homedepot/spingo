@@ -329,6 +329,7 @@ do
     echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for gate is the address where webhooks like those that come from GitHub will use"
+    GATE_SUBDOMAIN=""
     while [ -z "$GATE_SUBDOMAIN" ]; do
         GATE_SUBDOMAIN="$(prompt_for_value_with_default "$n" "gateSubdomain" "$GIT_ROOT_DIR" "gate subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$GATE_SUBDOMAIN")
@@ -341,6 +342,7 @@ do
     echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for x509 is the address where automation like the spin CLI will use"
+    X509_SUBDOMAIN=""
     while [ -z "$X509_SUBDOMAIN" ]; do
         X509_SUBDOMAIN="$(prompt_for_value_with_default "$n" "x509Subdomain" "$GIT_ROOT_DIR" "gate x509 subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$X509_SUBDOMAIN")
@@ -353,6 +355,7 @@ do
     echo "NEW SHIP_PLANS_JSON : "$(echo $SHIP_PLANS_JSON | jq '.')""
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for vault is the address where the vault server will be setup for accessing secrets"
+    VAULT_SUBDOMAIN=""
     while [ -z "$VAULT_SUBDOMAIN" ]; do
         VAULT_SUBDOMAIN="$(prompt_for_value_with_default "$n" "vaultSubdomain" "$GIT_ROOT_DIR" "vault subdomain" "$CLUSTER_NAME")"
         HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$VAULT_SUBDOMAIN")

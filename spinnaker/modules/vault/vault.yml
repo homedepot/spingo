@@ -39,6 +39,10 @@ server:
       - name: VAULT_SECRET_THRESHOLD
         value: "3"
 
+  serviceAccount:
+    annotations: |
+      "iam.gke.io/gcp-service-account": "${cluster_sa_email}"
+
   extraVolumes:
     - type: secret
       name: vault-tls

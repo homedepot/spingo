@@ -49,6 +49,10 @@ output "service_account_key_map" {
   value = var.service_account == "" ? { for k, v in var.ship_plans_without_agent : k => google_service_account_key.sa_key[k].private_key } : { for k, v in var.ship_plans : k => "" }
 }
 
+output "service_account_name_map" {
+  value = var.service_account == "" ? { for k, v in var.ship_plans_without_agent : k => google_service_account.sa[k].name } : { for k, v in var.ship_plans : k => var.service_account }
+}
+
 output "cloud_nat_adddress_map" {
   value = { for k, v in var.ship_plans : k => data.google_compute_address.existing_nat[k].address }
 }

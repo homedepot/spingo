@@ -40,7 +40,7 @@ server:
         value: "3"
 
   serviceAccount:
-    annotations: |
+    annotations:
       "iam.gke.io/gcp-service-account": "${cluster_sa_email}"
 
   extraVolumes:

@@ -111,13 +111,14 @@ CLOUDDRIVER_PATCH
 
 yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
 
-cat <<EOF >> /${USER}/.kube/kubeconfig_patch.yml
+
+tee <<EOF > /${USER}/.kube/kubeconfig_patch.yml
 users.0.user.exec.apiVersion: client.authentication.k8s.io/v1beta1
 users.0.user.exec.args[+]: "/tmp/gcloud/auth_token"
 users.0.user.exec.command: /bin/cat
 EOF
 
-cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/clouddriver.yml
+cat <<EOF > /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/clouddriver.yml
 kubernetes:
   serviceAccountName: spinnaker-onboarding
 

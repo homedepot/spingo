@@ -26,6 +26,7 @@ export VAULT_DEV_ROOT_TOKEN_ID="FakeDevRootTokenId"
 
 tfdirs='static_ips
 dns
+monitoring-alerting
 spinnaker
 halyard'
 

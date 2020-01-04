@@ -118,7 +118,7 @@ users.0.user.exec.args[+]: "/tmp/gcloud/auth_token"
 users.0.user.exec.command: /bin/cat
 EOF
 
-cat <<EOF > /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/clouddriver.yml
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/clouddriver.yml << EOF
 kubernetes:
   serviceAccountName: spinnaker-onboarding
 
@@ -290,7 +290,7 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
     
     echo "Configuring Spinnaker dynamic account for deployment ${DEPLOYMENT_NAME}"
 
-    cat <<DYN_CONFIG >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml
+    tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml << DYN_CONFIG
 spring:
   profiles:
     include: vault
@@ -312,7 +312,7 @@ DYN_CONFIG
 else
     echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
 fi
-cat <<SETTINGS_LOCAL >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js << SETTINGS_LOCAL
 window.spinnakerSettings.notifications.email.enabled = false;
 window.spinnakerSettings.notifications.bearychat.enabled = false;
 SETTINGS_LOCAL

@@ -281,7 +281,7 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
     # and store that into the vault secret
     yq r -j \
         /${USER}/.hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
-        jq --arg contents "$(yq r $(yq r .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0.kubeconfigFile) | \
+        jq --arg contents "$(yq r $(yq r /${USER}/.hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0.kubeconfigFile) | \
          yq d - users.0.user.token | yq w - -s /${USER}/.kube/kubeconfig_patch.yml | sed -E ':a;N;$!ba;s/\r{0,1}\n/\n/g')" \
         'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | \
         vault kv put \

@@ -263,7 +263,7 @@ redis:
 FRONT50_LOCAL
 
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
-cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml << EOF
 kubernetes:
   useExecHealthCheck: false
 

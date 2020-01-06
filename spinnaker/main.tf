@@ -186,6 +186,36 @@ module "onboarding_pubsub_service_account" {
   roles                  = ["roles/storage.admin", "roles/pubsub.subscriber"]
 }
 
+module "spinnaker_onboarding_service_account" {
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "spinnaker-onboarding"
+  service_account_prefix = ""
+  bucket_name            = module.halyard_storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = ["roles/container.admin"]
+  create_and_store_key   = false
+}
+
+resource "google_service_account_iam_binding" "onboarding_workload_identity_binding" {
+  service_account_id = module.spinnaker_onboarding_service_account.service_account_name
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "serviceAccount:${var.gcp_project}.svc.id.goog[spinnaker/spinnaker-onboarding]",
+  ]
+}
+
+resource "google_service_account_iam_binding" "k8s_sa_workload_identity_binding" {
+  for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
+  service_account_id = module.k8s.service_account_name_map[each.key]
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "serviceAccount:${var.gcp_project}.svc.id.goog[spinnaker/${each.key}]",
+    "serviceAccount:${var.gcp_project}.svc.id.goog[vault/vault]",
+  ]
+}
+
 module "halyard_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-halyard"
@@ -238,6 +268,10 @@ module "vault_setup" {
   vault_ips_map        = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   crypto_key_id_map    = module.vault_keys.crypto_key_id_map
   ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
+}
+
+output "spinnaker_onboarding_service_account_email" {
+  value = module.spinnaker_onboarding_service_account.service_account_email
 }
 
 output "vault_keyring_name_map" {

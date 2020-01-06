@@ -45,6 +45,7 @@ data "template_file" "vault" {
     kms_crypto_key   = "vault_key_${each.key}"
     crypto_key_id    = lookup(var.crypto_key_id_map, each.key, "")
     project          = var.gcp_project
+    cluster_sa_email = "${each.key}@${var.gcp_project}.iam.gserviceaccount.com"
     cluster_region   = each.value["clusterRegion"]
     load_balancer_ip = lookup(var.vault_ips_map, each.key, "")
   }

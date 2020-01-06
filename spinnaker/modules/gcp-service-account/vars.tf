@@ -19,3 +19,8 @@ variable "gcp_project" {
 variable "roles" {
   type = list(string)
 }
+
+variable "create_and_store_key" {
+  type    = bool
+  default = true
+}

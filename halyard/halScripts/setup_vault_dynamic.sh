@@ -67,15 +67,6 @@ do
    sleep 6
 done
 
-echo "Starting up consul through helm for deployment ${deployment}"
-
-helm install \
-    --namespace vault \
-    --kubeconfig "${details.kubeConfig}" \
-    --name consul \
-    --set 'ui.enabled=false' \
-    https://github.com/hashicorp/consul-helm/archive/v0.15.0.tar.gz
-
 echo "Starting up vault through helm for deployment ${deployment}"
 
 helm install \

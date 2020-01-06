@@ -6,8 +6,6 @@ cp -r /mnt/* /spingo
 cd "/spingo" || { echo "if you see this message, a problem has occured"; exit 1; }
 
 find . -regex-type sed -not -regex ".*\.(tf|sh)" -type f -delete
-apk add tree
-tree
 
 files="$(find . -type f -regex '.*\.sh' -not -regex '.*halyard.*')"
 for file in $files; do

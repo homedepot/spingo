@@ -25,48 +25,23 @@ data:
   vault.key: $(cat /${USER}/certbot/${DNS}_wildcard.key | base64 -w 0)
 SECRET_EOF
 
-echo "Creating Tiller service account and RBAC for deployment ${deployment}"
-
-cat << TILLER_RBAC | kubectl --kubeconfig="${details.kubeConfig}" create -f -
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: tiller
-  namespace: kube-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: tiller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: tiller
-    namespace: kube-system
-
-TILLER_RBAC
-
 echo "Initializing Helm for deployment ${deployment}"
 
 helm init \
+    --upgrade \
+    --wait \
     --service-account tiller \
     --kubeconfig "${details.kubeConfig}" \
     --history-max 200
 
-echo "Waiting for tiller to be up and ready for deployment ${deployment}"
-n=0
-until [ $n -ge 10 ]
-do
-  kubectl -n kube-system get po -l=name=tiller \
-  --kubeconfig="${details.kubeConfig}" \
-  -o=jsonpath='{.items[*].status.containerStatuses[*].ready}' | grep -v "false" && break
-   n=$((n+1))
-   echo "Tiller is not ready yet for deployment ${deployment} waiting..."
-   sleep 6
-done
+echo "Starting up consul through helm for deployment ${deployment}"
+
+helm install \
+    --namespace vault \
+    --kubeconfig "${details.kubeConfig}" \
+    --name consul \
+    --set 'ui.enabled=false' \
+    https://github.com/hashicorp/consul-helm/archive/v0.15.0.tar.gz
 
 echo "Starting up vault through helm for deployment ${deployment}"
 

@@ -17,7 +17,7 @@ output "client_certificate_map" {
 }
 
 output "workload_identity_namespace" {
-  value = element([ for k, v in var.ship_plans : google_container_cluster.cluster[k].workload_identity_config[0].identity_namespace ], 0)
+  value = element([for k, v in var.ship_plans : google_container_cluster.cluster[k].workload_identity_config[0].identity_namespace], 0)
 }
 
 output "client_key_map" {

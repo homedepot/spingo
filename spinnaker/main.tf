@@ -201,7 +201,7 @@ resource "google_service_account_iam_binding" "onboarding_workload_identity_bind
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "serviceAccount:${var.gcp_project}.svc.id.goog[spinnaker/spinnaker-onboarding]",
+    "serviceAccount:${module.k8s.workload_identity_namespace}[spinnaker/spinnaker-onboarding]",
   ]
 }
 
@@ -211,8 +211,8 @@ resource "google_service_account_iam_binding" "k8s_sa_workload_identity_binding"
   role               = "roles/iam.workloadIdentityUser"
 
   members = [
-    "serviceAccount:${var.gcp_project}.svc.id.goog[spinnaker/${each.key}]",
-    "serviceAccount:${var.gcp_project}.svc.id.goog[vault/vault]",
+    "serviceAccount:${module.k8s.workload_identity_namespace}[spinnaker/${each.key}]",
+    "serviceAccount:${module.k8s.workload_identity_namespace}[vault/vault]",
   ]
 }
 

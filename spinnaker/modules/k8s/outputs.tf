@@ -16,6 +16,10 @@ output "client_certificate_map" {
   value     = { for k, v in var.ship_plans : k => google_container_cluster.cluster[k].master_auth[0].client_certificate }
 }
 
+output "workload_identity_namespace" {
+  value = element([ for k, v in var.ship_plans : google_container_cluster.cluster[k].workload_identity_config[0].identity_namespace ], 0)
+}
+
 output "client_key_map" {
   sensitive = true
   value     = { for k, v in var.ship_plans : k => google_container_cluster.cluster[k].master_auth[0].client_key }

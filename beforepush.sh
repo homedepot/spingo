@@ -1,2 +1,8 @@
 #!/usr/bin/env bash
-docker run -v "$(pwd):/mnt" npmaile/spingo-sanity-tests bash -c /mnt/scripts/pre-push-tests.sh
+if ! command -v docker; then
+	echo "Dependency Docker not installed. Exiting"
+	exit 1
+fi
+
+GIT_ROOT=$(git rev-parse --show-toplevel)
+docker run -v "$GIT_ROOT:/mnt" npmaile/spingo-sanity-tests bash -c /mnt/scripts/pre-push-tests.sh

@@ -1,0 +1,22 @@
+{
+    "ship_plans": {
+      "spinnaker-us-central1": {
+        "clusterPrefix": "spinnaker",
+        "clusterRegion": "us-central1",
+        "wildcardDomain": "",
+        "gateSubdomain": "np-api",
+        "deckSubdomain": "np",
+        "x509Subdomain": "np-spin-api",
+        "vaultSubdomain": "vault-np"
+      },
+      "sandbox-us-central1": {
+        "clusterPrefix": "sandbox",
+        "clusterRegion": "us-central1",
+        "wildcardDomain": "",
+        "gateSubdomain": "sandbox-api",
+        "deckSubdomain": "sandbox",
+        "x509Subdomain": "sandbox-spin-api",
+        "vaultSubdomain": "vault-sandbox"
+      }
+    }
+  }

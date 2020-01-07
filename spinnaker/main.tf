@@ -1,46 +1,53 @@
 provider "vault" {
 }
 
-data "terraform_remote_state" "static_ips" {
-  backend = "gcs"
-
-  config = {
-    bucket      = "${var.gcp_project}-tf"
-    credentials = "${var.terraform_account}.json"
-    prefix      = "np-static-ips"
-  }
-}
-
-data "vault_generic_secret" "terraform-account" {
+data "vault_generic_secret" "terraform_account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
 provider "google" {
-  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
-  region  = var.cluster_region
   version = "~> 2.8"
 }
 
 provider "google" {
   alias       = "dns-zone"
-  credentials = data.vault_generic_secret.terraform-account.data[var.managed_dns_gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.managed_dns_gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.managed_dns_gcp_project
-  region  = var.cluster_region
   version = "~> 2.8"
 }
 
 provider "google-beta" {
-  credentials = data.vault_generic_secret.terraform-account.data[var.gcp_project]
+  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
 
-  # credentials = file("terraform-account.json") //! swtich to this if you need to import stuff from GCP
+  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
   project = var.gcp_project
-  region  = var.cluster_region
   version = "~> 2.8"
+}
+
+data "terraform_remote_state" "static_ips" {
+  backend = "gcs"
+
+  config = {
+    bucket      = "${var.gcp_project}-tf"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-static-ips"
+  }
+}
+
+data "terraform_remote_state" "dns" {
+  backend = "gcs"
+
+  config = {
+    bucket      = "${var.gcp_project}-tf"
+    credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
+    prefix      = "spingo-dns"
+  }
 }
 
 # Query the terraform service account from GCP
@@ -50,352 +57,101 @@ data "google_client_config" "current" {
 data "google_project" "project" {
 }
 
-variable "cluster_config" {
-  description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
+module "k8s" {
+  source          = "./modules/k8s"
+  project         = var.gcp_project
+  private_cluster = true # This will disable public IPs from the nodes
 
-  default = {
-    "0" = "spinnaker"
-    "1" = "sandbox"
-  }
+  networks_that_can_access_k8s_api = sort(compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.terraform_remote_state.static_ips.outputs.halyard_ip)]])))
+
+  oauth_scopes              = var.default_oauth_scopes
+  k8s_options               = var.default_k8s_options
+  node_options_map          = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat([for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.default_node_options], [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.second_cluster_node_options]))
+  node_pool_options_map     = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat([for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.default_node_pool_options], [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.second_cluster_node_pool_options]))
+  node_metadata             = var.default_node_metadata
+  client_certificate_config = var.default_client_certificate_config
+  extras                    = var.extras
+  crypto_key_id_map         = zipmap(concat(keys(module.gke_keys.crypto_key_id_map), formatlist("%s-agent", keys(module.gke_keys.crypto_key_id_map))), concat(values(module.gke_keys.crypto_key_id_map), values(module.gke_keys.crypto_key_id_map)))
+  ship_plans                = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
+  ship_plans_without_agent  = data.terraform_remote_state.static_ips.outputs.ship_plans
+  cloudnat_name_map         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map))), concat(values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map)))
+  cloudnat_ips              = data.terraform_remote_state.static_ips.outputs.cloudnat_ips
 }
 
-variable "agent_cluster_config" {
-  description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
-
-  default = {
-    "0" = "spinnaker-agent"
-    "1" = "sandbox-agent"
-  }
-}
-
-variable "hostname_config" {
-  description = "This variable has been placed above the module declaration to facilitate easy changes between projects. The first index should always be the main cluster"
-
-  default = {
-    "0" = "np"
-    "1" = "sandbox"
-  }
-}
-
-module "google-managed" {
+module "google_managed" {
   source                    = "./modules/google-managed"
-  cluster_region            = var.cluster_region
   gcp_project               = var.gcp_project
-  cluster_config            = var.cluster_config
-  authorized_networks_redis = [module.k8s.network_link, module.k8s-sandbox.network_link]
+  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
+  authorized_networks_redis = module.k8s.network_link_map
 }
 
-resource "google_kms_key_ring" "gke_keyring" {
-  name     = "gke_keyring"
-  location = var.cluster_region
+module "gke_keyring" {
+  source                   = "./modules/kms_key_ring"
+  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
+  kms_key_ring_prefix      = "gke_keyring"
 }
 
 module "gke_keys" {
-  source                 = "./modules/crypto_key"
-  gcp_project            = var.gcp_project
-  cluster_region         = var.cluster_region
-  kms_key_ring_self_link = google_kms_key_ring.gke_keyring.self_link
-  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
-  crypto_key_name_prefix = "gke_key"
+  source                     = "./modules/crypto_key"
+  gcp_project                = var.gcp_project
+  kms_key_ring_self_link_map = module.gke_keyring.kms_key_ring_region_map
+  ship_plans                 = data.terraform_remote_state.static_ips.outputs.ship_plans
+  crypto_key_name_prefix     = "gke_key"
 }
 
-module "k8s" {
-  source          = "github.com/devorbitus/terraform-google-gke-infra"
-  name            = "${var.cluster_config["0"]}-${var.cluster_region}"
-  project         = var.gcp_project
-  region          = var.cluster_region
-  private_cluster = true # This will disable public IPs from the nodes
-
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
-
-  oauth_scopes              = var.default_oauth_scopes
-  k8s_options               = var.default_k8s_options
-  node_options              = var.default_node_options
-  node_metadata             = var.default_node_metadata
-  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"]
-  client_certificate_config = var.default_client_certificate_config
-  cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
-  create_namespace          = var.default_create_namespace
-  extras                    = var.extras
-  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
-}
-
-module "k8s-sandbox" {
-  source          = "github.com/devorbitus/terraform-google-gke-infra"
-  name            = "${var.cluster_config["1"]}-${var.cluster_region}"
-  project         = var.gcp_project
-  region          = var.cluster_region
-  private_cluster = true # This will disable public IPs from the nodes
-
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
-
-  oauth_scopes              = var.default_oauth_scopes
-  k8s_options               = var.default_k8s_options
-  node_options              = var.default_node_options
-  node_metadata             = var.default_node_metadata
-  node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"]
-  client_certificate_config = var.default_client_certificate_config
-  cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
-  create_namespace          = var.default_create_namespace
-  extras                    = var.extras
-  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
-}
-
-module "halyard-storage" {
+module "halyard_storage" {
   source      = "./modules/gcp-bucket"
-  gcp_project = var.gcp_project
-  bucket_name = "halyard"
-}
-
-provider "kubernetes" {
-  alias                  = "main"
-  load_config_file       = false
-  host                   = module.k8s.endpoint
-  cluster_ca_certificate = base64decode(module.k8s.cluster_ca_certificate)
-  token                  = data.google_client_config.current.access_token
-}
-
-provider "kubernetes" {
-  load_config_file       = false
-  host                   = module.k8s-sandbox.endpoint
-  cluster_ca_certificate = base64decode(module.k8s-sandbox.cluster_ca_certificate)
-  token                  = data.google_client_config.current.access_token
-  alias                  = "sandbox"
-}
-
-module "k8s-spinnaker-service-account" {
-  source                    = "./modules/k8s-service-account"
-  service_account_name      = "spinnaker"
-  service_account_namespace = "kube-system"
-  bucket_name               = module.halyard-storage.bucket_name
-  gcp_project               = var.gcp_project
-  cluster_name              = var.cluster_config["0"]
-  cluster_config            = var.cluster_config
-  cluster_region            = var.cluster_region
-  host                      = module.k8s.endpoint
-  cluster_ca_certificate    = module.k8s.cluster_ca_certificate
-  enable                    = true
-  cluster_list_index        = 0
-  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
-  spinnaker_namespace       = length(module.k8s.created_namespace) > 0 ? module.k8s.created_namespace.0.metadata.0.name : var.default_create_namespace
-  spinnaker_nodepool        = module.k8s.created_nodepool
-  providers = {
-    kubernetes = kubernetes.main
-  }
-}
-
-module "k8s-spinnaker-service-account-sandbox" {
-  source                    = "./modules/k8s-service-account"
-  service_account_name      = "spinnaker"
-  service_account_namespace = "kube-system"
-  bucket_name               = module.halyard-storage.bucket_name
-  gcp_project               = var.gcp_project
-  cluster_name              = var.cluster_config["1"]
-  cluster_config            = var.cluster_config
-  cluster_region            = var.cluster_region
-  host                      = module.k8s-sandbox.endpoint
-  cluster_ca_certificate    = module.k8s-sandbox.cluster_ca_certificate
-  enable                    = true
-  cluster_list_index        = 1
-  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
-  spinnaker_namespace       = length(module.k8s-sandbox.created_namespace) > 0 ? module.k8s-sandbox.created_namespace.0.metadata.0.name : var.default_create_namespace
-  spinnaker_nodepool        = module.k8s-sandbox.created_nodepool
-
-  providers = {
-    kubernetes = kubernetes.sandbox
-  }
-}
-
-module "k8s-spinnaker-agent" {
-  source          = "github.com/devorbitus/terraform-google-gke-infra"
-  name            = "${var.agent_cluster_config["0"]}-${var.cluster_region}"
-  project         = var.gcp_project
-  region          = var.cluster_region
-  private_cluster = true # This will disable public IPs from the nodes
-
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
-
-  oauth_scopes              = var.default_oauth_scopes
-  k8s_options               = var.default_k8s_options
-  node_metadata             = var.default_node_metadata
-  node_options              = var.second_cluster_node_options
-  node_pool_options         = var.second_cluster_node_pool_options
-  client_certificate_config = var.default_client_certificate_config
-  cloud_nat                 = false                                                # Will re-use the cloud nat created by the primary cluster
-  cloud_nat_address_name    = "${var.cluster_config["0"]}-${var.cluster_region}-nat"
-  node_tags                 = ["${var.cluster_config["0"]}-${var.cluster_region}"] # Use the same network tags as primary cluster
-  create_namespace          = var.default_create_namespace
-  extras                    = var.extras
-  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["0"]}-${var.cluster_region}", "")
-}
-
-provider "kubernetes" {
-  load_config_file       = false
-  host                   = module.k8s-spinnaker-agent.endpoint
-  cluster_ca_certificate = base64decode(module.k8s-spinnaker-agent.cluster_ca_certificate)
-  token                  = data.google_client_config.current.access_token
-  alias                  = "spinnaker-agent"
-}
-
-module "k8s-spinnaker-service-account-spinnaker-agent" {
-  source                    = "./modules/k8s-service-account"
-  service_account_name      = "spinnaker"
-  service_account_namespace = "kube-system"
-  bucket_name               = module.halyard-storage.bucket_name
-  gcp_project               = var.gcp_project
-  cluster_name              = var.agent_cluster_config["0"]
-  cluster_config            = var.cluster_config
-  cluster_region            = var.cluster_region
-  host                      = module.k8s-spinnaker-agent.endpoint
-  cluster_ca_certificate    = module.k8s-spinnaker-agent.cluster_ca_certificate
-  enable                    = true
-  cluster_list_index        = 1
-  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
-  spinnaker_namespace       = length(module.k8s-spinnaker-agent.created_namespace) > 0 ? module.k8s-spinnaker-agent.created_namespace.0.metadata.0.name : var.default_create_namespace
-  spinnaker_nodepool        = module.k8s-spinnaker-agent.created_nodepool
-
-  providers = {
-    kubernetes = kubernetes.spinnaker-agent
-  }
-}
-
-module "k8s-sandbox-agent" {
-  source          = "github.com/devorbitus/terraform-google-gke-infra"
-  name            = "${var.agent_cluster_config["1"]}-${var.cluster_region}"
-  project         = var.gcp_project
-  region          = var.cluster_region
-  private_cluster = true # This will disable public IPs from the nodes
-
-  networks_that_can_access_k8s_api = compact(flatten([var.default_networks_that_can_access_k8s_api, [formatlist("%s/32", [trimspace(data.http.local_outgoing_ip_address.body)])], [formatlist("%s/32", data.google_compute_address.halyard_ip_address.address)]]))
-
-  oauth_scopes              = var.default_oauth_scopes
-  k8s_options               = var.default_k8s_options
-  node_metadata             = var.default_node_metadata
-  node_options              = var.second_cluster_node_options
-  node_pool_options         = var.second_cluster_node_pool_options
-  client_certificate_config = var.default_client_certificate_config
-  cloud_nat                 = false                                                # Will re-use the cloud nat created by the primary cluster
-  cloud_nat_address_name    = "${var.cluster_config["1"]}-${var.cluster_region}-nat"
-  node_tags                 = ["${var.cluster_config["1"]}-${var.cluster_region}"] # Use the same network tags as primary cluster
-  create_namespace          = var.default_create_namespace
-  extras                    = var.extras
-  crypto_key_id             = lookup(module.gke_keys.crypto_key_id_map, "${var.cluster_config["1"]}-${var.cluster_region}", "")
-}
-
-provider "kubernetes" {
-  load_config_file       = false
-  host                   = module.k8s-sandbox-agent.endpoint
-  cluster_ca_certificate = base64decode(module.k8s-sandbox-agent.cluster_ca_certificate)
-  token                  = data.google_client_config.current.access_token
-  alias                  = "sandbox-agent"
-}
-
-module "k8s-spinnaker-service-account-sandbox-agent" {
-  source                    = "./modules/k8s-service-account"
-  service_account_name      = "spinnaker"
-  service_account_namespace = "kube-system"
-  bucket_name               = module.halyard-storage.bucket_name
-  gcp_project               = var.gcp_project
-  cluster_name              = var.agent_cluster_config["1"]
-  cluster_config            = var.cluster_config
-  cluster_region            = var.cluster_region
-  host                      = module.k8s-sandbox-agent.endpoint
-  cluster_ca_certificate    = module.k8s-sandbox-agent.cluster_ca_certificate
-  enable                    = true
-  cluster_list_index        = 1
-  cloudsql_credentials      = module.spinnaker-gcp-cloudsql-service-account.service-account-json
-  spinnaker_namespace       = length(module.k8s-sandbox-agent.created_namespace) > 0 ? module.k8s-sandbox-agent.created_namespace.0.metadata.0.name : var.default_create_namespace
-  spinnaker_nodepool        = module.k8s-sandbox-agent.created_nodepool
-
-  providers = {
-    kubernetes = kubernetes.sandbox-agent
-  }
+  bucket_name = "${var.gcp_project}-halyard-bucket"
 }
 
 # to retrieve the keys for this for use outside of terraform, run 
 # `vault read -format json -field=data secret/spinnaker-gcs-account > somefile.json`
-module "spinnaker-gcp-service-account" {
+module "spinnaker_gcp_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-gcs-account"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/storage.admin", "roles/browser"]
 }
 
-module "spinnaker-gcp-cloudsql-service-account" {
+module "spinnaker_gcp_cloudsql_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-cloudsql-account"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/cloudsql.client"]
 }
 
-resource "google_service_account" "spinnaker_oauth_fiat" {
-  display_name = "spinnaker-fiat"
-  account_id   = "spinnaker-fiat"
-}
-
-resource "google_service_account_key" "fiat_svc_key" {
-  service_account_id = google_service_account.spinnaker_oauth_fiat.name
-}
-
-resource "vault_generic_secret" "fiat-service-account-key" {
-  path      = "secret/${var.gcp_project}/spinnaker_fiat"
-  data_json = base64decode(google_service_account_key.fiat_svc_key.private_key)
-}
-
-resource "google_storage_bucket_object" "fiat_service_account_key_storage" {
-  name         = ".gcp/spinnaker-fiat.json"
-  content      = base64decode(google_service_account_key.fiat_svc_key.private_key)
-  bucket       = module.halyard-storage.bucket_name
-  content_type = "application/json"
-}
-
-data "google_compute_address" "halyard_ip_address" {
-  name = "halyard-external-ip"
+module "spinnaker_gcp_fiat_service_account" {
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "spinnaker-fiat"
+  service_account_prefix = ""
+  bucket_name            = module.halyard_storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = []
 }
 
 data "http" "local_outgoing_ip_address" {
   url = "https://ifconfig.me"
 }
 
-data "google_compute_address" "ui_ip_address" {
-  name = "spinnaker-ui"
-}
-
-data "google_compute_address" "api_ip_address" {
-  name = "spinnaker-api"
-}
-
-data "google_compute_address" "sandbox_ui_ip_address" {
-  name = "sandbox-ui"
-}
-
-data "google_compute_address" "sandbox_api_ip_address" {
-  name = "sandbox-api"
-}
-
-module "spinnaker-dns" {
+module "spinnaker_dns" {
   source             = "./modules/dns"
   gcp_project        = var.managed_dns_gcp_project
-  cluster_config     = var.hostname_config
-  dns_name           = "${var.cloud_dns_hostname}"
-  ui_ip_addresses    = [data.google_compute_address.ui_ip_address.address, data.google_compute_address.sandbox_ui_ip_address.address]
-  api_ip_addresses   = [data.google_compute_address.api_ip_address.address, data.google_compute_address.sandbox_api_ip_address.address]
-  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.spin_api_ips
-  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips
+  ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
+  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
+  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  ship_plans         = data.terraform_remote_state.static_ips.outputs.ship_plans
 
   providers = {
     google = google.dns-zone
   }
 }
 
-resource "google_storage_bucket" "onboarding_bucket" {
-  name          = "${var.gcp_project}-spinnaker-onboarding"
-  storage_class = "MULTI_REGIONAL"
-  versioning {
-    enabled = true
-  }
+module "onboarding_storage" {
+  source      = "./modules/gcp-bucket"
+  bucket_name = "${var.gcp_project}-spinnaker-onboarding"
 }
 
 resource "google_project_iam_custom_role" "onboarding_role" {
@@ -406,7 +162,7 @@ resource "google_project_iam_custom_role" "onboarding_role" {
 }
 
 resource "google_storage_bucket_iam_binding" "binding" {
-  bucket = google_storage_bucket.onboarding_bucket.name
+  bucket = module.onboarding_storage.bucket_name
   role   = "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
 
   members = [
@@ -417,22 +173,53 @@ resource "google_storage_bucket_iam_binding" "binding" {
 module "onboarding_gke" {
   source                     = "./modules/onboarding"
   gcp_project                = var.gcp_project
-  onboarding_bucket_resource = google_storage_bucket.onboarding_bucket
+  onboarding_bucket_resource = module.onboarding_storage.bucket_resource
   storage_object_name_prefix = "gke"
 }
 
-module "onboarding-pubsub-service-account" {
-  source               = "./modules/gcp-service-account"
-  service_account_name = "onboarding-pub-sub"
-  bucket_name          = module.halyard-storage.bucket_name
-  gcp_project          = var.gcp_project
-  roles                = ["roles/storage.admin", "roles/pubsub.subscriber"]
+module "onboarding_pubsub_service_account" {
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "onboarding-pub-sub"
+  service_account_prefix = ""
+  bucket_name            = module.halyard_storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = ["roles/storage.admin", "roles/pubsub.subscriber"]
 }
 
-module "halyard-service-account" {
+module "spinnaker_onboarding_service_account" {
+  source                 = "./modules/gcp-service-account"
+  service_account_name   = "spinnaker-onboarding"
+  service_account_prefix = ""
+  bucket_name            = module.halyard_storage.bucket_name
+  gcp_project            = var.gcp_project
+  roles                  = ["roles/container.admin"]
+  create_and_store_key   = false
+}
+
+resource "google_service_account_iam_binding" "onboarding_workload_identity_binding" {
+  service_account_id = module.spinnaker_onboarding_service_account.service_account_name
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "serviceAccount:${var.gcp_project}.svc.id.goog[spinnaker/spinnaker-onboarding]",
+  ]
+}
+
+resource "google_service_account_iam_binding" "k8s_sa_workload_identity_binding" {
+  for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
+  service_account_id = module.k8s.service_account_name_map[each.key]
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "serviceAccount:${var.gcp_project}.svc.id.goog[spinnaker/${each.key}]",
+    "serviceAccount:${var.gcp_project}.svc.id.goog[vault/vault]",
+  ]
+}
+
+module "halyard_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-halyard"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles = [
     "roles/storage.admin",
@@ -446,47 +233,49 @@ module "halyard-service-account" {
 }
 
 resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
-  for_each      = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
+  for_each      = data.terraform_remote_state.static_ips.outputs.ship_plans
   crypto_key_id = lookup(module.vault_keys.crypto_key_id_map, each.key, "")
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${module.halyard-service-account.service-account-email}"
+  member        = "serviceAccount:${module.halyard_service_account.service_account_email}"
 }
 
-module "certbot-service-account" {
+module "certbot_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "certbot"
-  bucket_name          = module.halyard-storage.bucket_name
+  bucket_name          = module.halyard_storage.bucket_name
   gcp_project          = var.gcp_project
   roles                = ["roles/dns.admin"]
 }
 
-resource "google_kms_key_ring" "vault_keyring" {
-  name     = "vault_keyring"
-  location = var.cluster_region
+module "vault_keyring" {
+  source                   = "./modules/kms_key_ring"
+  kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
+  kms_key_ring_prefix      = "vault_keyring"
 }
 
 module "vault_keys" {
-  source                 = "./modules/crypto_key"
-  gcp_project            = var.gcp_project
-  cluster_region         = var.cluster_region
-  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
-  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
-  crypto_key_name_prefix = "vault_key"
+  source                     = "./modules/crypto_key"
+  gcp_project                = var.gcp_project
+  kms_key_ring_self_link_map = module.vault_keyring.kms_key_ring_region_map
+  ship_plans                 = data.terraform_remote_state.static_ips.outputs.ship_plans
+  crypto_key_name_prefix     = "vault_key"
 }
 
 module "vault_setup" {
-  source                 = "./modules/vault"
-  gcp_project            = var.gcp_project
-  kms_key_ring_self_link = google_kms_key_ring.vault_keyring.self_link
-  cluster_key_map        = zipmap(formatlist("%s-${var.cluster_region}", values(var.cluster_config)), formatlist("%s-${var.cluster_region}", values(var.cluster_config)))
-  kms_keyring_name       = google_kms_key_ring.vault_keyring.name
-  vault_ips_map          = data.terraform_remote_state.static_ips.outputs.vault_ips_map
-  cluster_region         = var.cluster_region
-  crypto_key_id_map      = module.vault_keys.crypto_key_id_map
+  source               = "./modules/vault"
+  gcp_project          = var.gcp_project
+  kms_keyring_name_map = module.vault_keyring.kms_key_ring_name_map
+  vault_ips_map        = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  crypto_key_id_map    = module.vault_keys.crypto_key_id_map
+  ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
 }
 
-output "vault_keyring" {
-  value = google_kms_key_ring.vault_keyring.name
+output "spinnaker_onboarding_service_account_email" {
+  value = module.spinnaker_onboarding_service_account.service_account_email
+}
+
+output "vault_keyring_name_map" {
+  value = module.vault_keyring.kms_key_ring_name_map
 }
 
 output "vault_crypto_key_id_map" {
@@ -498,59 +287,51 @@ output "vault_crypto_key_name_map" {
 }
 
 output "vault_hosts_map" {
-  value = module.spinnaker-dns.vault_hosts_map
+  value = module.spinnaker_dns.vault_hosts_map
 }
 
-output "vault_yml_files" {
-  value = module.vault_setup.vault_yml_files
+output "vault_yml_files_map" {
+  value = module.vault_setup.vault_yml_files_map
+}
+
+output "vault_bucket_name_map" {
+  value = module.vault_setup.vault_bucket_name_map
 }
 
 output "created_onboarding_bucket_name" {
-  value = google_storage_bucket.onboarding_bucket.name
+  value = module.onboarding_storage.bucket_name
 }
 
 output "spinnaker_fiat_account_unique_id" {
-  value = google_service_account.spinnaker_oauth_fiat.unique_id
+  value = module.spinnaker_gcp_fiat_service_account.service_account_id
 }
 
-output "redis_instance_links" {
-  value = module.google-managed.redis_instance_link
-}
-
-output "cluster_config_values" {
-  value = values(var.cluster_config)
-}
-
-output "hostname_config_values" {
-  value = values(var.hostname_config)
+output "redis_instance_link_map" {
+  value = module.google_managed.redis_instance_link_map
 }
 
 output "the_gcp_project" {
   value = var.gcp_project
 }
 
-output "spinnaker-ui_hosts" {
-  value = module.spinnaker-dns.spinnaker-ui_hosts
+output "spinnaker_ui_hosts_map" {
+  value = module.spinnaker_dns.ui_hosts_map
 }
 
-output "spinnaker-api_hosts" {
-  value = module.spinnaker-dns.spinnaker-api_hosts
+output "spinnaker_api_hosts_map" {
+  value = module.spinnaker_dns.api_hosts_map
 }
 
-output "spinnaker-api_x509_hosts" {
-  value = module.spinnaker-dns.spinnaker-api_x509_hosts
+output "spinnaker_api_x509_hosts_map" {
+  value = module.spinnaker_dns.api_x509_hosts_map
 }
 
-output "google_sql_database_instance_names" {
-  value = module.google-managed.google_sql_database_instance_names
+output "google_sql_database_instance_names_map" {
+  value = module.google_managed.google_sql_database_instance_names_map
 }
 
-output "google_sql_database_failover_instance_names" {
-  value = module.google-managed.google_sql_database_failover_instance_names
-}
-
-output "cluster_region" {
-  value = var.cluster_region
+output "google_sql_database_failover_instance_names_map" {
+  value = module.google_managed.google_sql_database_failover_instance_names_map
 }
 
 output "created_onboarding_topic_name" {
@@ -562,17 +343,17 @@ output "created_onboarding_subscription_name" {
 }
 
 output "created_onboarding_service_account_name" {
-  value = module.onboarding-pubsub-service-account.service-account-display-name
+  value = module.onboarding_pubsub_service_account.service_account_display_name
 }
 
 output "spinnaker_halyard_service_account_email" {
-  value = module.halyard-service-account.service-account-email
+  value = module.halyard_service_account.service_account_email
 }
 
 output "spinnaker_halyard_service_account_display_name" {
-  value = module.halyard-service-account.service-account-display-name
+  value = module.halyard_service_account.service_account_display_name
 }
 
 output "spinnaker_halyard_service_account_key_path" {
-  value = module.halyard-service-account.service-account-key-path
+  value = module.halyard_service_account.service_account_key_path
 }

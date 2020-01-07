@@ -69,6 +69,7 @@ echo "Setting up helper scripts"
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_OAUTH}" | base64 -d > /home/${USER}/setupOAuth.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setupHalyard.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_KUBERNETES}" | base64 -d > /home/${USER}/setupKubernetes.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALPUSH}" | base64 -d > /home/${USER}/halpush.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALGET}" | base64 -d > /home/${USER}/halget.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALDIFF}" | base64 -d > /home/${USER}/haldiff.sh'
@@ -95,7 +96,7 @@ runuser -l ${USER}  -c 'cd /usr/local/bin; curl https://getmic.ro | sudo bash'
 # format the json bindings file as this will probably be pulled intoa file later
 runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:setlocal filetype yaml\"}" | jq -r "." - > ~/.config/micro/bindings.json'
 
-runuser -l ${USER} -c 'if [ ! -d /${USER}/.hal ]; then time /home/${USER}/quickstart.sh; fi'
+runuser -l ${USER} -c 'if [ ${AUTO_START_HALYARD_QUICKSTART} == true ] && [ ! -d /${USER}/.hal ]; then time /home/${USER}/quickstart.sh; fi'
 runuser -l ${USER} -c 'if [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"

@@ -104,9 +104,25 @@ deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.mountPath: /cloudsql
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.mountPath: /secrets/cloudsql
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.0.secretVolumeMounts.0.secretName: cloudsql-instance-credentials
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.1.name: token-refresh
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.1.dockerImage: justinrlee/gcloud-auth-helper:stable
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-clouddriver.1.mountPath: /tmp/gcloud
 CLOUDDRIVER_PATCH
 
 yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
+
+
+tee /${USER}/.kube/kubeconfig_patch.yml << EOF
+users.0.user.exec.apiVersion: client.authentication.k8s.io/v1beta1
+users.0.user.exec.args[+]: "/tmp/gcloud/auth_token"
+users.0.user.exec.command: /bin/cat
+EOF
+
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/clouddriver.yml << EOF
+kubernetes:
+  serviceAccountName: spinnaker-onboarding
+
+EOF
 
 # set-up front50 to use cloudsql proxy
 tee /tmp/halconfig-front50-patch-${DEPLOYMENT_INDEX}.yml << FRONT50_PATCH
@@ -247,7 +263,7 @@ redis:
 FRONT50_LOCAL
 
 # Changing health check to be native instead of wget https://github.com/spinnaker/spinnaker/issues/4479
-cat <<EOF >> /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/gate.yml << EOF
 kubernetes:
   useExecHealthCheck: false
 
@@ -264,8 +280,9 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
     # and append it as a kubeconfigContents element, lastly we append that to the kubernetes.account list
     # and store that into the vault secret
     yq r -j \
-        .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
-        jq --arg contents "$(yq r $(yq r .hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0.kubeconfigFile) | sed -E ':a;N;$!ba;s/\r{0,1}\n/\n/g')" \
+        /${USER}/.hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0 | \
+        jq --arg contents "$(yq r $(yq r /${USER}/.hal/config deploymentConfigurations.${DEPLOYMENT_INDEX}.providers.kubernetes.accounts.0.kubeconfigFile) | \
+         yq d - users.0.user.token | yq w - -s /${USER}/.kube/kubeconfig_patch.yml | sed -E ':a;N;$!ba;s/\r{0,1}\n/\n/g')" \
         'del(.kubeconfigFile) | . += {"kubeconfigContents":$contents} | {"kubernetes":{"accounts":[.]}}' | \
         vault kv put \
         -address="https://${VAULT_ADDR}" \
@@ -273,7 +290,7 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
     
     echo "Configuring Spinnaker dynamic account for deployment ${DEPLOYMENT_NAME}"
 
-    cat <<DYN_CONFIG >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml
+    tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/spinnakerconfig.yml << DYN_CONFIG
 spring:
   profiles:
     include: vault
@@ -295,7 +312,7 @@ DYN_CONFIG
 else
     echo "Dynamic Account Tokens NOT found so skipping configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
 fi
-cat <<SETTINGS_LOCAL >> /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js
+tee /${USER}/.hal/${DEPLOYMENT_NAME}/profiles/settings-local.js << SETTINGS_LOCAL
 window.spinnakerSettings.notifications.email.enabled = false;
 window.spinnakerSettings.notifications.bearychat.enabled = false;
 SETTINGS_LOCAL

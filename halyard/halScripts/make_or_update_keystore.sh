@@ -30,8 +30,9 @@ do
       --pem \
       --email="${CERTBOT_EMAIL}" \
       --domains="*.${DNS}" \
+      --domains="${DNS}" \
       $LEGO_CMD && break
-   n=$[$n+1]
+   n=$((n+1))
    sleep 3
 done
 

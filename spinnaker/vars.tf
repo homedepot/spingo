@@ -3,12 +3,8 @@
 ######################################################################################
 
 variable "terraform_account" {
-  type = string
-}
-
-variable "cluster_region" {
-  type        = string
-  description = "GCP region, e.g. us-east1"
+  type    = string
+  default = "terraform-account"
 }
 
 variable "gcp_project" {
@@ -19,11 +15,6 @@ variable "gcp_project" {
 variable "managed_dns_gcp_project" {
   type        = string
   description = "GCP project name where the DNS managed zone lives"
-}
-
-variable "cloud_dns_hostname" {
-  type        = string
-  description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
 }
 
 variable "default_node_options" {
@@ -49,6 +40,19 @@ variable "second_cluster_node_options" {
     image        = "COS"
     machine_type = "n1-standard-1"
     preemptible  = false
+  }
+}
+
+variable "default_node_pool_options" {
+  type        = map(string)
+  description = "Options to configure the default Node Pool created for the cluster."
+
+  default = {
+    auto_repair           = true # Whether the nodes will be automatically repaired.
+    auto_upgrade          = true # Whether the nodes will be automatically upgraded.
+    autoscaling_nodes_min = 1    # Minimum number of nodes to create in each zone. Must be >=1 and <= autoscaling_nodes_max.
+    autoscaling_nodes_max = 3    # Maximum number of nodes to create in each zone. Must be >= autoscaling_nodes_min.
+    max_pods_per_node     = 110  # The maximum number of pods per node in this node pool. Note this setting is currently in Beta: https://www.terraform.io/docs/providers/google/r/container_node_pool.html#max_pods_per_node
   }
 }
 
@@ -152,10 +156,10 @@ variable "extras" {
   description = "Extra options to configure K8s. These are options that are unlikely to change from deployment to deployment. All options must be specified when passed as a map variable input to this module."
 
   default = {
-    kubernetes_alpha       = false    # Enable Kubernetes Alpha features for this cluster. When this option is enabled, the cluster cannot be upgraded and will be automatically deleted after 30 days.
-    local_ssd_count        = 0        # The amount of local SSD disks that will be attached to each cluster node.
-    maintenance_start_time = "01:00"  # Time window specified for daily maintenance operations. Specify start_time in RFC3339 format "HH:MM”, where HH : [00-23] and MM : [00-59] GMT.
-    metadata_config        = "EXPOSE" # How to expose the node metadata to the workload running on the node. See: https://www.terraform.io/docs/providers/google/r/container_cluster.html#node_metadata
+    kubernetes_alpha       = false                 # Enable Kubernetes Alpha features for this cluster. When this option is enabled, the cluster cannot be upgraded and will be automatically deleted after 30 days.
+    local_ssd_count        = 0                     # The amount of local SSD disks that will be attached to each cluster node.
+    maintenance_start_time = "01:00"               # Time window specified for daily maintenance operations. Specify start_time in RFC3339 format "HH:MM”, where HH : [00-23] and MM : [00-59] GMT.
+    metadata_config        = "GKE_METADATA_SERVER" # How to expose the node metadata to the workload running on the node. See: https://www.terraform.io/docs/providers/google/r/container_cluster.html#node_metadata
   }
   # guest_accelerator  = ""       # The accelerator type resource to expose to this instance. E.g. nvidia-tesla-k80. If unset will not attach an accelerator.
   # min_cpu_platform = "" # Minimum CPU platform to be used by this instance. The instance may be scheduled on the specified or newer CPU platform. Applicable values are the friendly names of CPU platforms, such as Intel Haswell.

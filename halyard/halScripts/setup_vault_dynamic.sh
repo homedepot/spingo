@@ -392,20 +392,28 @@ SA_JWT_TOKEN=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" 
 SA_CA_CRT=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n spinnaker get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
 K8S_HOST=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" config view -o jsonpath="{.clusters[0].cluster.server}")
 
-echo "Creating kubernetes auth config spinnaker-onboarding for agent cluster deployment ${deployment}"
-
-vault write \
-    -address="https://${details.vaultAddr}" \
-    auth/kubernetes-${details.clusterName}-agent/config \
-    token_reviewer_jwt="$SA_JWT_TOKEN" \
-    kubernetes_host="$K8S_HOST" \
-    kubernetes_ca_cert="$SA_CA_CRT"
-
 echo "Creating role to map to kubernetes service account spinnaker-onboarding for agent cluster deployment ${deployment}"
 
 vault write \
     -address="https://${details.vaultAddr}" \
     auth/kubernetes-${details.clusterName}-agent/role/onboarding \
+    bound_service_account_names="spinnaker-onboarding" \
+    bound_service_account_namespaces="spinnaker" \
+    policies="dynamic_accounts_rw_policy" \
+    ttl="1680h"
+
+echo "Getting information from kubernetes to complete auth method spinnaker-onboarding for deployment ${deployment}"
+
+VAULT_SA_NAME=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" -n spinnaker get sa spinnaker-onboarding -o jsonpath="{.secrets[*]['name']}")
+SA_JWT_TOKEN=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" -n spinnaker get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
+SA_CA_CRT=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" -n spinnaker get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
+K8S_HOST=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" config view -o jsonpath="{.clusters[0].cluster.server}")
+
+echo "Creating role to map to kubernetes service account spinnaker-onboarding for deployment ${deployment}"
+
+vault write \
+    -address="https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}/role/onboarding \
     bound_service_account_names="spinnaker-onboarding" \
     bound_service_account_namespaces="spinnaker" \
     policies="dynamic_accounts_rw_policy" \

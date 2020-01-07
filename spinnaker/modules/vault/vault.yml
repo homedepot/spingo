@@ -7,10 +7,6 @@ injector:
     tag: "0.1.0"
   agentImage:
     tag: "1.3.1"
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "256mi"
 
 ui:
   enabled: true
@@ -22,19 +18,11 @@ server:
   image:
     repository: "vault"
     tag: "1.3.1"
-  resources:
-    requests:
-      cpu: "500m"
-      memory: "256mi"
 
   extraContainers:
     - name: vault-init
       image: "devorbitus/vault-init:1.2.1"
       imagePullPolicy: IfNotPresent
-      resources:
-        requests:
-          cpu: "100m"
-          memory: "64Mi"
       env:
       - name: GCS_BUCKET_NAME
         value: "${gcs_bucket_name}"

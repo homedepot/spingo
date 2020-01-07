@@ -156,7 +156,7 @@ if [[ -f /${USER}/vault/dyn_acct_${deployment}_rw_token && -s /${USER}/vault/dyn
 
     gsutil cat gs://${vaultBucket_map[replace(deployment, "-agent", "")]}/root-token.enc | base64 -d | gcloud kms decrypt \
       --key=${vaultKmsKey_map[replace(deployment, "-agent", "")]} \
-      --keyring=${vaultKmsKeyRingName_map[replace(deployment, "-agent", "")]} \
+      --keyring=${vaultKmsKeyRingName_map[details.clusterRegion]} \
       --location=${details.clusterRegion} \
       --ciphertext-file='-' \
       --plaintext-file='-' > /home/${USER}/.vault-token

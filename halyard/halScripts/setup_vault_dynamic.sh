@@ -385,7 +385,33 @@ vault write -address="https://${details.vaultAddr}" \
     secret_id="$(cat /${USER}/vault/dyn_acct_${deployment}_rw_secred_id)" \
     | jq -r '.auth.client_token' > /${USER}/vault/dyn_acct_${deployment}_rw_token
 
-echo "Ending dynamic account setup for deployment ${deployment}"
+echo "Getting information from kubernetes to complete auth method spinnaker-onboarding for agent cluster deployment ${deployment}"
+
+VAULT_SA_NAME=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n default get sa spinnaker-onboarding -o jsonpath="{.secrets[*]['name']}")
+SA_JWT_TOKEN=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n default get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
+SA_CA_CRT=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n default get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
+K8S_HOST=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" config view -o jsonpath="{.clusters[0].cluster.server}")
+
+echo "Creating kubernetes auth config spinnaker-onboarding for agent cluster deployment ${deployment}"
+
+vault write \
+    -address="https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}-agent/config \
+    token_reviewer_jwt="$SA_JWT_TOKEN" \
+    kubernetes_host="$K8S_HOST" \
+    kubernetes_ca_cert="$SA_CA_CRT"
+
+echo "Creating role to map to kubernetes service account spinnaker-onboarding for agent cluster deployment ${deployment}"
+
+vault write \
+    -address="https://${details.vaultAddr}" \
+    auth/kubernetes-${details.clusterName}-agent/role/onboarding \
+    bound_service_account_names="spinnaker-onboarding" \
+    bound_service_account_namespaces="spinnaker" \
+    policies="dynamic_accounts_rw_policy" \
+    ttl="1680h"
+
+echo "Ending vault kubernetes auth for spinnaker-onboarding deployment ${deployment}"
 
 rm /home/${USER}/.vault-token
 

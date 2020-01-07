@@ -23,6 +23,10 @@ server:
     - name: vault-init
       image: "devorbitus/vault-init:1.2.1"
       imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "64Mi"
       env:
       - name: GCS_BUCKET_NAME
         value: "${gcs_bucket_name}"

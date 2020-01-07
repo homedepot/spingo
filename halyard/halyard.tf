@@ -338,10 +338,14 @@ data "template_file" "setupKubernetesMultiple" {
   vars = {
     SHEBANG = "#!/bin/bash"
     SCRIPT_CONTENT = templatefile("./halScripts/setup_kubernetes_dynamic.sh", {
-      PROJECT             = var.gcp_project
-      USER                = var.service_account_name
-      ONBOARDING_SA_EMAIL = data.terraform_remote_state.spinnaker.outputs.spinnaker_onboarding_service_account_email
-      deployments         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
+      PROJECT                 = var.gcp_project
+      USER                    = var.service_account_name
+      ONBOARDING_SA_EMAIL     = data.terraform_remote_state.spinnaker.outputs.spinnaker_onboarding_service_account_email
+      deployments             = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
+      vault_hosts_map         = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map
+      vaultBucket_map         = data.terraform_remote_state.spinnaker.outputs.vault_bucket_name_map
+      vaultKmsKey_map         = data.terraform_remote_state.spinnaker.outputs.vault_crypto_key_name_map
+      vaultKmsKeyRingName_map = data.terraform_remote_state.spinnaker.outputs.vault_keyring_name_map
     })
   }
 }

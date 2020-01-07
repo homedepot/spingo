@@ -136,18 +136,67 @@ if [ "$?" -ne 0 ]; then
     die "Unable to talk to cluster ${deployment} using kubeconfig $CONFIG_FILE so cowardly exiting"
 fi
 
+kubectl --kubeconfig="$CONFIG_FILE" create ns spinnaker
+kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker spinnaker-onboarding
+kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker spinnaker-onboarding \
+    iam.gke.io/gcp-service-account=${ONBOARDING_SA_EMAIL}
+
 if [[ ${deployment} == *-agent ]]; then
     echo "No need to create instance cloudsql secret for agent cluster"
 else
     echo "Creating Spinnaker namespace and cloudsql-instance-credentials secret"
-    kubectl --kubeconfig="$CONFIG_FILE" create ns spinnaker
     kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker create secret generic cloudsql-instance-credentials --from-file=/${USER}/.gcp/secret
-    kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker spinnaker-onboarding
-    kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker spinnaker-onboarding \
-        iam.gke.io/gcp-service-account=${ONBOARDING_SA_EMAIL}
     kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker ${deployment}
     kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker ${deployment} \
         iam.gke.io/gcp-service-account=${deployment}@${PROJECT}.iam.gserviceaccount.com
+fi
+
+if [[ -f /${USER}/vault/dyn_acct_${deployment}_rw_token && -s /${USER}/vault/dyn_acct_${deployment}_rw_token && -f /${USER}/vault/dyn_acct_${deployment}_ro_token && -s /${USER}/vault/dyn_acct_${deployment}_ro_token ]]; then
+    echo "Dynamic Account Tokens found so configuring spinnaker-onboarding to vault for deployment ${deployment}"
+
+    gsutil cat gs://${vaultBucket_map[replace(deployment, "-agent", "")]}/root-token.enc | base64 -d | gcloud kms decrypt \
+      --key=${vaultKmsKey_map[replace(deployment, "-agent", "")]} \
+      --keyring=${vaultKmsKeyRingName_map[replace(deployment, "-agent", "")]} \
+      --location=${details.clusterRegion} \
+      --ciphertext-file='-' \
+      --plaintext-file='-' > /home/${USER}/.vault-token
+
+    echo "Enabling kubernetes auth on vault for spinnaker-onboarding deployment ${deployment}"
+
+    vault auth enable \
+        -address="https://${vault_hosts_map[replace(deployment, "-agent", "")]}" \
+        --path="kubernetes-${deployment}-onboarding" \
+        --policies="dynamic_accounts_rw_policy"
+        --
+        kubernetes
+
+    VAULT_SA_NAME=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" -n default get sa spinnaker-onboarding -o jsonpath="{.secrets[*]['name']}")
+    SA_JWT_TOKEN=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" -n default get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
+    SA_CA_CRT=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" -n default get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
+    K8S_HOST=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}.config" config view -o jsonpath="{.clusters[0].cluster.server}")
+
+    echo "Creating kubernetes auth config for k8s onboarding auth method deployment ${deployment}"
+
+    vault write \
+        -address="https://${vault_hosts_map[replace(deployment, "-agent", "")]}" \
+        auth/kubernetes-${deployment}-onboarding/config \
+        token_reviewer_jwt="$SA_JWT_TOKEN" \
+        kubernetes_host="$K8S_HOST" \
+        kubernetes_ca_cert="$SA_CA_CRT"
+
+    echo "Creating kubernetes auth role for k8s onboarding auth method deployment ${deployment}"
+
+    vault write \
+        -address="https://${vault_hosts_map[replace(deployment, "-agent", "")]}" \
+        auth/kubernetes-${deployment}-onboarding/role/spinnaker \
+        bound_service_account_names="spinnaker-onboarding" \
+        bound_service_account_namespaces='spinnaker' \
+        policies="dynamic_accounts_rw_policy" \
+        ttl="1600h"
+
+    rm /home/${USER}/.vault-token
+else
+    echo "Dynamic Account Tokens NOT found so skipping configuring spinnaker-onboarding to vault for deployment ${deployment}"
 fi
 
 %{ endfor ~}

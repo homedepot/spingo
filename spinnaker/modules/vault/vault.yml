@@ -35,9 +35,9 @@ server:
       - name: VAULT_ADDR
         value: "http://127.0.0.1:8200"
       - name: VAULT_SECRET_SHARES
-        value: "5"
+        value: "1"
       - name: VAULT_SECRET_THRESHOLD
-        value: "3"
+        value: "1"
 
   serviceAccount:
     annotations:

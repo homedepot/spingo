@@ -23,3 +23,4 @@ Your contribution needs to meet the following standards:
 - Add a descriptive message for each commit. Follow [commit message best practices](https://github.com/erlang/otp/wiki/writing-good-commit-messages).
 - Document your pull requests. Include the reasoning behind each change and describe the testing done.
 - To the extent possible, follow existing code and documentation style and practices.
+- Each contribution must pass a shellcheck and terraform validate test. 

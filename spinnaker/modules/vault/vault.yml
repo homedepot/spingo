@@ -7,6 +7,10 @@ injector:
     tag: "0.1.0"
   agentImage:
     tag: "1.3.1"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "256mi"
 
 ui:
   enabled: true
@@ -18,6 +22,10 @@ server:
   image:
     repository: "vault"
     tag: "1.3.1"
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "256mi"
 
   extraContainers:
     - name: vault-init
@@ -35,9 +43,9 @@ server:
       - name: VAULT_ADDR
         value: "http://127.0.0.1:8200"
       - name: VAULT_SECRET_SHARES
-        value: "5"
+        value: "1"
       - name: VAULT_SECRET_THRESHOLD
-        value: "3"
+        value: "1"
 
   serviceAccount:
     annotations:
@@ -79,7 +87,7 @@ server:
       max_lease_ttl = "1680h" # 70 days
 
       listener "tcp" {
-        address     = "0.0.0.0:8200"
+        address     = "127.0.0.1:8200"
         tls_disable = "true"
       }
 

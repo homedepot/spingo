@@ -387,9 +387,9 @@ vault write -address="https://${details.vaultAddr}" \
 
 echo "Getting information from kubernetes to complete auth method spinnaker-onboarding for agent cluster deployment ${deployment}"
 
-VAULT_SA_NAME=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n default get sa spinnaker-onboarding -o jsonpath="{.secrets[*]['name']}")
-SA_JWT_TOKEN=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n default get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
-SA_CA_CRT=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n default get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
+VAULT_SA_NAME=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n spinnaker get sa spinnaker-onboarding -o jsonpath="{.secrets[*]['name']}")
+SA_JWT_TOKEN=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n spinnaker get secret $VAULT_SA_NAME -o jsonpath="{.data.token}" | base64 --decode; echo)
+SA_CA_CRT=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" -n spinnaker get secret $VAULT_SA_NAME -o jsonpath="{.data['ca\.crt']}" | base64 --decode; echo)
 K8S_HOST=$(kubectl --kubeconfig="/${USER}/.kube/${deployment}-agent.config" config view -o jsonpath="{.clusters[0].cluster.server}")
 
 echo "Creating kubernetes auth config spinnaker-onboarding for agent cluster deployment ${deployment}"

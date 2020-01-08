@@ -25,6 +25,7 @@ override.tf.json
 #
 # !example_override.tf
 terraform-account.json
+terraform-account-dns.json
 .history
 *.auto.tfvars
 *.auto.tfvars.json

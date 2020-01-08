@@ -6,7 +6,7 @@ data "vault_generic_secret" "terraform_account" {
 }
 
 provider "google" {
-  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
+  credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.gcp_project]
   project     = var.gcp_project
   zone        = var.gcp_zone
   version     = "~> 2.8"

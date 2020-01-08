@@ -6,28 +6,22 @@ data "vault_generic_secret" "terraform_account" {
 }
 
 provider "google" {
-  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
-
-  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
-  project = var.gcp_project
-  version = "~> 2.8"
+  credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.gcp_project]
+  project     = var.gcp_project
+  version     = "~> 2.8"
 }
 
 provider "google" {
   alias       = "dns-zone"
-  credentials = data.vault_generic_secret.terraform_account.data[var.managed_dns_gcp_project]
-
-  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
-  project = var.managed_dns_gcp_project
-  version = "~> 2.8"
+  credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.managed_dns_gcp_project]
+  project     = var.managed_dns_gcp_project
+  version     = "~> 2.8"
 }
 
 provider "google-beta" {
-  credentials = data.vault_generic_secret.terraform_account.data[var.gcp_project]
-
-  # credentials = file("${var.terraform_account}.json") //! swtich to this if you need to import stuff from GCP
-  project = var.gcp_project
-  version = "~> 2.8"
+  credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.gcp_project]
+  project     = var.gcp_project
+  version     = "~> 2.8"
 }
 
 data "terraform_remote_state" "static_ips" {

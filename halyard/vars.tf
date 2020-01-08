@@ -59,3 +59,8 @@ variable "spinnaker_admin_slack_channel" {
   type        = string
   default     = "spinnaker_admins"
 }
+
+variable "use_local_credential_file" {
+  type    = bool
+  default = false
+}

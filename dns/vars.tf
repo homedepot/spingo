@@ -15,3 +15,7 @@ variable "cloud_dns_hostname" {
   description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
 }
 
+variable "use_local_credential_file" {
+  type    = bool
+  default = false
+}

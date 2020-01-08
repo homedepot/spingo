@@ -170,3 +170,7 @@ variable "spingo_user_email" {
   type        = string
 }
 
+variable "use_local_credential_file" {
+  type    = bool
+  default = false
+}

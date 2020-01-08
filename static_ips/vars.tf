@@ -21,3 +21,8 @@ variable "ship_plans" {
   type        = map(map(string))
   description = "The object that describes all of the clusters that need to be built by Spingo"
 }
+
+variable "use_local_credential_file" {
+  type    = bool
+  default = false
+}

@@ -314,7 +314,8 @@ do
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
         fi
         PS3="$READ_PROMPT";
-        CLUSTER_REGION="$(select_with_default "$(gcloud compute regions list --format='value(name)' 2>/dev/null)")"
+        # shellcheck disable=SC2046
+        CLUSTER_REGION="$(select_with_default $(gcloud compute regions list --format='value(name)' 2>/dev/null))"
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
     echo "-----------------------------------------------------------------------------"
@@ -411,7 +412,7 @@ if [ -z "$SLACK_BOT_TOKEN" ]; then
     PS3="Do you want to setup Slack automatically and already have a token? or just press [ENTER] for (Yes) : "
     USE_SLACK=$(select_with_default "No" "Yes")
     USE_SLACK=${USE_SLACK:-Yes}
-    if [ "$USE_SLACK" == "No" ]; then
+    if [ "$USE_SLACK" == "Yes" ]; then
         SLACK_BOT_TOKEN=$(prompt_for_value \
         "" \
         "Slack Bot Token" \
@@ -506,9 +507,9 @@ for role in "${roles[@]}"; do
         if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
             --member serviceAccount:"$SA_EMAIL" \
             --role="$role"; then
-            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
-        else
             echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+        else
+            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
         fi
     else
         echo "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"

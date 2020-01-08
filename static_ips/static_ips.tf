@@ -36,6 +36,12 @@ resource "google_compute_address" "vault" {
   region   = each.value["clusterRegion"]
 }
 
+resource "google_compute_address" "grafana" {
+  for_each = var.ship_plans
+  name     = "grafana-${each.key}"
+  region   = each.value["clusterRegion"]
+}
+
 resource "google_compute_address" "cloudnat" {
   for_each = var.ship_plans
   name     = "nat-${each.key}"
@@ -65,6 +71,10 @@ output "api_x509_ips_map" {
 
 output "vault_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.vault[k].address }
+}
+
+output "grafana_ips_map" {
+  value = { for k, v in var.ship_plans : k => google_compute_address.grafana[k].address }
 }
 
 output "cloudnat_ips_map" {

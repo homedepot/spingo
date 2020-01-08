@@ -136,15 +136,16 @@ if [ "$?" -ne 0 ]; then
     die "Unable to talk to cluster ${deployment} using kubeconfig $CONFIG_FILE so cowardly exiting"
 fi
 
+kubectl --kubeconfig="$CONFIG_FILE" create ns spinnaker
+kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker spinnaker-onboarding
+kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker spinnaker-onboarding \
+    iam.gke.io/gcp-service-account=${ONBOARDING_SA_EMAIL}
+
 if [[ ${deployment} == *-agent ]]; then
     echo "No need to create instance cloudsql secret for agent cluster"
 else
     echo "Creating Spinnaker namespace and cloudsql-instance-credentials secret"
-    kubectl --kubeconfig="$CONFIG_FILE" create ns spinnaker
     kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker create secret generic cloudsql-instance-credentials --from-file=/${USER}/.gcp/secret
-    kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker spinnaker-onboarding
-    kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker spinnaker-onboarding \
-        iam.gke.io/gcp-service-account=${ONBOARDING_SA_EMAIL}
     kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker ${deployment}
     kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker ${deployment} \
         iam.gke.io/gcp-service-account=${deployment}@${PROJECT}.iam.gserviceaccount.com

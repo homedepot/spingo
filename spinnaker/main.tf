@@ -136,13 +136,14 @@ data "http" "local_outgoing_ip_address" {
 }
 
 module "spinnaker_dns" {
-  source             = "./modules/dns"
-  gcp_project        = var.managed_dns_gcp_project
-  ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
-  api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
-  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
-  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips_map
-  ship_plans         = data.terraform_remote_state.static_ips.outputs.ship_plans
+  source               = "./modules/dns"
+  gcp_project          = var.managed_dns_gcp_project
+  ui_ip_addresses      = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  api_ip_addresses     = data.terraform_remote_state.static_ips.outputs.api_ips_map
+  x509_ip_addresses    = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
+  vault_ip_addresses   = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  grafana_ip_addresses = data.terraform_remote_state.static_ips.outputs.grafana_ips_map
+  ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
 
   providers = {
     google = google.dns-zone
@@ -298,6 +299,10 @@ output "vault_bucket_name_map" {
   value = module.vault_setup.vault_bucket_name_map
 }
 
+output "grafana_hosts_map" {
+  value = module.spinnaker_dns.grafana_hosts_map
+}
+
 output "created_onboarding_bucket_name" {
   value = module.onboarding_storage.bucket_name
 }
@@ -357,3 +362,4 @@ output "spinnaker_halyard_service_account_display_name" {
 output "spinnaker_halyard_service_account_key_path" {
   value = module.halyard_service_account.service_account_key_path
 }
+

@@ -1,4 +1,4 @@
-variable "gcp_project" {
+ariable "gcp_project" {
   description = "GCP project name"
 }
 

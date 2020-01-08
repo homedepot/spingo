@@ -25,6 +25,8 @@ echo "Auto running setupSlack.sh"
 ./setupSlack.sh
 echo "Auto running setupOnboarding.sh"
 ./setupOnboarding.sh
+echo "Auto running setupMonitoring.sh"
+./setupMonitoring.sh
 
 echo "Auto running halpush to save configuration to halyard bucket"
 ./halpush.sh

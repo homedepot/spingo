@@ -1,0 +1,3 @@
+#!/bin/bash
+
+${SETUP_MONITORING_CONTENTS}

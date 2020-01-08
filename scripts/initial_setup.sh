@@ -314,6 +314,7 @@ do
             READ_PROMPT="$READ_PROMPT_BASE""$DEFAULT_CHOICE_PROMPT"" : "
         fi
         PS3="$READ_PROMPT";
+        # shellcheck disable=SC2046
         CLUSTER_REGION="$(select_with_default $(gcloud compute regions list --format='value(name)' 2>/dev/null))"
         CLUSTER_REGION="${CLUSTER_REGION:-$DEFAULT_CLUSTER_REGION}"
     done
@@ -506,9 +507,9 @@ for role in "${roles[@]}"; do
         if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
             --member serviceAccount:"$SA_EMAIL" \
             --role="$role"; then
-            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
-        else
             echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+        else
+            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
         fi
     else
         echo "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"

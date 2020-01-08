@@ -19,21 +19,21 @@ CWD=$(pwd)
 cd spinnaker-monitoring/spinnaker-monitoring-third-party/third_party/prometheus_operator
 sed -i grafana-dashboard.yaml.template -e "s/  name: %DASHBOARD%/  name: %DASHBOARD%\n  namespace: monitoring/"
 
-ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT="$( cd "$( dirname "$${BASH_SOURCE[0]}" )" && pwd )"
 
 for filename in "$ROOT"/../prometheus/*-dashboard.json; do
   fn_only=$(basename "$filename")
-  fn_root="${fn_only%.*}"
-  dest_file="generated_dashboards/${fn_root}.yaml"
+  fn_root="$${fn_only%.*}"
+  dest_file="generated_dashboards/$${fn_root}.yaml"
   uid=$(uuidgen)
 
   cat grafana-dashboard.yaml.template | sed -e "s/%DASHBOARD%/$fn_root/" > $dest_file
   printf "  $fn_only: |-\n" >> $dest_file
 
-  cat $filename | sed -e "s/\"uid\": null/\"uid\": \"${uid}\"/" \
+  cat $filename | sed -e "s/\"uid\": null/\"uid\": \"$${uid}\"/" \
     | sed -e "/\"__inputs\"/,/],/d" \
       -e "/\"__requires\"/,/],/d" \
-      -e "s/\${DS_SPINNAKER\}/Prometheus/g" \
+      -e "s/\$${DS_SPINNAKER\}/Prometheus/g" \
       -e "s/^/    /" \
   >> $dest_file
 done

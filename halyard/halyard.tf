@@ -341,6 +341,7 @@ data "template_file" "setupKubernetesMultiple" {
       PROJECT             = var.gcp_project
       USER                = var.service_account_name
       ONBOARDING_SA_EMAIL = data.terraform_remote_state.spinnaker.outputs.spinnaker_onboarding_service_account_email
+      VAULT_ADDR          = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map
       deployments         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
     })
   }

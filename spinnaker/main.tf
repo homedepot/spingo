@@ -271,6 +271,14 @@ module "vault_setup" {
   ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
 }
 
+module "metrics_setup" {
+  source            = "./modules/metrics"
+  gcp_project       = var.gcp_project
+  grafana_ips_map   = data.terraform_remote_state.static_ips.outputs.grafana_ips_map
+  grafana_hosts_map = data.terraform_remote_state.static_ips.outputs.grafana_hosts_map
+  ship_plans        = data.terraform_remote_state.static_ips.outputs.ship_plans
+}
+
 output "spinnaker_onboarding_service_account_email" {
   value = module.spinnaker_onboarding_service_account.service_account_email
 }
@@ -301,6 +309,10 @@ output "vault_bucket_name_map" {
 
 output "grafana_hosts_map" {
   value = module.spinnaker_dns.grafana_hosts_map
+}
+
+output "metrics_yml_files_map" {
+  value = module.metrics_setup.metrics_yml_files_map
 }
 
 output "created_onboarding_bucket_name" {

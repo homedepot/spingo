@@ -8,9 +8,13 @@ data "template_file" "values" {
   template = file("${path.module}/metrics.yml")
 
   vars = {
-    gf_server_root_url = "https://${var.grafana_hosts_map[each.key]}"
-    gf_auth_google_client_id = data.gcp-oauth.client-id
-    gf_auth_google_client_secret = data.gcp-oauth.client-secret
-    gf_load_balancer_ip = var.grafana_ips_map[each.key]
+    gf_server_root_url           = "https://${var.grafana_hosts_map[each.key]}"
+    gf_auth_google_client_id     = data.vault_generic_secret.gcp-oauth.data["client-id"]
+    gf_auth_google_client_secret = data.vault_generic_secret.gcp-oauth.data["client-secret"]
+    gf_load_balancer_ip          = var.grafana_ips_map[each.key]
   }
+}
+
+output "metrics_yml_files_map" {
+  value = { for k, v in var.ship_plans : k => base64encode(data.template_file.values[k].rendered) }
 }

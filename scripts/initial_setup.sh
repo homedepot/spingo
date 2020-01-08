@@ -532,16 +532,14 @@ fi
 
 cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
 cp "$SERVICE_ACCOUNT_DEST" ./halyard
+cp "$SERVICE_ACCOUNT_DEST" ./dns
 
 if [ "$PROJECT" != "$dns_project" ]; then
     echo "Using a seperate DNS project so getting service account JSON for the $dns_project project from the vault secret/$dns_project/terraform-account"
-    if [ -f dns/terraform-account.json ]; then
-        rm dns/terraform-account.json
+    if [ -f dns/terraform-account-dns.json ]; then
+        rm dns/terraform-account-dns.json
     fi
-    vault read -field="$dns_project" secret/"$dns_project"/terraform-account > dns/terraform-account.json
-else
-    echo "DNS project and Spinnaker project are the same"
-    cp "$SERVICE_ACCOUNT_DEST" ./dns
+    vault read -field="$dns_project" secret/"$dns_project"/terraform-account > dns/terraform-account-dns.json
 fi
 
 cp "$SERVICE_ACCOUNT_DEST" ./static_ips

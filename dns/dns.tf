@@ -6,7 +6,7 @@ data "vault_generic_secret" "terraform_account" {
 }
 
 provider "google" {
-  credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.gcp_project]
+  credentials = var.use_local_credential_file ? file("${var.terraform_account}-dns.json") : data.vault_generic_secret.terraform_account.data[var.gcp_project]
   project     = var.gcp_project
 }
 

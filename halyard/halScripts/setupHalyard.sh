@@ -247,6 +247,7 @@ sql:
     user: front50_migrate
     password: ${DB_FRONT50_MIGRATE_PASSWORD}
     jdbcUrl: jdbc:mysql://localhost:3306/front50?useSSL=false&useUnicode=true&characterEncoding=utf8
+
 spinnaker:
   gcs:
     enabled: false

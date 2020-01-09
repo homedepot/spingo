@@ -540,6 +540,7 @@ if [ "$PROJECT" != "$dns_project" ]; then
         rm dns/terraform-account-dns.json
     fi
     vault read -field="$dns_project" secret/"$dns_project"/terraform-account > dns/terraform-account-dns.json
+    cp dns/terraform-account-dns.json spinnaker/
 fi
 
 cp "$SERVICE_ACCOUNT_DEST" ./static_ips

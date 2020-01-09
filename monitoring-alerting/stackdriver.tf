@@ -26,7 +26,7 @@ data "terraform_remote_state" "static_ips" {
   config = {
     bucket      = "${var.gcp_project}-tf"
     credentials = "${var.terraform_account}.json" # this has to be a direct file location because it is needed before interpolation
-    prefix      = "spingo-static_ips"
+    prefix      = "spingo-static-ips"
   }
 }
 
@@ -122,7 +122,7 @@ resource "google_monitoring_alert_policy" "memorystore_alert_policy" {
   conditions {
     display_name = "Memorystore - Calls for ${title(each.value["clusterPrefix"])} [SUM]"
     condition_threshold {
-      filter     = "metric.type=\"redis.googleapis.com/commands/calls\" resource.type=\"redis_instance\" resource.label.\"instance_id\"=\"projects/${var.gcp_project}/locations/${each.value["clusterRegion"]}/instances/${data.terraform_remote_state.spinnaker.outputs.redis_instance_links_map[each.key]}\""
+      filter     = "metric.type=\"redis.googleapis.com/commands/calls\" resource.type=\"redis_instance\" resource.label.\"instance_id\"=\"projects/${var.gcp_project}/locations/${each.value["clusterRegion"]}/instances/${data.terraform_remote_state.spinnaker.outputs.redis_instance_link_map[each.key]}\""
       comparison = "COMPARISON_LT"
       duration   = "180s"
       trigger {

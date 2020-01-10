@@ -178,6 +178,102 @@ check_for_hostname_used() {
     fi
 }
 
+create_service_account(){
+    # $1 = Service account name to create
+    SA_NAME="$1"
+    echoerr "creating $SA_NAME service account"
+    SA_EMAIL="$(gcloud iam service-accounts list \
+        --filter="displayName:${SA_NAME}" \
+        --format='value(email)')"
+    if [ -n "$SA_EMAIL" ]; then
+        echoerr "Service account $SA_NAME already exists so no need to create it"
+    else
+        gcloud iam service-accounts create \
+            "$SA_NAME" \
+            --display-name "$SA_NAME"
+    fi
+
+    while [ -z "$SA_EMAIL" ]; do
+        echoerr "waiting for service account to be fully created..."
+        sleep 1
+        SA_EMAIL="$(gcloud iam service-accounts list \
+            --filter="displayName:${SA_NAME}" \
+            --format='value(email)')"
+    done
+
+    echoerr "Service account $SA_NAME created"
+}
+
+add_roles_to_service_account(){
+    # $1 = Service account name to add roles to
+    # $2 = list of roles to add if they don't already exist
+    # $3 = Project ID
+    SERVICE_ACCOUNT_NAME="$1"
+    list="$2[@]"
+    PROJECT="$3"
+    roles=("${!list}")
+
+    SA_EMAIL="$(gcloud iam service-accounts list \
+        --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+        --format='value(email)')"
+
+    if [ -n "$SA_EMAIL" ]; then
+        echoerr "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
+
+        EXISTING_ROLES="$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')"
+
+        for role in "${roles[@]}"; do
+            EXISTING_ROLE_CHECK="$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')"
+            if [ -z "$EXISTING_ROLE_CHECK" ]; then
+                echoerr "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
+                
+                if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
+                    --member serviceAccount:"$SA_EMAIL" \
+                    --role="$role"; then
+                    echoerr "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+                else
+                    echoerr "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+                fi
+            else
+                echoerr "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"
+            fi
+        done
+    else
+        echoerr "Unable to add roles to service account $SERVICE_ACCOUNT_NAME because it doesn't appear to exist"
+        exit 1
+    fi
+}
+
+create_and_save_service_account_key(){
+    # $1 = Service account name to add roles to
+    # $2 = list of roles to add if they don't already exist
+    # $3 = Path to store the newly created service account key
+    SERVICE_ACCOUNT_NAME="$1"
+    SERVICE_ACCOUNT_DEST="$2"
+    PROJECT="$3"
+
+    SA_EMAIL="$(gcloud iam service-accounts list \
+        --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+        --format='value(email)')"
+
+    if [ -n "$SA_EMAIL" ]; then
+        EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")"
+        if [ -z "$EXISTING_KEY" ]; then
+            echoerr "generating keys for $SERVICE_ACCOUNT_NAME"
+            gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
+                --iam-account "$SA_EMAIL"
+            echoerr "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
+            vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@"$SERVICE_ACCOUNT_DEST"
+        else
+            echoerr "key already exists in vault for $SERVICE_ACCOUNT_NAME so no need to create it again"
+            echo "$EXISTING_KEY" > "$SERVICE_ACCOUNT_DEST"
+        fi
+    else
+        echoerr "Unable to create and save key for service account $SERVICE_ACCOUNT_NAME because it doesn't appear to exist"
+        exit 1
+    fi
+}
+
 echo "-----------------------------------------------------------------------------"
 CURR_PROJ=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
 echo " *****   Current gcloud project is : $CURR_PROJ"
@@ -287,6 +383,7 @@ do
         echo "-----------------------------------------------------------------------------"
         echo "Managed DNS Google Cloud Project selected : $dns_project"
         terraform_variable "managed_dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
+        terraform_variable "managed_dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
         terraform_variable "gcp_project" "$dns_project" "$GIT_ROOT_DIR" "dns" "$PROJECT"
         vault write "secret/$PROJECT/dns_project_name" "value=$dns_project" >/dev/null 2>&1
         break;
@@ -457,8 +554,6 @@ terraform_variable "gcp_admin_email" "$gcp_admin_email" "$GIT_ROOT_DIR" "halyard
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 terraform_variable "spingo_user_email" "$USER_EMAIL" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
 
-
-
 echo "Enabling required Google Cloud APIs. This could take several minutes."
 echo "enabling iam.googleapis.com service"
 gcloud services enable iam.googleapis.com
@@ -478,26 +573,6 @@ echo "enabling cloudkms.googleapis.com - Needed for Vault"
 gcloud services enable cloudkms.googleapis.com
 
 echo "creating $SERVICE_ACCOUNT_NAME service account"
-SA_EMAIL="$(gcloud iam service-accounts list \
-      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)')"
-if [ -n "$SA_EMAIL" ]; then
-    echo "Service account $SERVICE_ACCOUNT_NAME already exists so no need to create it"
-else
-    gcloud iam service-accounts create \
-        "$SERVICE_ACCOUNT_NAME" \
-        --display-name "$SERVICE_ACCOUNT_NAME"
-fi
-
-while [ -z "$SA_EMAIL" ]; do
-  echo "waiting for service account to be fully created..."
-  sleep 1
-  SA_EMAIL="$(gcloud iam service-accounts list \
-      --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-      --format='value(email)')"
-done
-
-echo "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
 
 roles=(
     'roles/storage.admin'
@@ -515,50 +590,29 @@ roles=(
     'roles/pubsub.admin'
     'roles/cloudkms.admin'
 )
-
-EXISTING_ROLES="$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')"
-
-for role in "${roles[@]}"; do
-    EXISTING_ROLE_CHECK="$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')"
-    if [ -z "$EXISTING_ROLE_CHECK" ]; then
-        echo "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
-        
-        if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
-            --member serviceAccount:"$SA_EMAIL" \
-            --role="$role"; then
-            echo "Added role $role to service account $SERVICE_ACCOUNT_NAME"
-        else
-            echo "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
-        fi
-    else
-        echo "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"
-    fi
-done
-
-EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")"
-if [ -z "$EXISTING_KEY" ]; then
-    echo "generating keys for $SERVICE_ACCOUNT_NAME"
-    gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
-        --iam-account "$SA_EMAIL"
-    echo "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
-    vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@${SERVICE_ACCOUNT_DEST}
-else
-    echo "key already exists in vault for $SERVICE_ACCOUNT_NAME so no need to create it again"
-    echo "$EXISTING_KEY" > "$SERVICE_ACCOUNT_DEST"
-fi
+create_service_account "$SERVICE_ACCOUNT_NAME"
+add_roles_to_service_account "$SERVICE_ACCOUNT_NAME" roles
+create_and_save_service_account_key "$SERVICE_ACCOUNT_NAME" "$SERVICE_ACCOUNT_DEST" "$PROJECT"
 
 cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
 cp "$SERVICE_ACCOUNT_DEST" ./halyard
 cp "$SERVICE_ACCOUNT_DEST" ./dns
 
 if [ "$PROJECT" != "$dns_project" ]; then
-    echo "Using a seperate DNS project so getting service account JSON for the $dns_project project from the vault secret/$dns_project/terraform-account"
+    echoerr "Using a seperate DNS project so getting service account JSON for the $dns_project project from the vault secret/$dns_project/terraform-account"
     if [ -f dns/terraform-account-dns.json ]; then
         rm dns/terraform-account-dns.json
     fi
     vault read -field="$dns_project" secret/"$dns_project"/terraform-account > dns/terraform-account-dns.json
-    terraform_variable "dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
     cp dns/terraform-account-dns.json spinnaker/
+else
+    echoerr "Using Cloud DNS inside this project so creating Let's Encrypt (certbot) service account to be used by halyard to setup SSL"
+    roles=(
+        'roles/dns.admin'
+    )
+    create_service_account "certbot"
+    add_roles_to_service_account "certbot" roles
+    create_and_save_service_account_key "certbot" "certbot.json" "$PROJECT"
 fi
 
 cp "$SERVICE_ACCOUNT_DEST" ./static_ips

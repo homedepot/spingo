@@ -76,22 +76,14 @@ data "template_file" "vault" {
   }
 }
 
-resource "google_storage_bucket_object" "dns_certbot_service_account_key_storage" {
-  for_each     = var.gcp_project != var.dns_gcp_project ? { enabled = true } : {}
-  name         = ".gcp/certbot-dns.json"
-  content      = data.vault_generic_secret.certbot_dns_key["enabled"].data[var.dns_gcp_project]
-  bucket       = "${var.gcp_project}${var.bucket_name}"
-  content_type = "application/json"
-}
-
 data "template_file" "make_update_keystore_script" {
   template = file("./halScripts/make_or_update_keystore.sh")
 
   vars = {
     DNS             = var.cloud_dns_hostname
     KEYSTORE_PASS   = data.vault_generic_secret.keystore_pass.data["value"]
-    PROJECT         = var.gcp_project != var.dns_gcp_project ? var.dns_gcp_project : var.gcp_project
-    DNS_SA_KEY_PATH = var.gcp_project != var.dns_gcp_project ? "/${var.service_account_name}/.gcp/certbot-dns.json" : "/${var.service_account_name}/.gcp/certbot.json"
+    PROJECT         = var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project
+    DNS_SA_KEY_PATH = "/${var.service_account_name}/.gcp/certbot.json"
     USER            = var.service_account_name
     CERTBOT_EMAIL   = var.certbot_email
   }
@@ -452,11 +444,6 @@ data "vault_generic_secret" "front50_db_migrate_user_password" {
 
 data "vault_generic_secret" "slack_token" {
   path = "secret/${var.gcp_project}/slack-token"
-}
-
-data "vault_generic_secret" "certbot_dns_key" {
-  for_each = var.gcp_project != var.dns_gcp_project ? { enabled = true } : {}
-  path     = "secret/${var.dns_gcp_project}/terraform-account"
 }
 
 data "vault_generic_secret" "gcp_oauth" {

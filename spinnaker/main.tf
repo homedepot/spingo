@@ -237,12 +237,15 @@ resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
   member        = "serviceAccount:${module.halyard_service_account.service_account_email}"
 }
 
-module "certbot_service_account" {
-  source               = "./modules/gcp-service-account"
-  service_account_name = "certbot"
-  bucket_name          = module.halyard_storage.bucket_name
-  gcp_project          = var.gcp_project
-  roles                = ["roles/dns.admin"]
+data "vault_generic_secret" "certbot_dns_key" {
+  path     = "secret/${var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project}/certbot"
+}
+
+resource "google_storage_bucket_object" "dns_certbot_service_account_key_storage" {
+  name         = ".gcp/certbot.json"
+  content      = data.vault_generic_secret.certbot_dns_key.data[var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project]
+  bucket       = module.halyard_storage.bucket_name
+  content_type = "application/json"
 }
 
 module "vault_keyring" {

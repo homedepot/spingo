@@ -3,8 +3,8 @@ variable "gcp_project" {
   type        = string
 }
 
-variable "dns_gcp_project" {
-  description = "DNS GCP project name"
+variable "managed_dns_gcp_project" {
+  description = "GCP project name where the DNS managed zone lives"
   type        = string
 }
 

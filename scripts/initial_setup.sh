@@ -52,8 +52,7 @@ terraform_override() {
     fi
     vault write "secret/$5/local-override-$2" \
         "value"=@"$3/$4/override.tf" \
-        "vardirectory=$4" \
-        "varname=$2">/dev/null 2>&1
+        "vardirectory=$4" >/dev/null 2>&1
 }
 
 terraform_variable() {

@@ -61,9 +61,9 @@ terraform_variable() {
     # $3 = git root directory
     # $4 = terraform sub-project directory
     # $5 = GCP project name
-    # $6 = Store as JSON (boolean)
+    # $6 = Secret type or "" for text
     
-    if [ "$6" == "true" ]; then
+    if [ "$6" == "json" ]; then
         # Store as JSON
         SECRET_VALUE="$2"
         JSON_FILE_SUFFIX=".json"
@@ -385,7 +385,7 @@ do
 done
 
 terraform_variable "region" "$CLUSTER_REGION" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
-terraform_variable "ship_plans" "$SHIP_PLANS_JSON" "$GIT_ROOT_DIR" "static_ips" "$PROJECT" "true"
+terraform_variable "ship_plans" "$SHIP_PLANS_JSON" "$GIT_ROOT_DIR" "static_ips" "$PROJECT" "json"
 
 # choose a zone to place the Halyard VMs into
 echo "-----------------------------------------------------------------------------"

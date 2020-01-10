@@ -271,7 +271,7 @@ module "vault_setup" {
 resource "google_compute_firewall" "iap" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
   name     = "${each.key}-cloud-iap-ssh"
-  network  = each.key
+  network  = module.k8s.network_link_map[each.key]
 
   allow {
     protocol = "tcp"

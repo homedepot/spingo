@@ -31,8 +31,8 @@ setup_and_run_tf(){
 
     if [ "$RUN_DNS_IMPORT" == "true" ]; then
         echo "Existing Cloud DNS setup found so attempting to import"
-        DNS_PROJECT=$(cat "$GIT_ROOT_DIR/dns/var-gcp_project.auto.tfvars" | cut -d "\"" -f 2 -)
-        DNS_HOSTNAME=$(cat "$GIT_ROOT_DIR/dns/var-cloud_dns_hostname.auto.tfvars" | cut -d "\"" -f 2 -)
+        DNS_PROJECT=$(cut -d "\"" -f 2 "$GIT_ROOT_DIR/dns/var-gcp_project.auto.tfvars")
+        DNS_HOSTNAME=$(cut -d "\"" -f 2 "$GIT_ROOT_DIR/dns/var-cloud_dns_hostname.auto.tfvars")
         
         if terraform state list | grep "google_dns_managed_zone.project_zone"; then
             echo "Already imported Cloud DNS managed zone so nothing to import"

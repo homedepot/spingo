@@ -10,7 +10,9 @@ source "$GIT_ROOT_DIR"/scripts/common.sh
 
 setup_and_run_tf(){
     DIR="$GIT_ROOT_DIR/$1"
+    RUN_DNS_IMPORT="$2"
     cd "$DIR" || { echo "cd to $DIR failed. Unable to run terraform commands. Cowardly exiting" ; return; }
+
     n=0
     until [ $n -ge 20 ]
     do
@@ -21,25 +23,30 @@ setup_and_run_tf(){
         echo "Unable to initialize terraform directory $DIR retrying..."
         sleep 6
     done
+
     if [ "$ATTEMPT" == "fail" ]; then
         echo "terraform init of $DIR failed. Unable to run terraform commands. Cowardly exiting"
         exit 1
     fi
 
-    if [ "$DIR" == "dns" ] && [ -f terraform-account-dns.json ]; then
+    if [ "$RUN_DNS_IMPORT" == "true" ]; then
         echo "Existing Cloud DNS setup found so attempting to import"
-        DNS_PROJECT=$(cat var-gcp_project.auto.tfvars | cut -d "\"" -f 2 -)
-        DNS_HOSTNAME=$(cat var-cloud_dns_hostname.auto.tfvars | cut -d "\"" -f 2 -)
+        DNS_PROJECT=$(cat "$GIT_ROOT_DIR/dns/var-gcp_project.auto.tfvars" | cut -d "\"" -f 2 -)
+        DNS_HOSTNAME=$(cat "$GIT_ROOT_DIR/dns/var-cloud_dns_hostname.auto.tfvars" | cut -d "\"" -f 2 -)
         
-        if terraform import \
-            -var="use_local_credential_file=true" \
-            -var="gcp_project=$DNS_PROJECT" \
-            -var="cloud_dns_hostname=$DNS_HOSTNAME" \
-            google_dns_managed_zone.project_zone \
-            projects/"$DNS_PROJECT"/managedZones/spinnaker-wildcard-domain; then
-            echo "Successfully able to import existing Cloud DNS managed zone"
+        if terraform state list | grep "google_dns_managed_zone.project_zone"; then
+            echo "Already imported Cloud DNS managed zone so nothing to import"
         else
-            die "Unable to import existing Cloud DNS managed zone, possibly try manually?"
+            if terraform import \
+                -var="use_local_credential_file=true" \
+                -var="gcp_project=$DNS_PROJECT" \
+                -var="cloud_dns_hostname=$DNS_HOSTNAME" \
+                google_dns_managed_zone.project_zone \
+                projects/"$DNS_PROJECT"/managedZones/spinnaker-wildcard-domain; then
+                echo "Successfully able to import existing Cloud DNS managed zone"
+            else
+                die "Unable to import existing Cloud DNS managed zone, possibly try manually?"
+            fi
         fi
     fi
 
@@ -53,6 +60,7 @@ setup_and_run_tf(){
         echo "Unable to run apply command on terraform directory $DIR retrying..."
         sleep 6
     done
+
     if [ "$ATTEMPT" == "fail" ]; then
         echo "terraform apply -auto-approve of $DIR failed. Unable to run terraform commands. Cowardly exiting"
         exit 1
@@ -85,7 +93,13 @@ else
     fi
 fi
 
-setup_and_run_tf "dns"
+if [ -f "$GIT_ROOT_DIR/dns/terraform-account-dns.json" ]; then
+    RUN_DNS_IMPORT="true"
+else
+    RUN_DNS_IMPORT="false"
+fi
+
+setup_and_run_tf "dns" "$RUN_DNS_IMPORT"
 DNS_HOSTNAME=$(terraform output google_dns_managed_zone_hostname)
 DIG_CHECK=$(dig "$DNS_HOSTNAME" ns +short)
 if [ "$DIG_CHECK" == "" ]; then

@@ -557,6 +557,7 @@ if [ "$PROJECT" != "$dns_project" ]; then
         rm dns/terraform-account-dns.json
     fi
     vault read -field="$dns_project" secret/"$dns_project"/terraform-account > dns/terraform-account-dns.json
+    terraform_variable "dns_gcp_project" "$dns_project" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
     cp dns/terraform-account-dns.json spinnaker/
 fi
 

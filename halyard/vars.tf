@@ -1,5 +1,11 @@
 variable "gcp_project" {
   description = "GCP project name"
+  type        = string
+}
+
+variable "dns_gcp_project" {
+  description = "DNS GCP project name"
+  type        = string
 }
 
 variable "gcp_zone" {

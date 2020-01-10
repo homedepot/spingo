@@ -79,7 +79,7 @@ data "template_file" "vault" {
 resource "google_storage_bucket_object" "dns_certbot_service_account_key_storage" {
   for_each     = var.gcp_project != var.dns_gcp_project ? { enabled = true } : {}
   name         = ".gcp/certbot-dns.json"
-  content      = data.vault_generic_secret.certbot_dns_key["enabled"].data_json
+  content      = data.vault_generic_secret.certbot_dns_key["enabled"].data[var.dns_gcp_project]
   bucket       = "${var.gcp_project}${var.bucket_name}"
   content_type = "application/json"
 }
@@ -456,7 +456,7 @@ data "vault_generic_secret" "slack_token" {
 
 data "vault_generic_secret" "certbot_dns_key" {
   for_each = var.gcp_project != var.dns_gcp_project ? { enabled = true } : {}
-  path     = "secret/${var.dns_gcp_project}/certbot"
+  path     = "secret/${var.dns_gcp_project}/terraform-account"
 }
 
 data "vault_generic_secret" "gcp_oauth" {

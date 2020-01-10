@@ -36,7 +36,7 @@ resource "google_container_cluster" "cluster" {
   enable_legacy_abac          = var.enable_legacy_kubeconfig
   logging_service             = var.k8s_options["logging_service"]
   #node_version                = var.node_version == "" ? data.google_container_engine_versions.node.latest_node_version : var.node_version
-  min_master_version = var.k8s_version == "" ? data.google_container_engine_versions.master[each.value["clusterRegion"]].latest_master_version : var.k8s_version
+  min_master_version = var.k8s_version == "" ? data.google_container_engine_versions.master[each.value["clusterRegion"]].default_cluster_version : var.k8s_version
   master_authorized_networks_config {
     dynamic "cidr_blocks" {
       for_each = local.auth_list
@@ -147,7 +147,7 @@ resource "google_container_node_pool" "primary_pool" {
   cluster            = google_container_cluster.cluster[each.key].name
   location           = each.value["clusterRegion"]
   project            = var.project
-  version            = var.node_version == "" ? data.google_container_engine_versions.master[each.value["clusterRegion"]].latest_master_version : var.node_version
+  version            = var.node_version == "" ? data.google_container_engine_versions.master[each.value["clusterRegion"]].default_cluster_version : var.node_version
   initial_node_count = var.node_pool_options_map[each.key]["autoscaling_nodes_min"]
 
   autoscaling {

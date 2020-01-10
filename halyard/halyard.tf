@@ -451,6 +451,10 @@ data "vault_generic_secret" "gcp_oauth" {
   path = "secret/${var.gcp_project}/gcp-oauth"
 }
 
+data "google_compute_network" "network" {
+  name = var.network_name
+}
+
 resource "google_compute_instance" "halyard_spin_vm" {
   name         = "halyard-thd-spinnaker"
   machine_type = "n1-standard-4"
@@ -470,7 +474,8 @@ resource "google_compute_instance" "halyard_spin_vm" {
   }
 
   network_interface {
-    network = "default"
+    network    = data.google_compute_network.network.name
+    subnetwork = var.subnet_name != "" ? var.subnet_name : data.google_compute_network.network.subnetworks_self_links[0]
 
     access_config {
       nat_ip = data.terraform_remote_state.static_ips.outputs.halyard_ip

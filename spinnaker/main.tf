@@ -5,6 +5,10 @@ data "vault_generic_secret" "terraform_account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
 }
 
+data "vault_generic_secret" "terraform_account_dns" {
+  path = "secret/${var.managed_dns_gcp_project}/${var.terraform_account}"
+}
+
 provider "google" {
   credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.gcp_project]
   project     = var.gcp_project
@@ -13,7 +17,7 @@ provider "google" {
 
 provider "google" {
   alias       = "dns-zone"
-  credentials = var.use_local_credential_file ? file("${var.terraform_account}.json") : data.vault_generic_secret.terraform_account.data[var.managed_dns_gcp_project]
+  credentials = var.use_local_credential_file ? file("${var.terraform_account}-dns.json") : data.vault_generic_secret.terraform_account_dns.data[var.managed_dns_gcp_project]
   project     = var.managed_dns_gcp_project
   version     = "~> 2.8"
 }
@@ -131,7 +135,7 @@ data "http" "local_outgoing_ip_address" {
 
 module "spinnaker_dns" {
   source             = "./modules/dns"
-  gcp_project        = var.managed_dns_gcp_project
+  gcp_project        = var.gcp_project
   ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
   api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
   x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map

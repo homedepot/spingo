@@ -268,6 +268,21 @@ module "vault_setup" {
   ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
 }
 
+resource "google_compute_firewall" "iap" {
+  for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
+  name     = "${each.key}-cloud-iap-ssh"
+  network  = each.key
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = [
+    "35.235.240.0/20"
+  ]
+}
+
 output "spinnaker_onboarding_service_account_email" {
   value = module.spinnaker_onboarding_service_account.service_account_email
 }
@@ -294,6 +309,14 @@ output "vault_yml_files_map" {
 
 output "vault_bucket_name_map" {
   value = module.vault_setup.vault_bucket_name_map
+}
+
+output "halyard_network_name" {
+  value = keys(module.k8s.network_name_map)[0]
+}
+
+output "halyard_subnetwork_name" {
+  value = keys(module.k8s.subnet_name_map)[0]
 }
 
 output "created_onboarding_bucket_name" {

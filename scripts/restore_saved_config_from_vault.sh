@@ -28,51 +28,61 @@ then
   exit 1
 fi
 
-# can also run "gcloud config list --format 'value(core.project)' 2>/dev/null" to get the project name dynamically
 PROJECT=$(gcloud config list --format 'value(core.project)' 2>/dev/null)
-# DNS_PROJECT=$(vault read -field value secret/"$PROJECT"/dns_project_name)
 SERVICE_ACCOUNT_NAME="terraform-account"
-# DNS_SERVICE_ACCOUNT_NAME="terraform-account-dns"
 
+echo "Restoring terraform account for project $PROJECT"
 vault read -field "$PROJECT" secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" > "$SERVICE_ACCOUNT_NAME".json
-# vault read -field "$DNS_PROJECT" secret/"$DNS_PROJECT"/"$SERVICE_ACCOUNT_NAME" > "$DNS_SERVICE_ACCOUNT_NAME".json
 cp "$SERVICE_ACCOUNT_NAME".json ./halyard
 cp "$SERVICE_ACCOUNT_NAME".json ./spinnaker
 cp "$SERVICE_ACCOUNT_NAME".json ./static_ips
+cp "$SERVICE_ACCOUNT_NAME".json ./monitoring-alerting
 cp "$SERVICE_ACCOUNT_NAME".json ./dns
-# cp "$DNS_SERVICE_ACCOUNT_NAME".json ./dns/"$SERVICE_ACCOUNT_NAME".json
+rm "$SERVICE_ACCOUNT_NAME".json
 
-# For overrides.tf
-vault read -field value secret/"$PROJECT"/local-override-spingo-halyard > halyard/override.tf
-vault read -field value secret/"$PROJECT"/local-override-spingo-dns > dns/override.tf
-vault read -field value secret/"$PROJECT"/local-override-spingo-spinnaker > spinnaker/override.tf
-vault read -field value secret/"$PROJECT"/local-override-spingo-static-ips > static_ips/override.tf
+DNS_PROJECT=$(vault -field=value read secret/"$PROJECT"/local-vars-dns-gcp_project | cut -d "\"" -f 2 -)
 
-# GCP Project name
-vault read -field value secret/"$PROJECT"/local-vars-spinnaker-gcp_project > spinnaker/var-gcp_project.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_project > halyard/var-gcp_project.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-static_ips-gcp_project > static_ips/var-gcp_project.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-monitoring-alerting-gcp_project > monitoring-alerting/var-gcp_project.auto.tfvars
+if [ "$PROJECT" != "$DNS_PROJECT" ]; then
+    echo "Restoring terraform account for seperate DNS project $DNS_PROJECT"
+    vault read -field="$DNS_PROJECT" secret/"$DNS_PROJECT"/"$SERVICE_ACCOUNT_NAME" > "dns/$SERVICE_ACCOUNT_NAME-dns.json"
+fi
 
-# For DNS domain to manage
-vault read -field value secret/"$PROJECT"/local-vars-dns-cloud_dns_hostname > dns/var-cloud_dns_hostname.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-halyard-cloud_dns_hostname > halyard/var-cloud_dns_hostname.auto.tfvars
+echo "Restoring Overrides for $PROJECT"
+for secret in $(vault list -format=json secret/"$PROJECT" | jq -r '.[] | select(startswith("local-override"))'); do
+    echo "Restoring override for $secret"
+    SECRET=$(vault read "$secret")
+    DIR=$(echo "$SECRET" | awk '/vardirectory/ {print $2}')
+    vault read -field value secret/"$PROJECT"/"$secret" > "$DIR/override.tf"
+done
 
-# For DNS project
-vault read -field value secret/"$PROJECT"/local-vars-spinnaker-managed_dns_gcp_project > spinnaker/var-managed_dns_gcp_project.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-dns-gcp_project > dns/var-gcp_project.auto.tfvars
-
-# For cluster region
-vault read -field value secret/"$PROJECT"/local-vars-static_ips-region > static_ips/var-region.auto.tfvars
-vault read -field value -format json secret/"$PROJECT"/local-vars-static_ips-ship_plans > static_ips/var-ship_plans.auto.tfvars.json
-
-# For halyard VM zone
-vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_zone > halyard/var-gcp_zone.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-halyard-certbot_email > halyard/var-certbot_email.auto.tfvars
-
-# For GCP Org Admin Email
-vault read -field value secret/"$PROJECT"/local-vars-halyard-gcp_admin_email > halyard/var-gcp_admin_email.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-halyard-spingo_user_email > spinnaker/var-spingo_user_email.auto.tfvars
-vault read -field value secret/"$PROJECT"/local-vars-halyard-spingo_user_email > halyard/var-spingo_user_email.auto.tfvars
+echo "Restoring variables for $PROJECT"
+for secret in $(vault list -format=json secret/"$PROJECT" | jq -r '.[] | select(startswith("local-vars"))'); do
+    echo "Restoring variable for $secret"
+    SECRET=$(vault read "$secret")
+    DIR=$(echo "$SECRET" | awk '/vardirectory/ {print $2}')
+    if [ -z "$DIR" ]; then
+        die "Unable to get vardirectory field from secret $secret (vardirectory should hold the directory to place the variable into)"
+    fi
+    VARIABLE_NAME=$(echo "$SECRET" | awk '/varname / {print $2}')
+    if [ -z "$VARIABLE_NAME" ]; then
+        die "Unable to get varname field from secret $secret (varname should hold the variable name to create)"
+    fi
+    SECRET_TYPE=$(echo "$SECRET" | awk '/vartype / {print $2}')
+    if [ -z "$SECRET_TYPE" ]; then
+        die "Unable to get vartype field from secret $secret (vartype should hold the type of the variable)"
+    fi
+    case $SECRET_TYPE in
+        json)
+            JSON_FILE_SUFFIX=".json"
+            ;;
+        text)
+            JSON_FILE_SUFFIX=""
+            ;;
+        *)
+            JSON_FILE_SUFFIX=""
+            ;;
+    esac
+    vault read -field value secret/"$PROJECT"/"$secret" > "$DIR/var-$VARIABLE_NAME.auto.tfvars$JSON_FILE_SUFFIX"
+done
 
 cd "$CWD" || { echo "failed to return to directory $CWD"; exit;}

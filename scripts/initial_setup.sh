@@ -50,7 +50,10 @@ terraform_override() {
     then
         die "Unable to write terraform backend override file for $4"
     fi
-    vault write "secret/$5/local-override-$2" "value"=@"$3/$4/override.tf" >/dev/null 2>&1
+    vault write "secret/$5/local-override-$2" \
+        "value"=@"$3/$4/override.tf" \
+        "vardirectory=$4" \
+        "varname=$2">/dev/null 2>&1
 }
 
 terraform_variable() {
@@ -59,9 +62,25 @@ terraform_variable() {
     # $3 = git root directory
     # $4 = terraform sub-project directory
     # $5 = GCP project name
-
-    echo -e "$1 = \"${2}\"" > "$3/$4/var-$1.auto.tfvars"
-    vault write "secret/$5/local-vars-$4-$1" "value"=@"$3/$4/var-$1.auto.tfvars" >/dev/null 2>&1
+    # $6 = Store as JSON (boolean)
+    
+    if [ "$6" == "true" ]; then
+        # Store as JSON
+        SECRET_VALUE="$2"
+        JSON_FILE_SUFFIX=".json"
+        SECRET_TYPE="json"
+    else
+        # Do not store as JSON
+        SECRET_VALUE="$1 = \"$2\""
+        JSON_FILE_SUFFIX=""
+        SECRET_TYPE="text"
+    fi
+    echo -e "$SECRET_VALUE" > "$3/$4/var-$1.auto.tfvars$JSON_FILE_SUFFIX"
+    vault write "secret/$5/local-vars-$4-$1" \
+        "value"=@"$3/$4/var-$1.auto.tfvars$JSON_FILE_SUFFIX" \
+        "varname=$1" \
+        "vardirectory=$4" \
+        "vartype=$SECRET_TYPE" >/dev/null 2>&1
 }
 
 prompt_to_use_base_hostname_for_deck_or_get_value(){
@@ -212,6 +231,8 @@ while [[ "$BUCKET_CHECK" =~ "Traceback" ]];do
     BUCKET_CHECK=$(gsutil versioning set on gs://"$TERRAFORM_REMOTE_GCS_NAME"/ 2>&1)
     echo "Inner Bucket Check : $BUCKET_CHECK"
 done
+
+vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
 
 if ! vault read -field "value" secret/"$PROJECT"/keystore_pass >/dev/null 2>&1
   then
@@ -365,8 +386,7 @@ do
 done
 
 terraform_variable "region" "$CLUSTER_REGION" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"
-echo "$SHIP_PLANS_JSON" > "$GIT_ROOT_DIR"/static_ips/var-ship_plans.auto.tfvars.json
-vault write "secret/$PROJECT/local-vars-static_ips-ship_plans" "value"=@"$GIT_ROOT_DIR/static_ips/var-ship_plans.auto.tfvars.json" >/dev/null 2>&1
+terraform_variable "ship_plans" "$SHIP_PLANS_JSON" "$GIT_ROOT_DIR" "static_ips" "$PROJECT" "true"
 
 # choose a zone to place the Halyard VMs into
 echo "-----------------------------------------------------------------------------"
@@ -515,8 +535,6 @@ for role in "${roles[@]}"; do
         echo "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"
     fi
 done
-
-vault secrets enable -path=secret/"$PROJECT" -default-lease-ttl=0 -max-lease-ttl=0 kv >/dev/null 2>&1
 
 EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")"
 if [ -z "$EXISTING_KEY" ]; then

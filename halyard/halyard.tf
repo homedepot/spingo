@@ -445,14 +445,8 @@ data "vault_generic_secret" "slack_token" {
   path = "secret/${var.gcp_project}/slack-token"
 }
 
-#This is manually put into vault and created manually
-#Get OAUTH secrets
 data "vault_generic_secret" "gcp_oauth" {
   path = "secret/${var.gcp_project}/gcp-oauth"
-}
-
-data "google_compute_network" "network" {
-  name = var.network_name
 }
 
 resource "google_compute_instance" "halyard_spin_vm" {
@@ -474,8 +468,8 @@ resource "google_compute_instance" "halyard_spin_vm" {
   }
 
   network_interface {
-    network    = data.google_compute_network.network.name
-    subnetwork = var.subnet_name != "" ? var.subnet_name : data.google_compute_network.network.subnetworks_self_links[0]
+    network    = data.terraform_remote_state.spinnaker.outputs.halyard_network_name
+    subnetwork = data.terraform_remote_state.spinnaker.outputs.halyard_subnetwork_name
 
     access_config {
       nat_ip = data.terraform_remote_state.static_ips.outputs.halyard_ip
@@ -491,5 +485,5 @@ resource "google_compute_instance" "halyard_spin_vm" {
 }
 
 output "halyard_command" {
-  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard_spin_vm.name}\""
+  value = "gcloud beta compute --project \"${var.gcp_project}\" ssh --tunnel-through-iap --zone \"${var.gcp_zone}\" \"${google_compute_instance.halyard_spin_vm.name}\""
 }

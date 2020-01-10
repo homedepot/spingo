@@ -64,13 +64,3 @@ variable "use_local_credential_file" {
   type    = bool
   default = false
 }
-
-variable "network_name" {
-  type    = string
-  default = "default"
-}
-
-variable "subnet_name" {
-  type    = string
-  default = ""
-}

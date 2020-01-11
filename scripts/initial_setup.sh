@@ -591,7 +591,7 @@ roles=(
     'roles/cloudkms.admin'
 )
 create_service_account "$SERVICE_ACCOUNT_NAME"
-add_roles_to_service_account "$SERVICE_ACCOUNT_NAME" roles
+add_roles_to_service_account "$SERVICE_ACCOUNT_NAME" roles "$PROJECT"
 create_and_save_service_account_key "$SERVICE_ACCOUNT_NAME" "$SERVICE_ACCOUNT_DEST" "$PROJECT"
 
 cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
@@ -611,7 +611,7 @@ else
         'roles/dns.admin'
     )
     create_service_account "certbot"
-    add_roles_to_service_account "certbot" roles
+    add_roles_to_service_account "certbot" roles "$PROJECT"
     create_and_save_service_account_key "certbot" "certbot.json" "$PROJECT"
 fi
 

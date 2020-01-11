@@ -74,6 +74,14 @@ module "k8s" {
   ship_plans_without_agent  = data.terraform_remote_state.static_ips.outputs.ship_plans
   cloudnat_name_map         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map))), concat(values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map)))
   cloudnat_ips              = data.terraform_remote_state.static_ips.outputs.cloudnat_ips
+  service_account_iam_roles = [
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/monitoring.viewer",
+    "roles/storage.objectViewer",
+    "roles/compute.viewer",
+    "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.vault_role.role_id}"
+  ]
 }
 
 module "google_managed" {
@@ -159,6 +167,19 @@ resource "google_project_iam_custom_role" "onboarding_role" {
   permissions = ["storage.objects.list", "storage.objects.create"]
 }
 
+resource "google_project_iam_custom_role" "vault_role" {
+  role_id     = "vault_gcp_role"
+  title       = "Vault SA Role"
+  description = "This role will allow vault to verify everything it needs for gcp authentication"
+  permissions = [
+    "iam.serviceAccounts.get",
+    "iam.serviceAccountKeys.get",
+    "compute.instances.get",
+    "compute.instanceGroups.list",
+    "compute.instanceGroups.listInstances",
+  ]
+}
+
 resource "google_storage_bucket_iam_binding" "binding" {
   bucket = module.onboarding_storage.bucket_name
   role   = "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
@@ -237,17 +258,6 @@ resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
   member        = "serviceAccount:${module.halyard_service_account.service_account_email}"
 }
 
-data "vault_generic_secret" "certbot_dns_key" {
-  path     = "secret/${var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project}/certbot"
-}
-
-resource "google_storage_bucket_object" "dns_certbot_service_account_key_storage" {
-  name         = ".gcp/certbot.json"
-  content      = data.vault_generic_secret.certbot_dns_key.data[var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project]
-  bucket       = module.halyard_storage.bucket_name
-  content_type = "application/json"
-}
-
 module "vault_keyring" {
   source                   = "./modules/kms_key_ring"
   kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
@@ -274,7 +284,7 @@ module "vault_setup" {
 resource "google_compute_firewall" "iap" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
   name     = "${each.key}-cloud-iap-ssh"
-  network  = module.k8s.network_link_map[each.key]
+  network  = each.key
 
   allow {
     protocol = "tcp"

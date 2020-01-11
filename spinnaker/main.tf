@@ -79,7 +79,6 @@ module "k8s" {
     "roles/monitoring.metricWriter",
     "roles/monitoring.viewer",
     "roles/storage.objectViewer",
-    "roles/compute.viewer",
     "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.vault_role.role_id}"
   ]
 }
@@ -176,7 +175,6 @@ resource "google_project_iam_custom_role" "vault_role" {
     "iam.serviceAccountKeys.get",
     "compute.instances.get",
     "compute.instanceGroups.list",
-    "compute.instanceGroups.listInstances",
   ]
 }
 

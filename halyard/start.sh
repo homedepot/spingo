@@ -44,6 +44,7 @@ echo "Installing Vault"
 runuser -l ${USER} -c 'curl "https://releases.hashicorp.com/vault/1.2.3/vault_1.2.3_linux_amd64.zip" > /home/${USER}/vault.zip'
 runuser -l ${USER} -c 'unzip /home/${USER}/vault.zip -d /home/${USER}'
 runuser -l ${USER} -c 'sudo mv /home/${USER}/vault /usr/local/bin/vault'
+runuser -l ${USER} -c 'rm /home/${USER}/vault.zip'
 
 echo "Installing Helm"
 runuser -l ${USER} -c 'curl -LO https://git.io/get_helm.sh'

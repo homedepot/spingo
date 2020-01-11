@@ -208,42 +208,44 @@ add_roles_to_service_account(){
     # $1 = Service account name to add roles to
     # $2 = list of roles to add if they don't already exist
     # $3 = Project ID
-    SERVICE_ACCOUNT_NAME="$1"
+    SA_NAME="$1"
     list="$2[@]"
     PROJECT="$3"
     roles=("${!list}")
-
+    SA_EMAIL="$(gcloud iam service-accounts list \
+        --filter="displayName:${SA_NAME}" \
+        --format='value(email)')"
     while [ -z "$SA_EMAIL" ]; do
         echoerr "waiting for service account to be fully created..."
         sleep 1
         SA_EMAIL="$(gcloud iam service-accounts list \
-            --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+            --filter="displayName:${SA_NAME}" \
             --format='value(email)')"
     done
 
     if [ -n "$SA_EMAIL" ]; then
-        echoerr "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"
+        echoerr "adding roles to $SA_NAME for $SA_EMAIL"
 
         EXISTING_ROLES="$(gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" --format="json" --filter="bindings.members:$SA_EMAIL" | jq -r '.[].bindings' | jq -s '.')"
 
         for role in "${roles[@]}"; do
             EXISTING_ROLE_CHECK="$(echo "$EXISTING_ROLES" | jq -r --arg rl "$role" '.[] | select(.role == $rl) | .role')"
             if [ -z "$EXISTING_ROLE_CHECK" ]; then
-                echoerr "Attempting to add role $role to service account $SERVICE_ACCOUNT_NAME"
+                echoerr "Attempting to add role $role to service account $SA_NAME"
                 
                 if gcloud --no-user-output-enabled projects add-iam-policy-binding "$PROJECT" \
                     --member serviceAccount:"$SA_EMAIL" \
                     --role="$role"; then
-                    echoerr "Added role $role to service account $SERVICE_ACCOUNT_NAME"
+                    echoerr "Added role $role to service account $SA_NAME"
                 else
-                    echoerr "Unable to add role $role to service account $SERVICE_ACCOUNT_NAME"
+                    echoerr "Unable to add role $role to service account $SA_NAME"
                 fi
             else
-                echoerr "Role $role already exists on service account $SERVICE_ACCOUNT_NAME so nothing to add"
+                echoerr "Role $role already exists on service account $SA_NAME so nothing to add"
             fi
         done
     else
-        echoerr "Unable to add roles to service account $SERVICE_ACCOUNT_NAME because it doesn't appear to exist"
+        echoerr "Unable to add roles to service account $SA_NAME because it doesn't appear to exist"
         exit 1
     fi
 }
@@ -252,28 +254,28 @@ create_and_save_service_account_key(){
     # $1 = Service account name to add roles to
     # $2 = list of roles to add if they don't already exist
     # $3 = Path to store the newly created service account key
-    SERVICE_ACCOUNT_NAME="$1"
-    SERVICE_ACCOUNT_DEST="$2"
+    SA_NAME="$1"
+    SA_DEST="$2"
     PROJECT="$3"
 
     SA_EMAIL="$(gcloud iam service-accounts list \
-        --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+        --filter="displayName:${SA_NAME}" \
         --format='value(email)')"
 
     if [ -n "$SA_EMAIL" ]; then
-        EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SERVICE_ACCOUNT_NAME")"
+        EXISTING_KEY="$(vault read -field="$PROJECT" "secret/$PROJECT/$SA_NAME")"
         if [ -z "$EXISTING_KEY" ]; then
-            echoerr "generating keys for $SERVICE_ACCOUNT_NAME"
-            gcloud iam service-accounts keys create "$SERVICE_ACCOUNT_DEST" \
+            echoerr "generating keys for $SA_NAME"
+            gcloud iam service-accounts keys create "$SA_DEST" \
                 --iam-account "$SA_EMAIL"
-            echoerr "writing $SERVICE_ACCOUNT_DEST to vault in secret/$PROJECT/$SERVICE_ACCOUNT_NAME"
-            vault write secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" "$PROJECT"=@"$SERVICE_ACCOUNT_DEST"
+            echoerr "writing $SA_DEST to vault in secret/$PROJECT/$SA_NAME"
+            vault write secret/"$PROJECT"/"$SA_NAME" "$PROJECT"=@"$SA_DEST"
         else
-            echoerr "key already exists in vault for $SERVICE_ACCOUNT_NAME so no need to create it again"
-            echo "$EXISTING_KEY" > "$SERVICE_ACCOUNT_DEST"
+            echoerr "key already exists in vault for $SA_NAME so no need to create it again"
+            echo "$EXISTING_KEY" > "$SA_DEST"
         fi
     else
-        echoerr "Unable to create and save key for service account $SERVICE_ACCOUNT_NAME because it doesn't appear to exist"
+        echoerr "Unable to create and save key for service account $SA_NAME because it doesn't appear to exist"
         exit 1
     fi
 }
@@ -601,6 +603,9 @@ create_and_save_service_account_key "$SERVICE_ACCOUNT_NAME" "$SERVICE_ACCOUNT_DE
 cp "$SERVICE_ACCOUNT_DEST" ./spinnaker
 cp "$SERVICE_ACCOUNT_DEST" ./halyard
 cp "$SERVICE_ACCOUNT_DEST" ./dns
+cp "$SERVICE_ACCOUNT_DEST" ./static_ips
+cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
+rm "$SERVICE_ACCOUNT_DEST"
 
 if [ "$PROJECT" != "$dns_project" ]; then
     echoerr "Using a seperate DNS project so getting service account JSON for the $dns_project project from the vault secret/$dns_project/terraform-account"
@@ -617,11 +622,8 @@ else
     create_service_account "certbot"
     add_roles_to_service_account "certbot" roles "$PROJECT"
     create_and_save_service_account_key "certbot" "certbot.json" "$PROJECT"
+    rm certbot.json
 fi
-
-cp "$SERVICE_ACCOUNT_DEST" ./static_ips
-cp "$SERVICE_ACCOUNT_DEST" ./monitoring-alerting
-rm "$SERVICE_ACCOUNT_DEST"
 
 echo "setup complete"
 cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

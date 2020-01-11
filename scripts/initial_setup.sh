@@ -213,9 +213,13 @@ add_roles_to_service_account(){
     PROJECT="$3"
     roles=("${!list}")
 
-    SA_EMAIL="$(gcloud iam service-accounts list \
-        --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
-        --format='value(email)')"
+    while [ -z "$SA_EMAIL" ]; do
+        echoerr "waiting for service account to be fully created..."
+        sleep 1
+        SA_EMAIL="$(gcloud iam service-accounts list \
+            --filter="displayName:${SERVICE_ACCOUNT_NAME}" \
+            --format='value(email)')"
+    done
 
     if [ -n "$SA_EMAIL" ]; then
         echoerr "adding roles to $SERVICE_ACCOUNT_NAME for $SA_EMAIL"

@@ -22,5 +22,5 @@ variable "ship_plans" {
 }
 
 variable "service_account_email_map" {
-  type = map(map(string))
+  type = map(string)
 }

@@ -57,6 +57,7 @@ data "google_project" "project" {
 
 locals {
   full_ship_plan_keys = concat(keys(module.gke_keys.crypto_key_id_map), formatlist("%s-agent", keys(module.gke_keys.crypto_key_id_map)))
+  node_cidr_pool      = cidrsubnets("10.1.0.0/16", 4, 4, 4, 4, 4, 4, 4, 4)
 }
 
 module "k8s" {
@@ -86,9 +87,9 @@ module "k8s" {
     "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.vault_role.role_id}"
   ]
   k8s_ip_ranges_map = { for s in local.full_ship_plan_keys : s => {
-    master_cidr = "172.16.0.0/28"                                     # Specifies a private RFC1918 block for the master's VPC. The master range must not overlap with any subnet in your cluster's VPC. The master and your cluster use VPC peering. Must be specified in CIDR notation and must be /28 subnet. See: https://www.terraform.io/docs/providers/google/r/container_cluster.html#master_ipv4_cidr_block 10.0.82.0/28
-    pod_cidr    = "10.60.0.0/14" # The IP address range of the kubernetes pods in this cluster.
-    svc_cidr    = "10.190.16.0/20"
+    master_cidr = "172.16.0.0/28" # Specifies a private RFC1918 block for the master's VPC. The master range must not overlap with any subnet in your cluster's VPC. The master and your cluster use VPC peering. Must be specified in CIDR notation and must be /28 subnet. See: https://www.terraform.io/docs/providers/google/r/container_cluster.html#master_ipv4_cidr_block 10.0.82.0/28
+    pod_cidr    = "10.60.0.0/14"  # The IP address range of the kubernetes pods in this cluster.
+    svc_cidr    = "10.19${index(local.full_ship_plan_keys, s)}.16.0/20"
     node_cidr   = "10.19${index(local.full_ship_plan_keys, s)}.0.0/22"
     }
   }

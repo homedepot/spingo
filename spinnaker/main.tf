@@ -57,7 +57,6 @@ data "google_project" "project" {
 
 locals {
   full_ship_plan_keys = concat(keys(module.gke_keys.crypto_key_id_map), formatlist("%s-agent", keys(module.gke_keys.crypto_key_id_map)))
-  node_cidr_pool      = cidrsubnets("10.1.0.0/16", 4, 4, 4, 4, 4, 4, 4, 4)
 }
 
 module "k8s" {

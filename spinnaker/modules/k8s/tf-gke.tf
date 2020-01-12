@@ -29,7 +29,7 @@ resource "google_container_cluster" "cluster" {
   workload_identity_config {
     identity_namespace = "${data.google_project.project.project_id}.svc.id.goog"
   }
-  cluster_ipv4_cidr           = var.k8s_ip_ranges["pod_cidr"]
+  cluster_ipv4_cidr           = var.k8s_ip_ranges_map[each.key]["pod_cidr"]
   description                 = var.description
   enable_binary_authorization = var.k8s_options["binary_authorization"]
   enable_kubernetes_alpha     = var.extras["kubernetes_alpha"]
@@ -120,7 +120,7 @@ resource "google_container_cluster" "cluster" {
     for_each = local.private_cluster
     content {
       enable_private_nodes   = var.private_cluster
-      master_ipv4_cidr_block = var.k8s_ip_ranges["master_cidr"]
+      master_ipv4_cidr_block = var.k8s_ip_ranges_map[each.key]["master_cidr"]
     }
   }
 

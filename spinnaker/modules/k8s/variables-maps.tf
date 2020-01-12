@@ -12,6 +12,11 @@ variable "k8s_ip_ranges" {
   }
 }
 
+variable "k8s_ip_ranges_map" {
+  type        = map(map(string))
+  description = "See recommended IP range sizing: https://cloud.google.com/kubernetes-engine/docs/how-to/alias-ips#defaults_limits"
+}
+
 # Map: K8s Control Plane Options
 ###############################
 variable "k8s_options" {

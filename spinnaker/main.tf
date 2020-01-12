@@ -81,6 +81,13 @@ module "k8s" {
     "roles/storage.objectViewer",
     "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.vault_role.role_id}"
   ]
+  k8s_ip_ranges_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+    master_cidr = "172.16.0.0/28"                                                                           # Specifies a private RFC1918 block for the master's VPC. The master range must not overlap with any subnet in your cluster's VPC. The master and your cluster use VPC peering. Must be specified in CIDR notation and must be /28 subnet. See: https://www.terraform.io/docs/providers/google/r/container_cluster.html#master_ipv4_cidr_block 10.0.82.0/28
+    pod_cidr    = "1${index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), k)}.60.0.0/14" # The IP address range of the kubernetes pods in this cluster.
+    svc_cidr    = "1${index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), k)}.190.16.0/20"
+    node_cidr   = "1${index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), k)}.190.0.0/22"
+    }
+  }
 }
 
 module "google_managed" {

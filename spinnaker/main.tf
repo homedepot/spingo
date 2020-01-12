@@ -244,6 +244,17 @@ resource "google_service_account_iam_binding" "k8s_sa_workload_identity_binding"
   ]
 }
 
+data "vault_generic_secret" "certbot_account" {
+  path = "secret/${var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project}/certbot"
+}
+
+resource "google_storage_bucket_object" "service_account_key_storage" {
+  name         = ".gcp/certbot.json"
+  content      = data.vault_generic_secret.certbot_account.data[var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project]
+  bucket       = module.halyard_storage.bucket_name
+  content_type = "application/json"
+}
+
 module "halyard_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-halyard"

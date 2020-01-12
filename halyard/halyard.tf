@@ -458,6 +458,10 @@ resource "google_compute_instance" "halyard_spin_vm" {
     automatic_restart = true
   }
 
+  tags = [
+    data.terraform_remote_state.spinnaker.outputs.halyard_network_name
+  ]
+
   boot_disk {
     initialize_params {
       image = "ubuntu-os-cloud/ubuntu-1604-lts"

@@ -20,7 +20,7 @@ do
    docker run \
   -e GCE_PROJECT="${PROJECT}" \
   -e GCE_SERVICE_ACCOUNT_FILE="/gcloud-service-account.json" \
-  -v /${USER}/.gcp/certbot.json:/gcloud-service-account.json:ro \
+  -v ${DNS_SA_KEY_PATH}:/gcloud-service-account.json:ro \
   -v /${USER}/certstore:/certstore \
   -u 1978:1978 \
     goacme/lego \

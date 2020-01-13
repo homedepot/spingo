@@ -1,5 +1,11 @@
 variable "gcp_project" {
   description = "GCP project name"
+  type        = string
+}
+
+variable "managed_dns_gcp_project" {
+  description = "GCP project name where the DNS managed zone lives"
+  type        = string
 }
 
 variable "gcp_zone" {
@@ -63,14 +69,4 @@ variable "spinnaker_admin_slack_channel" {
 variable "use_local_credential_file" {
   type    = bool
   default = false
-}
-
-variable "network_name" {
-  type    = string
-  default = "default"
-}
-
-variable "subnet_name" {
-  type    = string
-  default = ""
 }

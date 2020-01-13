@@ -55,6 +55,11 @@ data "google_client_config" "current" {
 data "google_project" "project" {
 }
 
+locals {
+  full_ship_plan_keys = concat(keys(module.gke_keys.crypto_key_id_map), formatlist("%s-agent", keys(module.gke_keys.crypto_key_id_map)))
+  pod_cidr_pool = concat(cidrsubnets("10.0.0.0/12", 2, 2, 2, 2), cidrsubnets("172.16.0.0/12", 2, 2, 2, 2))
+}
+
 module "k8s" {
   source          = "./modules/k8s"
   project         = var.gcp_project
@@ -64,16 +69,30 @@ module "k8s" {
 
   oauth_scopes              = var.default_oauth_scopes
   k8s_options               = var.default_k8s_options
-  node_options_map          = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat([for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.default_node_options], [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.second_cluster_node_options]))
-  node_pool_options_map     = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat([for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.default_node_pool_options], [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.second_cluster_node_pool_options]))
+  node_options_map          = zipmap(local.full_ship_plan_keys, concat([for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.default_node_options], [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.second_cluster_node_options]))
+  node_pool_options_map     = zipmap(local.full_ship_plan_keys, concat([for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.default_node_pool_options], [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : var.second_cluster_node_pool_options]))
   node_metadata             = var.default_node_metadata
   client_certificate_config = var.default_client_certificate_config
   extras                    = var.extras
   crypto_key_id_map         = zipmap(concat(keys(module.gke_keys.crypto_key_id_map), formatlist("%s-agent", keys(module.gke_keys.crypto_key_id_map))), concat(values(module.gke_keys.crypto_key_id_map), values(module.gke_keys.crypto_key_id_map)))
-  ship_plans                = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.ship_plans))), concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
+  ship_plans                = zipmap(local.full_ship_plan_keys, concat(values(data.terraform_remote_state.static_ips.outputs.ship_plans), values(data.terraform_remote_state.static_ips.outputs.ship_plans)))
   ship_plans_without_agent  = data.terraform_remote_state.static_ips.outputs.ship_plans
   cloudnat_name_map         = zipmap(concat(keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), formatlist("%s-agent", keys(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map))), concat(values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map), values(data.terraform_remote_state.static_ips.outputs.cloudnat_name_map)))
   cloudnat_ips              = data.terraform_remote_state.static_ips.outputs.cloudnat_ips
+  service_account_iam_roles = [
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+    "roles/monitoring.viewer",
+    "roles/storage.objectViewer",
+    "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.vault_role.role_id}"
+  ]
+  k8s_ip_ranges_map = { for s in local.full_ship_plan_keys : s => {
+    master_cidr = "172.16.0.0/28" # Specifies a private RFC1918 block for the master's VPC. The master range must not overlap with any subnet in your cluster's VPC. The master and your cluster use VPC peering. Must be specified in CIDR notation and must be /28 subnet. See: https://www.terraform.io/docs/providers/google/r/container_cluster.html#master_ipv4_cidr_block 10.0.82.0/28
+    pod_cidr    = local.pod_cidr_pool[index(local.full_ship_plan_keys, s)]  # The IP address range of the kubernetes pods in this cluster.
+    svc_cidr    = "10.19${index(local.full_ship_plan_keys, s)}.16.0/20"
+    node_cidr   = "10.19${index(local.full_ship_plan_keys, s)}.0.0/22"
+    }
+  }
 }
 
 module "google_managed" {
@@ -159,6 +178,18 @@ resource "google_project_iam_custom_role" "onboarding_role" {
   permissions = ["storage.objects.list", "storage.objects.create"]
 }
 
+resource "google_project_iam_custom_role" "vault_role" {
+  role_id     = "vault_gcp_role"
+  title       = "Vault SA Role"
+  description = "This role will allow vault to verify everything it needs for gcp authentication"
+  permissions = [
+    "iam.serviceAccounts.get",
+    "iam.serviceAccountKeys.get",
+    "compute.instances.get",
+    "compute.instanceGroups.list",
+  ]
+}
+
 resource "google_storage_bucket_iam_binding" "binding" {
   bucket = module.onboarding_storage.bucket_name
   role   = "projects/${var.gcp_project}/roles/${google_project_iam_custom_role.onboarding_role.role_id}"
@@ -214,6 +245,17 @@ resource "google_service_account_iam_binding" "k8s_sa_workload_identity_binding"
   ]
 }
 
+data "vault_generic_secret" "certbot_account" {
+  path = "secret/${var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project}/certbot"
+}
+
+resource "google_storage_bucket_object" "service_account_key_storage" {
+  name         = ".gcp/certbot.json"
+  content      = data.vault_generic_secret.certbot_account.data[var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project]
+  bucket       = module.halyard_storage.bucket_name
+  content_type = "application/json"
+}
+
 module "halyard_service_account" {
   source               = "./modules/gcp-service-account"
   service_account_name = "spinnaker-halyard"
@@ -237,14 +279,6 @@ resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
   member        = "serviceAccount:${module.halyard_service_account.service_account_email}"
 }
 
-module "certbot_service_account" {
-  source               = "./modules/gcp-service-account"
-  service_account_name = "certbot"
-  bucket_name          = module.halyard_storage.bucket_name
-  gcp_project          = var.gcp_project
-  roles                = ["roles/dns.admin"]
-}
-
 module "vault_keyring" {
   source                   = "./modules/kms_key_ring"
   kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
@@ -260,12 +294,28 @@ module "vault_keys" {
 }
 
 module "vault_setup" {
-  source               = "./modules/vault"
-  gcp_project          = var.gcp_project
-  kms_keyring_name_map = module.vault_keyring.kms_key_ring_name_map
-  vault_ips_map        = data.terraform_remote_state.static_ips.outputs.vault_ips_map
-  crypto_key_id_map    = module.vault_keys.crypto_key_id_map
-  ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
+  source                    = "./modules/vault"
+  gcp_project               = var.gcp_project
+  kms_keyring_name_map      = module.vault_keyring.kms_key_ring_name_map
+  vault_ips_map             = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  crypto_key_id_map         = module.vault_keys.crypto_key_id_map
+  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
+  service_account_email_map = module.k8s.service_account_map
+}
+
+resource "google_compute_firewall" "iap" {
+  for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
+  name     = "${each.key}-cloud-iap-ssh"
+  network  = module.k8s.network_link_map[each.key]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = [
+    "35.235.240.0/20"
+  ]
 }
 
 output "spinnaker_onboarding_service_account_email" {
@@ -294,6 +344,14 @@ output "vault_yml_files_map" {
 
 output "vault_bucket_name_map" {
   value = module.vault_setup.vault_bucket_name_map
+}
+
+output "halyard_network_name" {
+  value = keys(module.k8s.network_name_map)[0]
+}
+
+output "halyard_subnetwork_name" {
+  value = keys(module.k8s.subnet_name_map)[0]
 }
 
 output "created_onboarding_bucket_name" {

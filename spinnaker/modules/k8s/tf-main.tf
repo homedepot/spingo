@@ -25,18 +25,18 @@ resource "google_compute_subnetwork" "subnet" {
   network                  = google_compute_network.vpc[each.key].name # https://github.com/terraform-providers/terraform-provider-google/issues/1792
   region                   = each.value["clusterRegion"]
   description              = var.description
-  ip_cidr_range            = var.k8s_ip_ranges["node_cidr"]
+  ip_cidr_range            = var.k8s_ip_ranges_map[each.key]["node_cidr"]
   private_ip_google_access = true
 
   # enable_flow_logs = "${var.enable_flow_logs}" # TODO
   secondary_ip_range {
     range_name    = "${each.key}-k8s-pod"
-    ip_cidr_range = var.k8s_ip_ranges["pod_cidr"]
+    ip_cidr_range = var.k8s_ip_ranges_map[each.key]["pod_cidr"]
   }
 
   secondary_ip_range {
     range_name    = "${each.key}-k8s-svc"
-    ip_cidr_range = var.k8s_ip_ranges["svc_cidr"]
+    ip_cidr_range = var.k8s_ip_ranges_map[each.key]["svc_cidr"]
   }
 }
 

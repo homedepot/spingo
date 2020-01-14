@@ -50,7 +50,7 @@ fi
 echo "Restoring Overrides for $PROJECT"
 for secret in $(vault list -format=json secret/"$PROJECT" | jq -r '.[] | select(startswith("local-override"))'); do
     echo "Restoring override for $secret"
-    SECRET=$(vault read "$secret")
+    SECRET=$(vault read "secret/$PROJECT/$secret")
     DIR=$(echo "$SECRET" | awk '/vardirectory/ {print $2}')
     vault read -field value secret/"$PROJECT"/"$secret" > "$DIR/override.tf"
 done
@@ -58,7 +58,7 @@ done
 echo "Restoring variables for $PROJECT"
 for secret in $(vault list -format=json secret/"$PROJECT" | jq -r '.[] | select(startswith("local-vars"))'); do
     echo "Restoring variable for $secret"
-    SECRET=$(vault read "$secret")
+    SECRET=$(vault read "secret/$PROJECT/$secret")
     DIR=$(echo "$SECRET" | awk '/vardirectory/ {print $2}')
     if [ -z "$DIR" ]; then
         die "Unable to get vardirectory field from secret $secret (vardirectory should hold the directory to place the variable into)"

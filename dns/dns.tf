@@ -14,6 +14,11 @@ resource "google_dns_managed_zone" "project_zone" {
   name        = "spinnaker-wildcard-domain"
   description = "Managed by Terraform created by Spingo"
   dns_name    = "${var.cloud_dns_hostname}."
+  lifecycle {
+    ignore_changes = [
+      dnssec_config
+    ]
+  }
 }
 
 output "google_dns_managed_zone_hostname" {

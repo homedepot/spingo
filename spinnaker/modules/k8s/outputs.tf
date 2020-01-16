@@ -37,10 +37,6 @@ output "subnet_name_map" {
   value = { for k, v in var.ship_plans : k => google_compute_subnetwork.subnet[k].name }
 }
 
-output "k8s_ip_ranges" {
-  value = var.k8s_ip_ranges
-}
-
 output "instace_urls_map" {
   value = { for k, v in var.ship_plans : k => google_container_cluster.cluster[k].instance_group_urls }
 }

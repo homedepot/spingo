@@ -40,7 +40,7 @@ cp "$SERVICE_ACCOUNT_NAME".json ./monitoring-alerting
 cp "$SERVICE_ACCOUNT_NAME".json ./dns
 rm "$SERVICE_ACCOUNT_NAME".json
 
-DNS_PROJECT=$(vault -field=value read secret/"$PROJECT"/local-vars-dns-gcp_project | cut -d "\"" -f 2 -)
+DNS_PROJECT=$(vault read -field=value secret/"$PROJECT"/local-vars-dns-gcp_project | cut -d "\"" -f 2 -)
 
 if [ "$PROJECT" != "$DNS_PROJECT" ]; then
     echo "Restoring terraform account for seperate DNS project $DNS_PROJECT"

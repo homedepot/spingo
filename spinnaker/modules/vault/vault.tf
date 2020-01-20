@@ -24,14 +24,14 @@ resource "google_storage_bucket_iam_member" "vault_server" {
   for_each = var.ship_plans
   bucket   = google_storage_bucket.vault[each.key].name
   role     = "roles/storage.objectAdmin"
-  member   = "serviceAccount:${each.key}@${var.gcp_project}.iam.gserviceaccount.com"
+  member   = "serviceAccount:${var.service_account_email_map[each.key]}"
 }
 
 resource "google_kms_crypto_key_iam_member" "vault_init" {
   for_each      = var.ship_plans
   crypto_key_id = lookup(var.crypto_key_id_map, each.key, "")
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${each.key}@${var.gcp_project}.iam.gserviceaccount.com"
+  member        = "serviceAccount:${var.service_account_email_map[each.key]}"
 }
 
 # Render the YAML file
@@ -45,7 +45,7 @@ data "template_file" "vault" {
     kms_crypto_key   = "vault_key_${each.key}"
     crypto_key_id    = lookup(var.crypto_key_id_map, each.key, "")
     project          = var.gcp_project
-    cluster_sa_email = "${each.key}@${var.gcp_project}.iam.gserviceaccount.com"
+    cluster_sa_email = var.service_account_email_map[each.key]
     cluster_region   = each.value["clusterRegion"]
     load_balancer_ip = lookup(var.vault_ips_map, each.key, "")
   }

@@ -20,3 +20,7 @@ variable "ship_plans" {
   type        = map(map(string))
   description = "The object that describes all of the clusters that need to be built by Spingo"
 }
+
+variable "service_account_email_map" {
+  type = map(string)
+}

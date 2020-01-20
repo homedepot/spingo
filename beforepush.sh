@@ -5,4 +5,7 @@ if ! command -v docker; then
 fi
 
 GIT_ROOT=$(git rev-parse --show-toplevel)
-docker run -v "$GIT_ROOT:/mnt" npmaile/spingo-sanity-tests bash -c /mnt/scripts/pre-push-tests.sh
+docker run \
+    -v "$GIT_ROOT:/mnt:ro" \
+    npmaile/spingo-sanity-tests bash \
+    -c /mnt/scripts/pre-push-tests.sh

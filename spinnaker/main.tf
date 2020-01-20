@@ -320,7 +320,7 @@ resource "google_compute_firewall" "iap" {
 
 resource "google_compute_firewall" "vault_agent_injector" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  name     = "${each.key}-vault_agent_injector"
+  name     = "${each.key}-vault-agent-injector"
   network  = module.k8s.network_link_map[each.key]
 
   allow {

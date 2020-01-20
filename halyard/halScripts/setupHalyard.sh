@@ -76,6 +76,8 @@ overrideBaseUrl: redis://${SPIN_REDIS_ADDR}
 skipLifeCycleManagement: true
 REDIS
 
+${SPIN_SERVICES}
+
 # set-up orca to use cloudsql proxy
 tee /tmp/halconfig-orca-patch-${DEPLOYMENT_INDEX}.yml << ORCA_PATCH
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.sidecars.spin-orca.0.name: cloudsql-proxy
@@ -111,12 +113,6 @@ CLOUDDRIVER_PATCH
 
 yq write -i -s /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.hal/config && rm /tmp/halconfig-clouddriver-patch-${DEPLOYMENT_INDEX}.yml
 
-
-tee /${USER}/.kube/kubeconfig_patch.yml << EOF
-users.0.user.exec.apiVersion: client.authentication.k8s.io/v1beta1
-users.0.user.exec.args[+]: "/tmp/gcloud/auth_token"
-users.0.user.exec.command: /bin/cat
-EOF
 
 tee /${USER}/.hal/${DEPLOYMENT_NAME}/service-settings/clouddriver.yml << EOF
 kubernetes:
@@ -275,6 +271,15 @@ if [[ -f /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token && -s /${USER}/vaul
     echo "Dynamic Account Tokens found so configuring dynamic account for deployment ${DEPLOYMENT_NAME}"
 
     cp /${USER}/vault/dyn_acct_${DEPLOYMENT_NAME}_rw_token /home/${USER}/.vault-token
+
+    if [ ! -f tee /${USER}/.kube/kubeconfig_patch.yml ]; then
+        tee /${USER}/.kube/kubeconfig_patch.yml << EOF
+users.0.user.exec.apiVersion: client.authentication.k8s.io/v1beta1
+users.0.user.exec.args[+]: "/tmp/gcloud/auth_token"
+users.0.user.exec.command: /bin/cat
+EOF
+    fi
+    
 
     echo "Setting Dynamic Account Secret for deployment ${DEPLOYMENT_NAME}"
     # First we read the existing account information, then we lookup the contents of the kubeconfigFile

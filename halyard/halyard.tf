@@ -267,10 +267,12 @@ data "template_file" "k8ssl" {
     SPIN_UI_IP  = data.google_compute_address.ui[each.key].address
     SPIN_API_IP = data.google_compute_address.api[each.key].address
     KUBE_CONFIG = "/${var.service_account_name}/.kube/${each.key}.config"
-    SPIN_CLI_SERVICE = templatefile("./halScripts/spin-gate-api.sh", {
+    SPIN_SERVICES = templatefile("./halScripts/spin-gate-api.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
-        clientIP   = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
-        kubeConfig = "/${var.service_account_name}/.kube/${k}.config"
+        gateSpinApiIP = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
+        gateApiIP     = data.terraform_remote_state.static_ips.outputs.api_ips_map[k]
+        uiIP          = data.terraform_remote_state.static_ips.outputs.ui_ips_map[k]
+        kubeConfig    = "/${var.service_account_name}/.kube/${k}.config"
         }
       }
     })
@@ -316,6 +318,15 @@ data "template_file" "setupHalyard" {
     DEPLOYMENT_INDEX                = index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), each.key)
     VAULT_ADDR                      = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map[each.key]
     KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${each.key}.config"
+    SPIN_SERVICES = templatefile("./halScripts/spin-gate-api.sh", {
+      deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+        gateSpinApiIP = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
+        gateApiIP     = data.terraform_remote_state.static_ips.outputs.api_ips_map[k]
+        uiIP          = data.terraform_remote_state.static_ips.outputs.ui_ips_map[k]
+        kubeConfig    = "/${var.service_account_name}/.kube/${k}.config"
+        }
+      }
+    })
   }
 }
 

@@ -12,30 +12,6 @@ hal config pubsub google subscription add $SPIN_SUB_NAME \
   --json-path $JSON_SA_KEY \
   --deployment ${deployment}
 
-echo "Creating Gate x509 API Service for deployment named ${deployment}"
-cat <<SVC_EOF | kubectl --kubeconfig="${details.kubeConfig}" apply -f -
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-gate
-  name: spin-gate-spin-api
-  namespace: spinnaker
-spec:
-  loadBalancerIP: ${details.clientIP}
-  ports:
-  - port: 443
-    protocol: TCP
-    targetPort: 8085
-  selector:
-    app: spin
-    cluster: spin-gate
-  sessionAffinity: None
-  type: LoadBalancer
-SVC_EOF
-
-echo "Added Gate x509 API Service for deployment named ${deployment}"
 hal config security authn x509 edit --role-oid 1.2.840.10070.8.1 --deployment ${deployment}
 hal config security api ssl edit --client-auth WANT --deployment ${deployment}
 hal config security authn x509 enable --deployment ${deployment}

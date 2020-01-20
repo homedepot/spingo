@@ -76,49 +76,7 @@ overrideBaseUrl: redis://${SPIN_REDIS_ADDR}
 skipLifeCycleManagement: true
 REDIS
 
-cat <<SVC_EOF | kubectl --kubeconfig="${KUBE_CONFIG}" apply -f -
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-gate
-  name: spin-gate-api
-  namespace: spinnaker
-spec:
-  loadBalancerIP: ${GATE_API_IP}
-  ports:
-  - port: 443
-    protocol: TCP
-    targetPort: 8084
-  selector:
-    app: spin
-    cluster: spin-gate
-  sessionAffinity: None
-  type: LoadBalancer
-SVC_EOF
-
-cat <<SVC_EOF | kubectl --kubeconfig="${KUBE_CONFIG}" apply -f -
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: spin
-    cluster: spin-deck
-  name: spin-deck-ui
-  namespace: spinnaker
-spec:
-  loadBalancerIP: ${UI_IP}
-  ports:
-  - port: 443
-    protocol: TCP
-    targetPort: 9000
-  selector:
-    app: spin
-    cluster: spin-deck
-  sessionAffinity: None
-  type: LoadBalancer
-SVC_EOF
+${SPIN_SERVICES}
 
 # set-up orca to use cloudsql proxy
 tee /tmp/halconfig-orca-patch-${DEPLOYMENT_INDEX}.yml << ORCA_PATCH

@@ -13,14 +13,14 @@ hal config pubsub google subscription add $SPIN_SUB_NAME \
   --deployment ${deployment}
 
 echo "Creating Gate x509 API Service for deployment named ${deployment}"
-cat <<SVC_EOF | kubectl -n spinnaker --kubeconfig="${details.kubeConfig}" apply -f -
+cat <<SVC_EOF | kubectl --kubeconfig="${details.kubeConfig}" apply -f -
 apiVersion: v1
 kind: Service
 metadata:
   labels:
     app: spin
     cluster: spin-gate
-  name: spin-gate-api
+  name: spin-gate-spin-api
   namespace: spinnaker
 spec:
   loadBalancerIP: ${details.clientIP}

@@ -317,8 +317,6 @@ data "template_file" "setupHalyard" {
     DEPLOYMENT_NAME                 = each.key
     DEPLOYMENT_INDEX                = index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), each.key)
     VAULT_ADDR                      = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map[each.key]
-    GATE_API_IP                     = data.terraform_remote_state.static_ips.outputs.api_ips_map[each.key]
-    UI_IP                           = data.terraform_remote_state.static_ips.outputs.ui_ips_map[each.key]
     KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${each.key}.config"
     SPIN_SERVICES = templatefile("./halScripts/spin-gate-api.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {

@@ -321,7 +321,7 @@ resource "google_compute_firewall" "iap" {
 
 resource "google_compute_firewall" "vault_agent_injector" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  name     = "${each.key}-vault_agent_injector"
+  name     = "${each.key}-vault-agent-injector"
   network  = module.k8s.network_link_map[each.key]
 
   allow {
@@ -346,6 +346,7 @@ module "metrics_setup" {
   grafana_ips_map   = data.terraform_remote_state.static_ips.outputs.grafana_ips_map
   grafana_hosts_map = data.terraform_remote_state.static_ips.outputs.grafana_hosts_map
   ship_plans        = data.terraform_remote_state.static_ips.outputs.ship_plans
+  cloud_dns_hostname = var.cloud_dns_hostname
 }
 
 output "spinnaker_onboarding_service_account_email" {
@@ -444,3 +445,6 @@ output "spinnaker_halyard_service_account_key_path" {
   value = module.halyard_service_account.service_account_key_path
 }
 
+output "metrics_yml_files_map" {
+  value = module.metrics_setup.metrics_yml_files_map
+}

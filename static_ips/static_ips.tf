@@ -75,6 +75,10 @@ output "grafana_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.grafana[k].address }
 }
 
+output "grafana_hosts_map" {
+  value = { for k, v in var.ship_plans : k => google_compute_address.grafana[k].name }
+}
+
 output "cloudnat_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.cloudnat[k].address }
 }

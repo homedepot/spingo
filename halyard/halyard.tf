@@ -403,10 +403,12 @@ data "template_file" "setupMonitoring" {
   vars = {
     SETUP_MONITORING_CONTENTS = templatefile("./halScripts/setupMonitoringContent.sh", {
       USER = var.service_account_name
+      DNS     = var.cloud_dns_hostname
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         metricsYaml = data.terraform_remote_state.spinnaker.outputs.metrics_yml_files_map[k]
         clusterName = v["clusterPrefix"]
         kubeConfig  = "/${var.service_account_name}/.kube/${k}.config"
+	grafanaLoadBalancerIpAddress = data.terraform_remote_state.static_ips.outputs.grafana_ips_map[k]
         }
       }
     })

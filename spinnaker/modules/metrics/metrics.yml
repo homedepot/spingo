@@ -1,9 +1,26 @@
 grafana:
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+      scheme: HTTPS
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+      scheme: HTTPS
+    initialDelaySeconds: 60
+    timeoutSeconds: 30
+    failureThreshold: 10
+    periodSeconds: 10
   persistence:
     enabled: true
   grafana.ini:
     server:
-      root_url: ${gf_server_root_url}
+      root_url: ${gf_server_root_url}.${gf_cloud_dns_hostname}
+      protocol: https
+      cert_file: /opt/grafana-tls/grafana.pem
+      cert_key: /opt/grafana-tls/grafana.key
     auth.google:
       enabled: true
       client_id: ${gf_auth_google_client_id}
@@ -14,6 +31,11 @@ grafana:
       allow_sign_up: true
   service:
     loadBalancerIP: ${gf_load_balancer_ip}
+  extraSecretMounts:
+  - name: grafana-tls
+    mountpath: /opt/grafana-tls
+    secretName: grafana-tls
+    readOnly: false
 
 prometheus:
   additionalServiceMonitors:

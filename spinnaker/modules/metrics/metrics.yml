@@ -31,8 +31,6 @@ grafana:
       auth_url: https://accounts.google.com/o/oauth2/auth
       token_url: https://accounts.google.com/o/oauth2/token
       allow_sign_up: true
-  service:
-    loadBalancerIP: ${gf_load_balancer_ip}
   extraSecretMounts:
   - name: grafana-tls
     mountPath: /opt/grafana-tls

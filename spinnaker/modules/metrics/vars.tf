@@ -3,10 +3,6 @@ variable "gcp_project" {
   description = "GCP project name"
 }
 
-variable "grafana_ips_map" {
-  type = map(string)
-}
-
 variable "grafana_hosts_map" {
   type = map(string)
 }

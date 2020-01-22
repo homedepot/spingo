@@ -44,7 +44,7 @@ resource "google_dns_record_set" "vault" {
 
 resource "google_dns_record_set" "grafana" {
   for_each     = var.ship_plans
-  name         = "grafana-${each.key}.${each.value["wildcardDomain"]}."
+  name         = "${each.value["grafanaSubdomain"]}.${each.value["wildcardDomain"]}."
   type         = "A"
   ttl          = 300
   managed_zone = "spinnaker-wildcard-domain"
@@ -81,6 +81,17 @@ EOF
 
 }
 
+resource "vault_generic_secret" "grafana_address" {
+  for_each = var.ship_plans
+  path     = "secret/${var.gcp_project}/spinnaker_ui_url/${each.key}"
+
+  data_json = <<-EOF
+              {"url":"${each.value["grafanaSubdomain"]}.${each.value["wildcardDomain"]}"}
+EOF
+
+}
+
+
 output "ui_hosts_map" {
   value = { for k, v in var.ship_plans : k => "${v["deckSubdomain"]}${length(v["deckSubdomain"]) > 0 ? "." : ""}${v["wildcardDomain"]}" }
 }
@@ -98,5 +109,5 @@ output "vault_hosts_map" {
 }
 
 output "grafana_hosts_map" {
-  value = { for k, v in var.ship_plans : k => "grafana-${k}.${v["wildcardDomain"]}" }
+  value = { for k, v in var.ship_plans : k => "${v["grafanaSubdomain"]}.${v["wildcardDomain"]}" }
 }

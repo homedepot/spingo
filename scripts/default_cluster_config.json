@@ -7,7 +7,8 @@
         "gateSubdomain": "np-api",
         "deckSubdomain": "np",
         "x509Subdomain": "np-spin-api",
-        "vaultSubdomain": "vault-np"
+        "vaultSubdomain": "vault-np",
+        "grafanaSubdomain": "grafana-np"
       },
       "sandbox-us-central1": {
         "clusterPrefix": "sandbox",
@@ -16,7 +17,8 @@
         "gateSubdomain": "sandbox-api",
         "deckSubdomain": "sandbox",
         "x509Subdomain": "sandbox-spin-api",
-        "vaultSubdomain": "vault-sandbox"
+        "vaultSubdomain": "vault-sandbox",
+	"grafanaSubdomain": "grafana-sandbox"
       }
     }
   }

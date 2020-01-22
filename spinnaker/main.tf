@@ -343,8 +343,7 @@ resource "google_compute_firewall" "vault_agent_injector" {
 module "metrics_setup" {
   source            = "./modules/metrics"
   gcp_project       = var.gcp_project
-  grafana_ips_map   = data.terraform_remote_state.static_ips.outputs.grafana_ips_map
-  grafana_hosts_map = data.terraform_remote_state.static_ips.outputs.grafana_hosts_map
+  grafana_hosts_map = module.spinnaker_dns.grafana_hosts_map
   ship_plans        = data.terraform_remote_state.static_ips.outputs.ship_plans
   cloud_dns_hostname = var.cloud_dns_hostname
 }

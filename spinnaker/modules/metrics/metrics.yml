@@ -35,7 +35,7 @@ grafana:
     loadBalancerIP: ${gf_load_balancer_ip}
   extraSecretMounts:
   - name: grafana-tls
-    mountpath: /opt/grafana-tls
+    mountPath: /opt/grafana-tls
     secretName: grafana-tls
     readOnly: false
 

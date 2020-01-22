@@ -18,7 +18,7 @@ jobs:
       - name: 'Terraform Init'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'init'
           tf_actions_working_dir: 'static_ips'
           tf_actions_comment: true
@@ -27,7 +27,7 @@ jobs:
       - name: 'Terraform Validate'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'validate'
           tf_actions_working_dir: 'static_ips'
           tf_actions_comment: true
@@ -51,7 +51,7 @@ jobs:
       - name: 'Terraform Init'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'init'
           tf_actions_working_dir: 'dns'
           tf_actions_comment: true
@@ -60,7 +60,7 @@ jobs:
       - name: 'Terraform Validate'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'validate'
           tf_actions_working_dir: 'dns'
           tf_actions_comment: true
@@ -84,7 +84,7 @@ jobs:
       - name: 'Terraform Init'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'init'
           tf_actions_working_dir: 'spinnaker'
           tf_actions_comment: true
@@ -93,7 +93,7 @@ jobs:
       - name: 'Terraform Validate'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'validate'
           tf_actions_working_dir: 'spinnaker'
           tf_actions_comment: true
@@ -117,7 +117,7 @@ jobs:
       - name: 'Terraform Init'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'init'
           tf_actions_working_dir: 'halyard'
           tf_actions_comment: true
@@ -126,7 +126,7 @@ jobs:
       - name: 'Terraform Validate'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'validate'
           tf_actions_working_dir: 'halyard'
           tf_actions_comment: true
@@ -150,7 +150,7 @@ jobs:
       - name: 'Terraform Init'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'init'
           tf_actions_working_dir: 'monitoring-alerting'
           tf_actions_comment: true
@@ -159,7 +159,7 @@ jobs:
       - name: 'Terraform Validate'
         uses: hashicorp/terraform-github-actions@master
         with:
-          tf_actions_version: 0.12.13
+          tf_actions_version: 0.12.19
           tf_actions_subcommand: 'validate'
           tf_actions_working_dir: 'monitoring-alerting'
           tf_actions_comment: true

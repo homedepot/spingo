@@ -35,7 +35,7 @@ echo "Creating monitoring namespace for deployment ${deployment}"
 
 kubectl --kubeconfig="${details.kubeConfig}" create namespace monitoring
 
-echo "Creating TLS cert kubernetes secrets for deployment ${deployment}
+echo "Creating TLS cert kubernetes secrets for deployment ${deployment}"
 
 
 cat <<SECRET_EOF | kubectl -n monitoring --kubeconfig="${details.kubeConfig}" apply -f -
@@ -48,7 +48,7 @@ type: Opaque
 data:
   grafana.pem: $(cat /${USER}/certbot/${DNS}_wildcard.crt | base64 -w 0)
   grafana.key: $(cat /${USER}/certbot/${DNS}_wildcard.key | base64 -w 0)
-SECRET_EOF 
+SECRET_EOF
   
 echo -e "Creating grafana dashboards as ConfigMaps for deployment ${deployment}\n"
 

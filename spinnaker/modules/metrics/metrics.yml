@@ -1,10 +1,12 @@
 grafana:
   livenessProbe:
+    # This is necessary because the liveness probe only uses http by default.
     httpGet:
       path: /api/health
       port: 3000
       scheme: HTTPS
   readinessProbe:
+    # This is necessary because the readiness  probe only uses http by default.
     httpGet:
       path: /api/health
       port: 3000

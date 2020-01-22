@@ -86,6 +86,10 @@ echo "Enabling metric-stored in halyard"
 
 hal config metric-stores prometheus enable --deployment ${deployment}
 
+echo "deploying metric-enabled spinnaker"
+
+hal deploy apply
+
 echo "Starting up prometheus-operator through helm for deployment ${deployment}"
 helm install \
     --name spin \

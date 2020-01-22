@@ -19,7 +19,7 @@ grafana:
     enabled: true
   grafana.ini:
     server:
-      root_url: ${gf_server_root_url}.${gf_cloud_dns_hostname}
+      root_url: ${gf_server_root_url}
       protocol: https
       cert_file: /opt/grafana-tls/grafana.pem
       cert_key: /opt/grafana-tls/grafana.key

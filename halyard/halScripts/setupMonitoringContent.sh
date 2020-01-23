@@ -8,7 +8,7 @@ fi
 %{ for deployment, details in deployments ~}
 echo "generating load balancer for ${deployment} grafana instance"
 
-cat <<EOF | kubectl apply -f -
+cat <<EOF | kubectl -n monitoring --kubeconfig="${details.kubeConfig}" apply -f - 
 apiVersion: v1
 kind: Service
 metadata:

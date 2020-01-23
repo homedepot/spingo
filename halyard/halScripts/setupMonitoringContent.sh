@@ -6,6 +6,11 @@ fi
 
 
 %{ for deployment, details in deployments ~}
+
+echo "Creating monitoring namespace for deployment ${deployment}"
+
+kubectl --kubeconfig="${details.kubeConfig}" create namespace monitoring
+
 echo "generating load balancer for ${deployment} grafana instance"
 
 cat <<EOF | kubectl -n monitoring --kubeconfig="${details.kubeConfig}" apply -f - 
@@ -30,10 +35,6 @@ EOF
 
 
 echo "${details.metricsYaml}" | base64 -d > /${USER}/metrics/metrics_${details.clusterName}_helm_values.yml
-
-echo "Creating monitoring namespace for deployment ${deployment}"
-
-kubectl --kubeconfig="${details.kubeConfig}" create namespace monitoring
 
 echo "Creating TLS cert kubernetes secrets for deployment ${deployment}"
 

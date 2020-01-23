@@ -485,7 +485,6 @@ do
         fi
     done
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk, gateSubdomain: $gt, x509Subdomain: $x509, vaultSubdomain: $vlt, wildcardDomain: $wd } }')
-    n=$((n+1))
     echo "-----------------------------------------------------------------------------"
     echo " *****   The subdomain for grafana is the address where the grafana server will be setup for system graphical monitoring"
     GRAFANA_SUBDOMAIN=""

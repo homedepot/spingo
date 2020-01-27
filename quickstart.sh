@@ -86,7 +86,7 @@ done
 if [ "$SKIP_INITIAL_SETUP" == "true" ]; then
     echo "Skipping initial setup at user request"
 else
-    if ! ./scripts/initial_setup.sh
+    if ! ./scripts/initial-setup.sh
     then
         echo "Initial setup failed so cowardly exiting"
         exit 1

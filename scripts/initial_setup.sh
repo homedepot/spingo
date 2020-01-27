@@ -375,6 +375,7 @@ done
 
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "dns" "$PROJECT"
 terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "halyard" "$PROJECT"
+terraform_variable "cloud_dns_hostname" "$DOMAIN_TO_MANAGE" "$GIT_ROOT_DIR" "spinnaker" "$PROJECT"
 
 # choose a project that will manage the DNS
 echo "-----------------------------------------------------------------------------"
@@ -484,7 +485,19 @@ do
         fi
     done
     SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk, gateSubdomain: $gt, x509Subdomain: $x509, vaultSubdomain: $vlt, wildcardDomain: $wd } }')
-    n=$((n+1))
+    echo "-----------------------------------------------------------------------------"
+    echo " *****   The subdomain for grafana is the address where the grafana server will be setup for system graphical monitoring"
+    GRAFANA_SUBDOMAIN=""
+    while [ -z "$GRAFANA_SUBDOMAIN" ]; do
+        GRAFANA_SUBDOMAIN="$(prompt_for_value_with_default "$n" "grafanaSubdomain" "$GIT_ROOT_DIR" "grafana subdomain" "$CLUSTER_NAME")"
+        HOSTNAME_USED=$(check_for_hostname_used "$SHIP_PLANS_JSON" "$GRAFANA_SUBDOMAIN")
+        if [[ "$HOSTNAME_USED" =~ "true" ]]; then
+            echoerr "A hostname can only be used once per project and $GRAFANA_SUBDOMAIN has already been used, please choose another hostname"
+            GRAFANA_SUBDOMAIN=""
+        fi
+    done
+    SHIP_PLANS_JSON=$(echo "$SHIP_PLANS_JSON" | jq --arg nm "$CLUSTER_NAME" --arg dsh "-" --arg reg "$CLUSTER_REGION" --arg dk "$DECK_SUBDOMAIN" --arg gt "$GATE_SUBDOMAIN" --arg x509 "$X509_SUBDOMAIN" --arg vlt "$VAULT_SUBDOMAIN" --arg wd "$DOMAIN_TO_MANAGE" --arg graf "$GRAFANA_SUBDOMAIN" '. | .ship_plans += { ($nm + $dsh + $reg): { clusterPrefix: $nm, clusterRegion: $reg, deckSubdomain: $dk, gateSubdomain: $gt, x509Subdomain: $x509, vaultSubdomain: $vlt, wildcardDomain: $wd, grafanaSubdomain: $graf } }')
+    n=$((n+1))   
 done
 
 terraform_variable "region" "$CLUSTER_REGION" "$GIT_ROOT_DIR" "static_ips" "$PROJECT"

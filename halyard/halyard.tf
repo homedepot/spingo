@@ -255,10 +255,6 @@ data "template_file" "setupSSL" {
   }
 }
 
-data "template_file" "setupMonitoring" {
-  template = file("./hal-scripts/setup-monitoring.sh")
-}
-
 data "template_file" "k8ssl" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
   template = file("./hal-scripts/setup-k8-ssl.sh")
@@ -402,10 +398,10 @@ data "template_file" "setupOAuthMultiple" {
 }
 
 data "template_file" "setupMonitoring" {
-  template = file("./halScripts/setupMonitoring.sh")
+  template = file("./hal-scripts/setup-monitoring.sh")
 
   vars = {
-    SETUP_MONITORING_CONTENTS = templatefile("./halScripts/setupMonitoringContent.sh", {
+    SETUP_MONITORING_CONTENTS = templatefile("./hal-scripts/setup-monitoring-content.sh", {
       USER = var.service_account_name
       DNS  = var.cloud_dns_hostname
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {

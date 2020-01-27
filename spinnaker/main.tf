@@ -222,7 +222,10 @@ module "spinnaker_onboarding_service_account" {
   service_account_prefix = ""
   bucket_name            = module.halyard_storage.bucket_name
   gcp_project            = var.gcp_project
-  roles                  = ["roles/container.admin"]
+  roles                  = [
+    "roles/container.admin", 
+    "roles/iam.serviceAccountTokenCreator"
+  ]
   create_and_store_key   = false
 }
 

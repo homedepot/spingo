@@ -1,0 +1,67 @@
+grafana:
+  livenessProbe:
+    # This is necessary because the liveness probe only uses http by default.
+    httpGet:
+      path: /api/health
+      port: 3000
+      scheme: HTTPS
+  readinessProbe:
+    # This is necessary because the readiness  probe only uses http by default.
+    httpGet:
+      path: /api/health
+      port: 3000
+      scheme: HTTPS
+    initialDelaySeconds: 60
+    timeoutSeconds: 30
+    failureThreshold: 10
+    periodSeconds: 10
+  persistence:
+    enabled: true
+  grafana.ini:
+    server:
+      root_url: ${gf_server_root_url}
+      protocol: https
+      cert_file: /opt/grafana-tls/grafana.pem
+      cert_key: /opt/grafana-tls/grafana.key
+    auth.google:
+      enabled: true
+      client_id: ${gf_auth_google_client_id}
+      client_secret: ${gf_auth_google_client_secret}
+      scopes: https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email
+      auth_url: https://accounts.google.com/o/oauth2/auth
+      token_url: https://accounts.google.com/o/oauth2/token
+      allow_sign_up: true
+  extraSecretMounts:
+  - name: grafana-tls
+    mountPath: /opt/grafana-tls
+    secretName: grafana-tls
+    readOnly: false
+
+prometheus:
+  additionalServiceMonitors:
+  - name: spinnaker-microservices-monitor
+    selector:
+      matchLabels:
+        app: spin
+    namespaceSelector:
+      matchNames:
+      - spinnaker
+    endpoints:
+    - targetPort: 8008
+      interval: 10s
+      path: /prometheus_metrics
+  prometheusSpec:
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard

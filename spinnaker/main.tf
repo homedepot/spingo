@@ -153,13 +153,14 @@ data "http" "local_outgoing_ip_address" {
 }
 
 module "spinnaker_dns" {
-  source             = "./modules/dns"
-  gcp_project        = var.gcp_project
-  ui_ip_addresses    = data.terraform_remote_state.static_ips.outputs.ui_ips_map
-  api_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
-  x509_ip_addresses  = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
-  vault_ip_addresses = data.terraform_remote_state.static_ips.outputs.vault_ips_map
-  ship_plans         = data.terraform_remote_state.static_ips.outputs.ship_plans
+  source               = "./modules/dns"
+  gcp_project          = var.gcp_project
+  ui_ip_addresses      = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  api_ip_addresses     = data.terraform_remote_state.static_ips.outputs.api_ips_map
+  x509_ip_addresses    = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
+  vault_ip_addresses   = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
+  grafana_ip_addresses = data.terraform_remote_state.static_ips.outputs.grafana_ips_map
 
   providers = {
     google = google.dns-zone
@@ -339,6 +340,14 @@ resource "google_compute_firewall" "vault_agent_injector" {
   ]
 }
 
+module "metrics_setup" {
+  source             = "./modules/metrics"
+  gcp_project        = var.gcp_project
+  grafana_hosts_map  = module.spinnaker_dns.grafana_hosts_map
+  ship_plans         = data.terraform_remote_state.static_ips.outputs.ship_plans
+  cloud_dns_hostname = var.cloud_dns_hostname
+}
+
 output "spinnaker_onboarding_service_account_email" {
   value = module.spinnaker_onboarding_service_account.service_account_email
 }
@@ -433,4 +442,8 @@ output "spinnaker_halyard_service_account_display_name" {
 
 output "spinnaker_halyard_service_account_key_path" {
   value = module.halyard_service_account.service_account_key_path
+}
+
+output "metrics_yml_files_map" {
+  value = module.metrics_setup.metrics_yml_files_map
 }

@@ -21,7 +21,7 @@ export VAULT_ADDR="http://FakeVaultAddr:8200"
 export VAULT_TOKEN="FakeVaultToken"
 export VAULT_DEV_ROOT_TOKEN_ID="FakeDevRootTokenId"
 
-tfdirs='static_ips
+tfdirs='static-ips
 dns
 monitoring-alerting
 spinnaker

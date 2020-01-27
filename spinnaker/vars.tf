@@ -151,6 +151,12 @@ variable "default_create_namespace" {
   default = "spinnaker"
 }
 
+
+variable "cloud_dns_hostname" {
+  description = "This is the hostname that cloud dns will attach to. Note that a trailing period will be added."
+  type        = string
+}
+
 variable "extras" {
   type        = map(string)
   description = "Extra options to configure K8s. These are options that are unlikely to change from deployment to deployment. All options must be specified when passed as a map variable input to this module."

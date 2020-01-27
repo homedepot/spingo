@@ -11,7 +11,7 @@ data "template_file" "values" {
     gf_server_root_url           = "https://${var.grafana_hosts_map[each.key]}"
     gf_auth_google_client_id     = data.vault_generic_secret.gcp-oauth.data["client-id"]
     gf_auth_google_client_secret = data.vault_generic_secret.gcp-oauth.data["client-secret"]
-    gf_cloud_dns_hostname        = trimsuffix(var.cloud_dns_hostname,".")
+    gf_cloud_dns_hostname        = trimsuffix(var.cloud_dns_hostname, ".")
   }
 }
 

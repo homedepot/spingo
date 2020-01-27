@@ -32,7 +32,7 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
 - [Vault](https://www.vaultproject.io/downloads.html) needs to be setup and authenticated
 	- VAULT_ADDR environment variable should be setup pointing to the vault server
 	- Or on OSX with homebrew it's `brew install vault`
-	- A local vault initialization can be done by from scripts/local_vault_setup.sh
+	- A local vault initialization can be done by from scripts/local-vault-setup.sh
 - [Google Cloud SDK](https://cloud.google.com/sdk/install) should be setup and authenticated
 	- Be sure to run both `gcloud auth login` and `gcloud config set project <YOUR_PROJECT_ID>`
 	- You will need to be an owner of the GCP project to grant all the permissions required for Terraform to create all the resources needed
@@ -111,7 +111,7 @@ This must happen before the `quickstart` script, that is run from inside the hal
 If you have previously run `./quickstart.sh`, and are in a situation where this is a new machine or otherwise a fresh clone of the repo, you can restore the saved values from vault by running:
 
 ```sh
-scripts/restore_saved_config_from_vault.sh
+scripts/restore-saved-config-from-vault.sh
 ```
 
 ## Teardown
@@ -119,7 +119,7 @@ scripts/restore_saved_config_from_vault.sh
 
 If you want to completely destroy the installation:
 
-1. execute `./scripts/reset_spingo.sh`, after confirmation, it will destroy all Terraform resources and the service accounts and buckets that terraform requires so that the `./scripts/initial_setup.sh` can be run again if needed.
+1. execute `./scripts/reset-spingo.sh`, after confirmation, it will destroy all Terraform resources and the service accounts and buckets that terraform requires so that the `./scripts/initial-setup.sh` can be run again if needed.
 
 ## Contributing
 <a id="markdown-contributing" name="contributing"></a>

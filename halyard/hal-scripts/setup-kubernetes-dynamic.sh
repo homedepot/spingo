@@ -1,4 +1,4 @@
-f [ ! -d /${USER}/.kube ]; then
+if [ ! -d /${USER}/.kube ]; then
   mkdir /${USER}/.kube
 fi
 

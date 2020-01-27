@@ -83,7 +83,7 @@ EOF
 
 resource "vault_generic_secret" "grafana_address" {
   for_each = var.ship_plans
-  path     = "secret/${var.gcp_project}/spinnaker_ui_url/${each.key}"
+  path     = "secret/${var.gcp_project}/spinnaker_grafana_url/${each.key}"
 
   data_json = <<-EOF
               {"url":"${each.value["grafanaSubdomain"]}.${each.value["wildcardDomain"]}"}

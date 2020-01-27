@@ -117,7 +117,7 @@ else
     echo "DNS base hostname appears to have nameserver setup so continuing on"
 fi
 
-setup_and_run_tf "static_ips"
+setup_and_run_tf "static-ips"
 setup_and_run_tf "spinnaker"
 setup_and_run_tf "halyard"
 

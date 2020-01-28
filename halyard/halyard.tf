@@ -58,7 +58,7 @@ data "template_file" "vault" {
     SETUP_VAULT_CONTENTS = templatefile("./hal-scripts/setup-vault-contents.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_yml_files_map[k]
-        clusterName         = v["clusterPrefix"]
+        clusterName         = "${k}"
         clusterRegion       = v["clusterRegion"]
         vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips_map[k]
         kubeConfig          = "/${var.service_account_name}/.kube/${k}.config"

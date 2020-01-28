@@ -86,7 +86,7 @@ done
 if [ "$SKIP_INITIAL_SETUP" == "true" ]; then
     echo "Skipping initial setup at user request"
 else
-    if ! ./scripts/initial_setup.sh
+    if ! ./scripts/initial-setup.sh
     then
         echo "Initial setup failed so cowardly exiting"
         exit 1
@@ -117,7 +117,7 @@ else
     echo "DNS base hostname appears to have nameserver setup so continuing on"
 fi
 
-setup_and_run_tf "static_ips"
+setup_and_run_tf "static-ips"
 setup_and_run_tf "spinnaker"
 setup_and_run_tf "halyard"
 

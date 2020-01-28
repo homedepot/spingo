@@ -103,13 +103,13 @@ module "google_managed" {
 }
 
 module "gke_keyring" {
-  source                   = "./modules/kms_key_ring"
+  source                   = "./modules/kms-key-ring"
   kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
   kms_key_ring_prefix      = "gke_keyring"
 }
 
 module "gke_keys" {
-  source                     = "./modules/crypto_key"
+  source                     = "./modules/crypto-key"
   gcp_project                = var.gcp_project
   kms_key_ring_self_link_map = module.gke_keyring.kms_key_ring_region_map
   ship_plans                 = data.terraform_remote_state.static_ips.outputs.ship_plans
@@ -284,13 +284,13 @@ resource "google_kms_crypto_key_iam_member" "halyard_encrypt_decrypt" {
 }
 
 module "vault_keyring" {
-  source                   = "./modules/kms_key_ring"
+  source                   = "./modules/kms-key-ring"
   kms_key_ring_cluster_map = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : v["clusterRegion"] => k... }
   kms_key_ring_prefix      = "vault_keyring"
 }
 
 module "vault_keys" {
-  source                     = "./modules/crypto_key"
+  source                     = "./modules/crypto-key"
   gcp_project                = var.gcp_project
   kms_key_ring_self_link_map = module.vault_keyring.kms_key_ring_region_map
   ship_plans                 = data.terraform_remote_state.static_ips.outputs.ship_plans

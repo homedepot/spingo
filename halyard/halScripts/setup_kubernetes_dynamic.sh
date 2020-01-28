@@ -141,20 +141,30 @@ kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker spinnaker
 kubectl --kubeconfig="$CONFIG_FILE" annotate serviceaccount -n spinnaker spinnaker-onboarding \
     iam.gke.io/gcp-service-account=${ONBOARDING_SA_EMAIL}
 
-echo "Creating spinnaker configmap with vault address"
-cat <<SPINNAKER_CONFIGMAP | kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker apply -f -
-apiVersion: v1
-data:
-  VAULT_ADDR: https://${VAULT_ADDR[replace(deployment, "-agent", "")]}
-kind: ConfigMap
-metadata:
-  name: spinnaker-config
-  namespace: spinnaker
-SPINNAKER_CONFIGMAP
-
 if [[ ${deployment} == *-agent ]]; then
+    echo "Creating spinnaker configmap with vault address"
+    cat <<SPINNAKER_CONFIGMAP_AGENT | kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker apply -f -
+    apiVersion: v1
+    data:
+      VAULT_ADDR: https://${VAULT_ADDR[replace(deployment, "-agent", "")]}
+      VAULT_AUTH_PATH: auth/kubernetes-${deployment}/login
+    kind: ConfigMap
+    metadata:
+      name: spinnaker-config
+      namespace: spinnaker
+SPINNAKER_CONFIGMAP_AGENT
     echo "No need to create instance cloudsql secret for agent cluster"
 else
+    cat <<SPINNAKER_CONFIGMAP | kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker apply -f -
+    apiVersion: v1
+    data:
+      VAULT_ADDR: https://${VAULT_ADDR[deployment]}
+      VAULT_AUTH_PATH: auth/kubernetes-${deployment}/login
+    kind: ConfigMap
+    metadata:
+      name: spinnaker-config
+      namespace: spinnaker
+SPINNAKER_CONFIGMAP
     echo "Creating Spinnaker namespace and cloudsql-instance-credentials secret"
     kubectl --kubeconfig="$CONFIG_FILE" -n spinnaker create secret generic cloudsql-instance-credentials --from-file=/${USER}/.gcp/secret
     kubectl --kubeconfig="$CONFIG_FILE" create serviceaccount -n spinnaker ${deployment}

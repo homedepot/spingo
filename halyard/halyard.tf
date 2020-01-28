@@ -255,10 +255,6 @@ data "template_file" "setupSSL" {
   }
 }
 
-data "template_file" "setupMonitoring" {
-  template = file("./halScripts/setupMonitoring.sh")
-}
-
 data "template_file" "k8ssl" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
   template = file("./halScripts/setupK8SSL.sh")
@@ -400,6 +396,26 @@ data "template_file" "setupOAuthMultiple" {
     })
   }
 }
+
+data "template_file" "setupMonitoring" {
+  template = file("./halScripts/setupMonitoring.sh")
+
+  vars = {
+    SETUP_MONITORING_CONTENTS = templatefile("./halScripts/setupMonitoringContent.sh", {
+      USER = var.service_account_name
+      DNS  = var.cloud_dns_hostname
+      deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+        metricsYaml                  = data.terraform_remote_state.spinnaker.outputs.metrics_yml_files_map[k]
+        clusterName                  = v["clusterPrefix"]
+        kubeConfig                   = "/${var.service_account_name}/.kube/${k}.config"
+        grafanaLoadBalancerIpAddress = data.terraform_remote_state.static_ips.outputs.grafana_ips_map[k]
+        }
+      }
+    })
+  }
+}
+
+
 
 #Get urls
 

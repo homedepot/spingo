@@ -5,7 +5,7 @@ data "vault_generic_secret" "gcp-oauth" {
 # Render the YAML file
 data "template_file" "values" {
   for_each = var.ship_plans
-  template = file("${path.module}/metrics.yml")
+  template = file("${path.module}/metrics.yaml")
 
   vars = {
     gf_server_root_url           = "https://${var.grafana_hosts_map[each.key]}"

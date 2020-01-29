@@ -24,7 +24,7 @@ resource "google_container_cluster" "cluster" {
   name       = each.key
   project    = var.project
   location   = each.value["clusterRegion"]
-  network    = google_compute_network.vpc[each.key].name # https://github.com/terraform-providers/terraform-provider-google/issues/1792
+  network    = google_compute_network.vpc[replace(each.key, "-agent", "")].name # https://github.com/terraform-providers/terraform-provider-google/issues/1792
   subnetwork = google_compute_subnetwork.subnet[each.key].self_link
   workload_identity_config {
     identity_namespace = "${data.google_project.project.project_id}.svc.id.goog"

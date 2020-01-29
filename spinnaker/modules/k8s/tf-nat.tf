@@ -37,7 +37,18 @@ resource "google_compute_router_nat" "nat" {
       "${each.key}-k8s-svc",
     ]
   }
+
+  subnetwork {
+    name                    = google_compute_subnetwork.subnet["${each.key}-agent"].self_link
+    source_ip_ranges_to_nat = ["PRIMARY_IP_RANGE", "LIST_OF_SECONDARY_IP_RANGES"]
+
+    secondary_ip_range_names = [
+      "${each.key}-agent-k8s-pod",
+      "${each.key}-agent-k8s-svc",
+    ]
+  }
 }
+
 
 # For old version of NAT Gateway (VM)
 # Route traffic to the Masters through the default gateway. This fixes things like kubectl exec and logs

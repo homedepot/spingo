@@ -75,7 +75,7 @@ helm install \
     --namespace vault \
     --kubeconfig "${details.kubeConfig}" \
     --values /${USER}/vault/vault_${details.clusterName}_helm_values.yml \
-    https://github.com/hashicorp/vault-helm/archive/v0.3.0.tar.gz
+    https://github.com/hashicorp/vault-helm/archive/v0.3.3.tar.gz
 
 echo "Waiting for vault to be installed for deployment ${deployment}"
 n=0

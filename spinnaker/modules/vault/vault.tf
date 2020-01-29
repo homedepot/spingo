@@ -37,7 +37,7 @@ resource "google_kms_crypto_key_iam_member" "vault_init" {
 # Render the YAML file
 data "template_file" "vault" {
   for_each = var.ship_plans
-  template = file("${path.module}/vault.yml")
+  template = file("${path.module}/vault.yaml")
 
   vars = {
     gcs_bucket_name  = google_storage_bucket.vault[each.key].name

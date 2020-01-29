@@ -4,7 +4,7 @@ global:
 
 injector:
   image:
-    tag: "0.1.0"
+    tag: "0.1.1"
   agentImage:
     tag: "1.3.1"
 

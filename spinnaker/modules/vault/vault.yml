@@ -39,6 +39,9 @@ server:
       - name: VAULT_SECRET_THRESHOLD
         value: "1"
 
+  extraEnvironmentVars:
+    VAULT_ADDR: http://127.0.0.1:8200
+
   serviceAccount:
     annotations:
       "iam.gke.io/gcp-service-account": "${cluster_sa_email}"

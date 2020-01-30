@@ -15,6 +15,9 @@ exec > $logfile 2>&1
 echo "Setting up alias for sudo action."
 runuser -l root -c 'echo "${PROFILE_ALIASES}" | base64 -d > /etc/profile.d/aliases.sh'
 
+echo "Adding prompt including google project to .bashrc skeleton file"
+runuser -l root -c 'echo "\[\e]0;\u@\h: \w\a\]\[\033[01;32m\]\u@${GOOGLE_PROJECT}\[\033[00m\]\[\033[01;34m\]:\w\[\033[00m\]$" >> /etc/skel/.bashrc"'
+
 #CREATE USER
 echo "Creating user"
 useradd -s /bin/bash ${USER} -u 1978

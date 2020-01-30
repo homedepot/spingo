@@ -91,7 +91,11 @@ echo "deploying metric-enabled spinnaker"
 
 hal deploy apply
 
+
 echo "Starting up prometheus-operator through helm for deployment ${deployment}"
+
+helm init
+
 helm install \
     --name spin \
     --namespace monitoring \

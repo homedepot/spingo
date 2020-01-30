@@ -142,7 +142,8 @@ data "template_file" "profile_aliases" {
 data "template_file" "start_script" {
   template = file("./start.sh")
 
-  vars = {
+  vars = {    
+    GOOGLE_PROJECT       = var.gcp_project
     USER                 = var.service_account_name
     BUCKET               = "${var.gcp_project}${var.bucket_name}"
     PROJECT              = var.gcp_project

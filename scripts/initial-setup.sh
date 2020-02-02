@@ -30,6 +30,7 @@ need "openssl"
 need "git"
 need "cut"
 need "jq"
+need "tar"
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)

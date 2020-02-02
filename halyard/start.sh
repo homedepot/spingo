@@ -103,6 +103,9 @@ runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:s
 runuser -l ${USER} -c 'if [ ${AUTO_START_HALYARD_QUICKSTART} == true ] && [ ! -d /${USER}/.hal ]; then time /home/${USER}/quickstart.sh; fi'
 runuser -l ${USER} -c 'if [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
 
+#extract userscripts
+runuser -l ${USER} -c 'echo "${$USER_SCRIPTS}" | base64 -d | tar -xf /home/${USER}'
+
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"
 #Use sudo -H -u spinnaker bash at log in or use spingo alias

@@ -29,3 +29,6 @@ terraform-account-dns.json
 .history
 *.auto.tfvars
 *.auto.tfvars.json
+
+# Ignore user-scripts directory
+user-scripts/*

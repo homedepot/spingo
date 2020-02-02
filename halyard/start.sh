@@ -93,6 +93,9 @@ runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_VAULT}" | base64 -d > /home/${USER}/setupVault.sh'
 
+#extract userscripts
+runuser -l ${USER} -c 'echo "${USER_SCRIPTS}" | base64 -d | tar -xf - -C /home/${USER}'
+
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 # Install micro editor because it's awesome
@@ -102,10 +105,6 @@ runuser -l ${USER}  -c 'mkdir -p ~/.config/micro; echo "{\"Ctrl-y\": \"command:s
 
 runuser -l ${USER} -c 'if [ ${AUTO_START_HALYARD_QUICKSTART} == true ] && [ ! -d /${USER}/.hal ]; then time /home/${USER}/quickstart.sh; fi'
 runuser -l ${USER} -c 'if [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
-
-#extract userscripts
-runuser -l ${USER} -c 'echo "${USER_SCRIPTS}" | base64 -d | tar -xf - -C /home/${USER}'
-
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"

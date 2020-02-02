@@ -188,7 +188,7 @@ data "template_file" "start_script" {
     SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./hal-scripts/configure-to-current-deployment.sh", {
       USER = var.service_account_name
     }))
-    USER_SCRIPTS = data.template_file.user-scripts.rendered
+    USER_SCRIPTS = filebase64("./hal-scripts/user-scripts.tar")
     AUTO_START_HALYARD_QUICKSTART = var.auto_start_halyard_quickstart
     PROFILE_ALIASES               = base64encode(data.template_file.profile_aliases.rendered)
   }
@@ -415,10 +415,6 @@ data "template_file" "setupMonitoring" {
       }
     })
   }
-}
-
-data "template_file" "user-scripts" {
-  template = filebase64("./hal-scripts/user-scripts.tar")
 }
 
 #Get urls

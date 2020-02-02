@@ -71,7 +71,3 @@ variable "use_local_credential_file" {
   default = false
 }
 
-variable "user-scripts" {
-  description = "The base64 encoded contents of the tar file containing all user scripts"
-  type = string
-}

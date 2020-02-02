@@ -639,5 +639,8 @@ else
     rm certbot.json
 fi
 
+echo "preparing userscripts for use later"
+tar -cf halyard/hal-scripts/user-scripts.tar user-scripts 
+
 echo "setup complete"
 cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

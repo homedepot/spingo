@@ -104,7 +104,8 @@ runuser -l ${USER} -c 'if [ ${AUTO_START_HALYARD_QUICKSTART} == true ] && [ ! -d
 runuser -l ${USER} -c 'if [ -d /${USER}/.hal ]; then source /home/${USER}/configureToCurrentDeployment.sh;  fi'
 
 #extract userscripts
-runuser -l ${USER} -c 'echo "${$USER_SCRIPTS}" | base64 -d | tar -xf /home/${USER}'
+runuser -l ${USER} -c 'echo "${$USER_SCRIPTS}" | base64 -d | tar -xf - -C /home/${USER}'
+
 
 echo "If you have not been exited to console yet just type ctrl-c to exit"
 echo "startup complete"

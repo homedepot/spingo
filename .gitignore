@@ -30,5 +30,6 @@ terraform-account-dns.json
 *.auto.tfvars
 *.auto.tfvars.json
 
-# Ignore user-scripts directory
+# Ignore user-scripts
 user-scripts/*
+halyard/hal-scripts/user-scripts.tar

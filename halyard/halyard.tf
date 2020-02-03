@@ -142,7 +142,7 @@ data "template_file" "profile_aliases" {
 data "template_file" "start_script" {
   template = file("./start.sh")
 
-  vars = {    
+  vars = {
     GOOGLE_PROJECT       = var.gcp_project
     USER                 = var.service_account_name
     BUCKET               = "${var.gcp_project}${var.bucket_name}"
@@ -188,6 +188,7 @@ data "template_file" "start_script" {
     SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./hal-scripts/configure-to-current-deployment.sh", {
       USER = var.service_account_name
     }))
+    USER_SCRIPTS                  = filebase64("./hal-scripts/user-scripts.tar")
     AUTO_START_HALYARD_QUICKSTART = var.auto_start_halyard_quickstart
     PROFILE_ALIASES               = base64encode(data.template_file.profile_aliases.rendered)
   }
@@ -415,8 +416,6 @@ data "template_file" "setupMonitoring" {
     })
   }
 }
-
-
 
 #Get urls
 

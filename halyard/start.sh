@@ -93,6 +93,9 @@ runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_VAULT}" | base64 -d > /home/${USER}/setupVault.sh'
 
+#extract userscripts
+runuser -l ${USER} -c 'echo "${USER_SCRIPTS}" | base64 -d | tar -xf - -C /home/${USER}'
+
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'
 # Install micro editor because it's awesome

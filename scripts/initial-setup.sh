@@ -30,6 +30,7 @@ need "openssl"
 need "git"
 need "cut"
 need "jq"
+need "tar"
 
 CWD=$(pwd)
 GIT_ROOT_DIR=$(git rev-parse --show-toplevel)
@@ -637,6 +638,9 @@ else
     create_and_save_service_account_key "certbot" "certbot.json" "$PROJECT"
     rm certbot.json
 fi
+
+echo "preparing userscripts for use later"
+tar -cf halyard/hal-scripts/user-scripts.tar user-scripts 
 
 echo "setup complete"
 cd "$CWD" || { echo "failed to return to $CWD" ; exit ; }

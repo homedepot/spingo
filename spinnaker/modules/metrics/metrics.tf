@@ -2,6 +2,12 @@ data "vault_generic_secret" "gcp-oauth" {
   path = "secret/${var.gcp_project}/gcp-oauth"
 }
 
+resource "random_password" "password" {
+  length = 16
+  special = true
+  override_special = "_%@"
+}
+
 # Render the YAML file
 data "template_file" "values" {
   for_each = var.ship_plans
@@ -12,6 +18,7 @@ data "template_file" "values" {
     gf_auth_google_client_id     = data.vault_generic_secret.gcp-oauth.data["client-id"]
     gf_auth_google_client_secret = data.vault_generic_secret.gcp-oauth.data["client-secret"]
     gf_cloud_dns_hostname        = trimsuffix(var.cloud_dns_hostname, ".")
+    gf_admin_password            = random_password.password.result
   }
 }
 

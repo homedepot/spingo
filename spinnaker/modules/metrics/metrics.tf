@@ -18,7 +18,7 @@ data "template_file" "values" {
     gf_auth_google_client_id     = data.vault_generic_secret.gcp-oauth.data["client-id"]
     gf_auth_google_client_secret = data.vault_generic_secret.gcp-oauth.data["client-secret"]
     gf_cloud_dns_hostname        = trimsuffix(var.cloud_dns_hostname, ".")
-    gf_admin_pw                  = random_password.password.result
+    gf_admin_password            = random_password.password.result
   }
 }
 

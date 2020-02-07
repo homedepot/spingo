@@ -19,7 +19,7 @@ This project uses the “fork-and-pull” development model. Follow these steps 
 
 Your contribution needs to meet the following standards:
 
-- All files and folders in `spingo` are `kebab-case` - any new additions to `spingo` must follow this convention unless an exception is noted.
+- All files and folders in [spingo](https://github.com/homedepot/spingo) are `kebab-case` - any new additions to [spingo](https://github.com/homedepot/spingo) must follow this convention unless an exception is noted.
 - Separate each **logical change** into its own commit.
 - Add a descriptive message for each commit. Follow [commit message best practices](https://github.com/erlang/otp/wiki/writing-good-commit-messages).
 - Document your pull requests. Include the reasoning behind each change and describe the testing done.

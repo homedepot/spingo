@@ -4,7 +4,7 @@ global:
 
 injector:
   image:
-    tag: "0.1.0"
+    tag: "0.1.1"
   agentImage:
     tag: "1.3.1"
 
@@ -38,6 +38,9 @@ server:
         value: "1"
       - name: VAULT_SECRET_THRESHOLD
         value: "1"
+
+  extraEnvironmentVars:
+    VAULT_ADDR: http://127.0.0.1:8200
 
   serviceAccount:
     annotations:

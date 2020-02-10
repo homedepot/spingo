@@ -26,11 +26,11 @@ output "client_key_map" {
 }
 
 output "network_name_map" {
-  value = { for k, v in var.ship_plans : k => google_compute_network.vpc[k].name }
+  value = { for k, v in var.ship_plans_without_agent : k => google_compute_network.vpc[k].name }
 }
 
 output "network_link_map" {
-  value = { for k, v in var.ship_plans : k => google_compute_network.vpc[k].self_link }
+  value = { for k, v in var.ship_plans_without_agent : k => google_compute_network.vpc[k].self_link }
 }
 
 output "subnet_name_map" {

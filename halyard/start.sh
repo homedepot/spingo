@@ -15,6 +15,9 @@ exec > $logfile 2>&1
 echo "Setting up alias for sudo action."
 runuser -l root -c 'echo "${PROFILE_ALIASES}" | base64 -d > /etc/profile.d/aliases.sh'
 
+echo "Adding prompt including google project to .bashrc skeleton file"
+runuser -l root -c 'echo "\[\e]0;\u@\h: \w\a\]\[\033[01;32m\]\u@${GOOGLE_PROJECT}\[\033[00m\]\[\033[01;34m\]:\w\[\033[00m\]$" >> /etc/skel/.bashrc"'
+
 #CREATE USER
 echo "Creating user"
 useradd -s /bin/bash ${USER} -u 1978
@@ -89,6 +92,9 @@ runuser -l ${USER} -c 'echo "${SCRIPT_CURRENT_DEPLOYMENT}" | base64 -d > /home/$
 runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationsPipeline.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_VAULT}" | base64 -d > /home/${USER}/setupVault.sh'
+
+#extract userscripts
+runuser -l ${USER} -c 'echo "${USER_SCRIPTS}" | base64 -d | tar -xf - -C /home/${USER}'
 
 runuser -l ${USER} -c 'chmod +x /home/${USER}/*.sh'
 runuser -l ${USER}  -c 'echo "${SCRIPT_ALIASES}" | base64 -d > /home/${USER}/.bash_aliases'

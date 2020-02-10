@@ -32,7 +32,7 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
 - [Vault](https://www.vaultproject.io/downloads.html) needs to be setup and authenticated
 	- VAULT_ADDR environment variable should be setup pointing to the vault server
 	- Or on OSX with homebrew it's `brew install vault`
-	- A local vault initialization can be done by from scripts/local_vault_setup.sh
+	- A local vault initialization can be done by from scripts/local-vault-setup.sh
 - [Google Cloud SDK](https://cloud.google.com/sdk/install) should be setup and authenticated
 	- Be sure to run both `gcloud auth login` and `gcloud config set project <YOUR_PROJECT_ID>`
 	- You will need to be an owner of the GCP project to grant all the permissions required for Terraform to create all the resources needed
@@ -51,7 +51,7 @@ A collection of Terraform and bash scripts to setup an enterprise-grade Spinnake
     ```
 1. When asked to enter your Google OAuth credentials use [these instructions](#google-oauth-authentication-setup)
 1. When asked to enter your Slack token use [these instructions](#if-you-are-going-to-use-slack-integration-skip-to-next-section-if-not) if you choose to setup Slack notifications or choose the option for `No`
-1. When you see `Quickstart complete` you should see a terraform output variable called `halyard_command` which you can copy to log into your ephemerial halyard VM
+1. When you see `Quickstart complete` you should see a Terraform output variable called `halyard_command` which you can copy to log into your ephemerial halyard VM
     - You should wait about 20 seconds or so for the VM to be up and running and ready to take commands before logging into it
 1. Log into the halyard VM
 1. Run the `showlog` command to follow the setup process by watching the tailing of the logs that setup all of the dependencies needed for all of the scripts inside the `quickstart` script
@@ -73,7 +73,7 @@ Follow the instructions [here](monitoring-alerting) to setup basic monitoring an
 ### Setup Managed DNS through Cloud DNS
 <a id="markdown-setup-managed-dns-through-cloud-dns" name="setup-managed-dns-through-cloud-dns"></a>
 
-After the managed DNS is setup you will need to direct the DNS hostname to the proper nameservers. After the DNS direcotry is run by quickstart, Terraform will outpus the new nameservers on the screen called `google_dns_managed_zone_nameservers = [ "ns-cloud-c1.googledomains.com.", "ns-cloud-c2.googledomains.com.", ...]`. You then need to log into your domain hosting provider and direct the owned domain to all four of these name servers so that traffic can be routed to your project and SSL certificates can be requested through the [Let's Encrypt](https://letsencrypt.org/) Google domain authentication plugin which adds a TXT record to the domain to prove that it is owned by you.
+After the managed DNS is setup you will need to direct the DNS hostname to the proper nameservers. After the DNS directory is run by quickstart, Terraform will output the new nameservers on the screen called `google_dns_managed_zone_nameservers = [ "ns-cloud-c1.googledomains.com.", "ns-cloud-c2.googledomains.com.", ...]`. You then need to log into your domain hosting provider and direct the owned domain to all four of these name servers so that traffic can be routed to your project and SSL certificates can be requested through the [Let's Encrypt](https://letsencrypt.org/) Google domain authentication plugin which adds a TXT record to the domain to prove that it is owned by you.
 
 Once Google Cloud DNS is properly getting traffic you will be able to complete the Let's Encrypt SSL configuration.
 
@@ -111,7 +111,7 @@ This must happen before the `quickstart` script, that is run from inside the hal
 If you have previously run `./quickstart.sh`, and are in a situation where this is a new machine or otherwise a fresh clone of the repo, you can restore the saved values from vault by running:
 
 ```sh
-scripts/restore_saved_config_from_vault.sh
+scripts/restore-saved-config-from-vault.sh
 ```
 
 ## Teardown
@@ -119,7 +119,7 @@ scripts/restore_saved_config_from_vault.sh
 
 If you want to completely destroy the installation:
 
-1. execute `./scripts/reset_spingo.sh`, after confirmation, it will destroy all Terraform resources and the service accounts and buckets that terraform requires so that the `./scripts/initial_setup.sh` can be run again if needed.
+1. execute `./scripts/reset-spingo.sh`, after confirmation, it will destroy all Terraform resources and the service accounts and buckets that Terraform requires so that the `./scripts/initial-setup.sh` can be run again if needed.
 
 ## Contributing
 <a id="markdown-contributing" name="contributing"></a>

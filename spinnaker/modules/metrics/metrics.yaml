@@ -1,4 +1,5 @@
 grafana:
+  adminPassowd: ${gf_admin_password}
   livenessProbe:
     # This is necessary because the liveness probe only uses http by default.
     httpGet:

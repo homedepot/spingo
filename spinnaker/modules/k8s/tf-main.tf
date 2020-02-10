@@ -10,7 +10,7 @@ data "google_client_config" "gcloud" {
 # VPCs
 ##########################################################
 resource "google_compute_network" "vpc" {
-  for_each                = var.ship_plans
+  for_each                = var.ship_plans_without_agent
   name                    = each.key
   project                 = var.project
   auto_create_subnetworks = "false"
@@ -22,7 +22,7 @@ resource "google_compute_subnetwork" "subnet" {
   for_each                 = var.ship_plans
   name                     = each.key
   project                  = var.project
-  network                  = google_compute_network.vpc[each.key].name # https://github.com/terraform-providers/terraform-provider-google/issues/1792
+  network                  = google_compute_network.vpc[replace(each.key, "-agent", "")].name # https://github.com/terraform-providers/terraform-provider-google/issues/1792
   region                   = each.value["clusterRegion"]
   description              = var.description
   ip_cidr_range            = var.k8s_ip_ranges_map[each.key]["node_cidr"]

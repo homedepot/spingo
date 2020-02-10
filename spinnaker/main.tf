@@ -249,6 +249,16 @@ resource "google_service_account_iam_binding" "k8s_sa_workload_identity_binding"
   ]
 }
 
+resource "google_service_account_iam_binding" "k8s_sa_agent_workload_identity_binding" {
+  for_each           = data.terraform_remote_state.static_ips.outputs.ship_plans
+  service_account_id = module.k8s.service_account_name_map["${each.key}-agent"]
+  role               = "roles/iam.workloadIdentityUser"
+
+  members = [
+    "serviceAccount:${module.k8s.workload_identity_namespace}[spinnaker/${each.key}-agent]",
+  ]
+}
+
 data "vault_generic_secret" "certbot_account" {
   path = "secret/${var.gcp_project != var.managed_dns_gcp_project ? var.managed_dns_gcp_project : var.gcp_project}/certbot"
 }

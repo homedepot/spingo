@@ -50,7 +50,7 @@ output "service_account_key_map" {
 }
 
 output "service_account_name_map" {
-  value = var.service_account == "" ? { for k, v in var.ship_plans_without_agent : k => google_service_account.sa[k].name } : { for k, v in var.ship_plans : k => var.service_account }
+  value = var.service_account == "" ? { for k, v in var.ship_plans : k => google_service_account.sa[k].name } : { for k, v in var.ship_plans : k => var.service_account }
 }
 
 output "cloud_nat_adddress_map" {

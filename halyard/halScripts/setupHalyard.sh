@@ -169,7 +169,7 @@ yq write -i -s /tmp/halconfig-replica-patch-${DEPLOYMENT_INDEX}.yml /${USER}/.ha
 
 # set-up resources patch
 tee /tmp/halconfig-resources-patch-${DEPLOYMENT_INDEX}.yml << RESOURCES_PATCH
-deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.clouddriver.limits.cpu: 2000m
+deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.clouddriver.limits.memory: 10Gi
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.clouddriver.requests.cpu: 500m
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.clouddriver.requests.memory: 5Gi
 deploymentConfigurations.${DEPLOYMENT_INDEX}.deploymentEnvironment.customSizing.deck.limits.memory: 500Mi

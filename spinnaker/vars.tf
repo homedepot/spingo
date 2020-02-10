@@ -76,6 +76,7 @@ variable "default_k8s_options" {
   default = {
     binary_authorization       = false # If enabled, all container images will be validated by Google Binary Authorization.
     enable_hpa                 = true  # The status of the Horizontal Pod Autoscaling addon, which increases or decreases the number of replica pods a replication controller has based on the resource usage of the existing pods. It ensures that a Heapster pod is running in the cluster, which is also used by the Cloud Monitoring service.
+    enable_vpa                 = true  # The status of the Verticaal Pod Autoscaling addon, which Vertical Pod Autoscaling automatically analyzes and (optionally) adjusts your containers' CPU requests and memory requests.
     enable_http_load_balancing = true  # The status of the HTTP (L7) load balancing controller addon, which makes it easy to set up HTTP load balancers for services in a cluster.
     enable_dashboard           = false # Whether the Kubernetes Dashboard is enabled for this cluster.
     enable_network_policy      = false # Whether we should enable the network policy addon for the master. This must be enabled in order to enable network policy for the nodes. It can only be disabled if the nodes already do not have network policies enabled.

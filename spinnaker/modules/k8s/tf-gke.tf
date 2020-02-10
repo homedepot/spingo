@@ -68,6 +68,10 @@ resource "google_container_cluster" "cluster" {
     }
   }
 
+  vertical_pod_autoscaling {
+    enabled = var.k8s_options["enable_vpa"] ? true : false
+  }
+
   ip_allocation_policy {
     cluster_secondary_range_name  = "${each.key}-k8s-pod"
     services_secondary_range_name = "${each.key}-k8s-svc"

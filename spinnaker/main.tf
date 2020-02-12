@@ -376,11 +376,6 @@ output "vault_crypto_key_id_map" {
 output "vault_crypto_key_name_map" {
   value = module.vault_keys.crypto_key_name_map
 }
-
-output "vault_hosts_map" {
-  value = module.spinnaker_dns.vault_hosts_map
-}
-
 output "vault_yml_files_map" {
   value = module.vault_setup.vault_yml_files_map
 }
@@ -413,6 +408,14 @@ output "the_gcp_project" {
   value = var.gcp_project
 }
 
+
+output "vault_hosts_map" {
+  value = module.spinnaker_dns.vault_hosts_map
+}
+
+output "grafana_hosts_map" {
+  value = module.spinnaker_dns.grafana_hosts_map
+}
 output "spinnaker_ui_hosts_map" {
   value = module.spinnaker_dns.ui_hosts_map
 }

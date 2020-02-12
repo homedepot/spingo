@@ -1,6 +1,3 @@
-add ssl cert to secret
 freestyled ingress objects
+add ssl cert to secret
 update values yaml
-remove load balancers
-yeet static ips
-yeet dns entries

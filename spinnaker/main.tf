@@ -311,7 +311,6 @@ module "vault_setup" {
   source                    = "./modules/vault"
   gcp_project               = var.gcp_project
   kms_keyring_name_map      = module.vault_keyring.kms_key_ring_name_map
-  vault_ips_map             = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   crypto_key_id_map         = module.vault_keys.crypto_key_id_map
   ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
   service_account_email_map = module.k8s.service_account_map

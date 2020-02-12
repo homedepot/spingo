@@ -1,29 +1,11 @@
 grafana:
   adminPassowd: ${gf_admin_password}
-  livenessProbe:
-    # This is necessary because the liveness probe only uses http by default.
-    httpGet:
-      path: /api/health
-      port: 3000
-      scheme: HTTPS
-  readinessProbe:
-    # This is necessary because the readiness  probe only uses http by default.
-    httpGet:
-      path: /api/health
-      port: 3000
-      scheme: HTTPS
-    initialDelaySeconds: 60
-    timeoutSeconds: 30
-    failureThreshold: 10
-    periodSeconds: 10
   persistence:
     enabled: true
   grafana.ini:
     server:
       root_url: ${gf_server_root_url}
-      protocol: https
-      cert_file: /opt/grafana-tls/grafana.pem
-      cert_key: /opt/grafana-tls/grafana.key
+      protocol: http
     auth.google:
       enabled: true
       client_id: ${gf_auth_google_client_id}
@@ -32,11 +14,16 @@ grafana:
       auth_url: https://accounts.google.com/o/oauth2/auth
       token_url: https://accounts.google.com/o/oauth2/token
       allow_sign_up: true
-  extraSecretMounts:
-  - name: grafana-tls
-    mountPath: /opt/grafana-tls
-    secretName: grafana-tls
-    readOnly: false
+
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+    - ${gf_server_root_url}
+    tls:
+     - hosts:
+       - grafana-sandbox.spinnaker.homedepot.com
 
 prometheus:
   additionalServiceMonitors:

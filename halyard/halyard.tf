@@ -268,8 +268,8 @@ data "template_file" "k8ssl" {
     SPIN_SERVICES = templatefile("./hal-scripts/spin-gate-api.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         gateSpinApiIP = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
-        gateApiIP     = data.terraform_remote_state.static_ips.outputs.api_ips_map[k]
-        uiIP          = data.terraform_remote_state.static_ips.outputs.ui_ips_map[k]
+        gateApiHostname = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_hosts_map[k]
+        deckHostname = data.terraform_remote_state.spinnaker.outputs.spinnaker_ui_hosts_map[k]
         kubeConfig    = "/${var.service_account_name}/.kube/${k}.config"
         }
       }

@@ -8,9 +8,6 @@ variable "kms_keyring_name_map" {
   description = "The name of the Cloud KMS KeyRing for asset encryption."
 }
 
-variable "vault_ips_map" {
-  type = map(string)
-}
 
 variable "crypto_key_id_map" {
   type = map(string)

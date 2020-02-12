@@ -47,7 +47,6 @@ data "template_file" "vault" {
     project                = var.gcp_project
     cluster_sa_email       = var.service_account_email_map[each.key]
     cluster_region         = each.value["clusterRegion"]
-    load_balancer_ip       = lookup(var.vault_ips_map, each.key, "")
     vault_ui_hostname      = lookup(var.vault_hosts_map, each.key, "")
     whitelist_source_range = var.allowed_cidrs
 

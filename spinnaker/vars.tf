@@ -106,7 +106,7 @@ variable "default_oauth_scopes" {
 }
 
 variable "default_networks_that_can_access_k8s_api" {
-  description = "A list of networks that can access the K8s API"
+  description = "A list of networks that can access the K8s API and also vault"
   type        = list(string)
 
   default = [

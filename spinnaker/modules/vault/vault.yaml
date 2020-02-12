@@ -82,7 +82,7 @@ server:
     replicas: 3
 
     config: |
-      api_addr     = "https://${load_balancer_ip}:8200"
+      api_addr     = "https://${vault_ui_hostname}:8200"
       cluster_addr = "https://POD_IP:8201"
 
       ui = true

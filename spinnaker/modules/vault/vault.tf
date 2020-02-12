@@ -40,14 +40,17 @@ data "template_file" "vault" {
   template = file("${path.module}/vault.yaml")
 
   vars = {
-    gcs_bucket_name  = google_storage_bucket.vault[each.key].name
-    kms_key_ring     = var.kms_keyring_name_map[each.value["clusterRegion"]]
-    kms_crypto_key   = "vault_key_${each.key}"
-    crypto_key_id    = lookup(var.crypto_key_id_map, each.key, "")
-    project          = var.gcp_project
-    cluster_sa_email = var.service_account_email_map[each.key]
-    cluster_region   = each.value["clusterRegion"]
-    load_balancer_ip = lookup(var.vault_ips_map, each.key, "")
+    gcs_bucket_name        = google_storage_bucket.vault[each.key].name
+    kms_key_ring           = var.kms_keyring_name_map[each.value["clusterRegion"]]
+    kms_crypto_key         = "vault_key_${each.key}"
+    crypto_key_id          = lookup(var.crypto_key_id_map, each.key, "")
+    project                = var.gcp_project
+    cluster_sa_email       = var.service_account_email_map[each.key]
+    cluster_region         = each.value["clusterRegion"]
+    load_balancer_ip       = lookup(var.vault_ips_map, each.key, "")
+    vault_ui_hostname      = lookup(var.vault_hosts_map, each.key, "")
+    whitelist_source_range = var.allowed_cidrs
+
   }
 }
 

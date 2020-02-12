@@ -315,6 +315,9 @@ module "vault_setup" {
   crypto_key_id_map         = module.vault_keys.crypto_key_id_map
   ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
   service_account_email_map = module.k8s.service_account_map
+  vault_hosts_map           = module.spinnaker_dns.vault_hosts_map
+  allowed_cidrs             = join(",", concat(var.default_networks_that_can_access_k8s_api, data.terraform_remote_state.static_ips.outputs.cloudnat_ips, data.terraform_remote_state.static_ips.outputs.halyard_ip))
+
 }
 
 resource "google_compute_firewall" "iap" {

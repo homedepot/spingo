@@ -1,3 +1,5 @@
 freestyled ingress objects
 add ssl cert to secret
 update values yaml
+turn off ssl for deck
+

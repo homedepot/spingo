@@ -24,3 +24,13 @@ variable "ship_plans" {
 variable "service_account_email_map" {
   type = map(string)
 }
+
+variable "allowed_cidrs" {
+  type        = string
+  description = "cidrs allowed to access vault"
+}
+
+variable "vault_hosts_map" {
+  type        = map(string)
+  description = "hosts for vault"
+}

@@ -32,5 +32,3 @@ expect -c "spawn hal config security api ssl edit --deployment ${DEPLOYMENT_NAME
 
 hal config security api ssl enable \
     --deployment ${DEPLOYMENT_NAME}
-hal config security ui ssl enable \
-    --deployment ${DEPLOYMENT_NAME}

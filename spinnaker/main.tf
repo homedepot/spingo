@@ -1,5 +1,5 @@
 provider "vault" {
-
+}
 
 data "vault_generic_secret" "terraform_account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"

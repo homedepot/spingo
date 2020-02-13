@@ -49,8 +49,6 @@ spec:
           serviceName: spin-gate
           servicePort: 8084
         path: /
-status:
-  loadBalancer: {}
 SVC_EOF
 
 echo "Added Gate API Service for deployment named ${deployment}"
@@ -79,8 +77,6 @@ spec:
   tls:
   - hosts:
     - sandbox.spinnaker.homedepot.com
-status:
-  loadBalancer: {}
 SVC_EOF
 
 echo "Added Deck UI Service for deployment named ${deployment}"

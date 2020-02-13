@@ -81,7 +81,7 @@ data "template_file" "ingress" {
 
   vars = {
     USER = var.service_account_name
-    SETUP_INGRESS_CONTENTS = templatefile("./hal-scripts/setup-ingress-contents.sh", {
+    SETUP_INGRESS_CONTENTS = templatefile("./hal-scripts/setup-ingress-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         kubeConfig     = "/${var.service_account_name}/.kube/${k}.config"
         clusterName    = "${k}"

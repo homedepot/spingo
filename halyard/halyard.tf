@@ -60,7 +60,6 @@ data "template_file" "vault" {
         vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_yml_files_map[k]
         clusterName         = "${k}"
         clusterRegion       = v["clusterRegion"]
-        vaultLoadBalancerIP = data.terraform_remote_state.static_ips.outputs.vault_ips_map[k]
         kubeConfig          = "/${var.service_account_name}/.kube/${k}.config"
         vaultBucket         = data.terraform_remote_state.spinnaker.outputs.vault_bucket_name_map[k]
         vaultKmsKey         = data.terraform_remote_state.spinnaker.outputs.vault_crypto_key_name_map[k]
@@ -81,7 +80,7 @@ data "template_file" "ingress" {
 
   vars = {
     USER = var.service_account_name
-    SETUP_INGRESS_CONTENTS = templatefile("./hal-scripts/setup-ingress-content.sh", {
+    SETUP_INGRESS_CONTENT = templatefile("./hal-scripts/setup-ingress-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         kubeConfig     = "/${var.service_account_name}/.kube/${k}.config"
         clusterName    = "${k}"
@@ -338,7 +337,7 @@ data "template_file" "setupHalyard" {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         gateSpinApiIP   = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
         gateApiHostname = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_hosts_map[k]
-        deckHostname    = data.terraform_remote_state.spinnaker.outputs.ui_hosts_map[k]
+        deckHostname    = data.terraform_remote_state.spinnaker.outputs.spinnaker_ui_hosts_map[k]
         kubeConfig      = "/${var.service_account_name}/.kube/${k}.config"
         }
       }
@@ -428,7 +427,6 @@ data "template_file" "setupMonitoring" {
         metricsYaml                  = data.terraform_remote_state.spinnaker.outputs.metrics_yml_files_map[k]
         clusterName                  = v["clusterPrefix"]
         kubeConfig                   = "/${var.service_account_name}/.kube/${k}.config"
-        grafanaLoadBalancerIpAddress = data.terraform_remote_state.static_ips.outputs.grafana_ips_map[k]
         }
       }
     })

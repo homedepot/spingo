@@ -57,15 +57,15 @@ metadata:
   namespace: kube-system
 type: kubernetes.io/tls
 data:
-  vault.pem: $(cat /${USER}/certbot/${DNS}_wildcard.crt | base64 -w 0)
-  vault.key: $(cat /${USER}/certbot/${DNS}_wildcard.key | base64 -w 0)
+  tls.crt: $(cat /${USER}/certbot/${DNS}_wildcard.crt | base64 -w 0)
+  tls.key: $(cat /${USER}/certbot/${DNS}_wildcard.key | base64 -w 0)
 SECRET_EOF
 
 
 cat <<EOF > /${USER}/ingress/ingress_${details.clusterName}_nginx-ingress.yml
 controller:
   service:
-    loadBalancerIP: ${load_balancer_ip}
+    loadBalancerIP: ${loadBalancerIP}
   extraArgs:
     default-ssl-certificate "kube-system/wildcard-cert"
     enable-ssl-passthrough: {}

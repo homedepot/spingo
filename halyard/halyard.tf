@@ -112,6 +112,16 @@ data "template_file" "setup_onboarding" {
   }
 }
 
+data "template_file" "setup-cleanup-operator"{
+    template = file("./hal-scripts/setup-cleanup-operator.sh")
+
+    vars = {
+        deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+            kubeConfig      = "/${var.service_account_name}/.kube/${k}.config"
+        }
+    }
+}
+
 data "template_file" "cert_script" {
   template = file("./hal-scripts/x509-cert.sh")
 
@@ -165,6 +175,7 @@ data "template_file" "start_script" {
     SCRIPT_ONBOARDING    = base64encode(data.template_file.setup_onboarding.rendered)
     SCRIPT_X509          = base64encode(data.template_file.cert_script.rendered)
     SCRIPT_VAULT         = base64encode(data.template_file.vault.rendered)
+    SCRIPT_CLEANUP_OPERATOR = base64encode(data.template_file.setup-cleanup-operator.rendered)
     SCRIPT_CREATE_FIAT   = base64encode(templatefile("./hal-scripts/create-fiat-service-account.sh", {}))
     SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./hal-scripts/onboarding-notifications-pipeline.json", {
       ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.spinnaker.outputs.created_onboarding_subscription_name

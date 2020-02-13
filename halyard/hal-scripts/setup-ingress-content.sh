@@ -67,7 +67,7 @@ controller:
   service:
     loadBalancerIP: ${details.loadBalancerIP}
   extraArgs:
-    default-ssl-certificate "kube-system/wildcard-cert"
+    default-ssl-certificate: "kube-system/wildcard-cert"
     enable-ssl-passthrough: {}
 EOF
 

@@ -23,7 +23,7 @@ grafana:
     - ${gf_server_root_url}
     tls:
      - hosts:
-       - grafana-sandbox.spinnaker.homedepot.com
+       - ${gf_server_root_url}
 
 prometheus:
   additionalServiceMonitors:

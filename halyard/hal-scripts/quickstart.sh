@@ -13,6 +13,8 @@ fi
 
 echo "Auto running setupCertbot.sh"
 ./setupCertbot.sh
+echo "Auto running setup-ingress.sh"
+./setup-ingress.sh
 echo "Auto running setupVault.sh"
 ./setupVault.sh
 echo "Auto running setupHalyard.sh"

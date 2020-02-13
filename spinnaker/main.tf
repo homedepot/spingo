@@ -155,12 +155,12 @@ data "http" "local_outgoing_ip_address" {
 module "spinnaker_dns" {
   source               = "./modules/dns"
   gcp_project          = var.gcp_project
-  ui_ip_addresses      = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  ui_ip_addresses      = data.terraform_remote_state.static_ips.outputs.api_ips_map
   api_ip_addresses     = data.terraform_remote_state.static_ips.outputs.api_ips_map
   x509_ip_addresses    = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
-  vault_ip_addresses   = data.terraform_remote_state.static_ips.outputs.vault_ips_map
+  vault_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
   ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
-  grafana_ip_addresses = data.terraform_remote_state.static_ips.outputs.grafana_ips_map
+  grafana_ip_addresses = data.terraform_remote_state.static_ips.outputs.api_ips_map
 
   providers = {
     google = google.dns-zone
@@ -222,11 +222,11 @@ module "spinnaker_onboarding_service_account" {
   service_account_prefix = ""
   bucket_name            = module.halyard_storage.bucket_name
   gcp_project            = var.gcp_project
-  roles                  = [
-    "roles/container.admin", 
+  roles = [
+    "roles/container.admin",
     "roles/iam.serviceAccountTokenCreator"
   ]
-  create_and_store_key   = false
+  create_and_store_key = false
 }
 
 resource "google_service_account_iam_binding" "onboarding_workload_identity_binding" {
@@ -311,10 +311,12 @@ module "vault_setup" {
   source                    = "./modules/vault"
   gcp_project               = var.gcp_project
   kms_keyring_name_map      = module.vault_keyring.kms_key_ring_name_map
-  vault_ips_map             = data.terraform_remote_state.static_ips.outputs.vault_ips_map
   crypto_key_id_map         = module.vault_keys.crypto_key_id_map
   ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
   service_account_email_map = module.k8s.service_account_map
+  vault_hosts_map           = module.spinnaker_dns.vault_hosts_map
+  allowed_cidrs             = join(",", concat(var.default_networks_that_can_access_k8s_api, data.terraform_remote_state.static_ips.outputs.cloudnat_ips, [data.terraform_remote_state.static_ips.outputs.halyard_ip]))
+
 }
 
 resource "google_compute_firewall" "iap" {
@@ -376,11 +378,6 @@ output "vault_crypto_key_id_map" {
 output "vault_crypto_key_name_map" {
   value = module.vault_keys.crypto_key_name_map
 }
-
-output "vault_hosts_map" {
-  value = module.spinnaker_dns.vault_hosts_map
-}
-
 output "vault_yml_files_map" {
   value = module.vault_setup.vault_yml_files_map
 }
@@ -413,6 +410,14 @@ output "the_gcp_project" {
   value = var.gcp_project
 }
 
+
+output "vault_hosts_map" {
+  value = module.spinnaker_dns.vault_hosts_map
+}
+
+output "grafana_hosts_map" {
+  value = module.spinnaker_dns.grafana_hosts_map
+}
 output "spinnaker_ui_hosts_map" {
   value = module.spinnaker_dns.ui_hosts_map
 }

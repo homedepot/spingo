@@ -10,12 +10,6 @@ provider "google" {
   project     = var.gcp_project
 }
 
-resource "google_compute_address" "ui" {
-  for_each = var.ship_plans
-  name     = "ui-${each.key}"
-  region   = each.value["clusterRegion"]
-}
-
 resource "google_compute_address" "api" {
   for_each = var.ship_plans
   name     = "api-${each.key}"
@@ -25,18 +19,6 @@ resource "google_compute_address" "api" {
 resource "google_compute_address" "api_x509" {
   for_each = var.ship_plans
   name     = "api-x509-${each.key}"
-  region   = each.value["clusterRegion"]
-}
-
-resource "google_compute_address" "vault" {
-  for_each = var.ship_plans
-  name     = "vault-${each.key}"
-  region   = each.value["clusterRegion"]
-}
-
-resource "google_compute_address" "grafana" {
-  for_each = var.ship_plans
-  name     = "grafana-${each.key}"
   region   = each.value["clusterRegion"]
 }
 
@@ -55,10 +37,6 @@ resource "google_compute_address" "halyard" {
   region = var.region
 }
 
-output "ui_ips_map" {
-  value = { for k, v in var.ship_plans : k => google_compute_address.ui[k].address }
-}
-
 output "api_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.api[k].address }
 }
@@ -67,13 +45,6 @@ output "api_x509_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.api_x509[k].address }
 }
 
-output "vault_ips_map" {
-  value = { for k, v in var.ship_plans : k => google_compute_address.vault[k].address }
-}
-
-output "grafana_ips_map" {
-  value = { for k, v in var.ship_plans : k => google_compute_address.grafana[k].address }
-}
 
 output "cloudnat_ips_map" {
   value = { for k, v in var.ship_plans : k => google_compute_address.cloudnat[k].address }

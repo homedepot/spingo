@@ -1,2 +1,2 @@
 add ssl cert to secret
-turn off ssl for deck
+deploy ingress controller

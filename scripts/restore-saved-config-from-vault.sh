@@ -35,7 +35,7 @@ echo "Restoring terraform account for project $PROJECT"
 vault read -field "$PROJECT" secret/"$PROJECT"/"$SERVICE_ACCOUNT_NAME" > "$SERVICE_ACCOUNT_NAME".json
 cp "$SERVICE_ACCOUNT_NAME".json ./halyard
 cp "$SERVICE_ACCOUNT_NAME".json ./spinnaker
-cp "$SERVICE_ACCOUNT_NAME".json ./static_ips
+cp "$SERVICE_ACCOUNT_NAME".json ./static-ips
 cp "$SERVICE_ACCOUNT_NAME".json ./monitoring-alerting
 cp "$SERVICE_ACCOUNT_NAME".json ./dns
 rm "$SERVICE_ACCOUNT_NAME".json

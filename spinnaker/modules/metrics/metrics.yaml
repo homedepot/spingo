@@ -20,10 +20,10 @@ grafana:
     annotations:
       kubernetes.io/ingress.class: nginx
     hosts:
-    - ${gf_server_root_url}
+    - ${gf_hostname}
     tls:
      - hosts:
-       - ${gf_server_root_url}
+       - ${gf_hostname}
 
 prometheus:
   additionalServiceMonitors:

@@ -165,7 +165,7 @@ data "template_file" "start_script" {
     PROJECT              = var.gcp_project
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
     REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard_svc_key.data))
-    SCRIPT_INGRESS = base64encode(data.template_file.ingress.rendered)
+    SCRIPT_INGRESS       = base64encode(data.template_file.ingress.rendered)
     SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
     SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
     SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
@@ -424,9 +424,9 @@ data "template_file" "setupMonitoring" {
       USER = var.service_account_name
       DNS  = var.cloud_dns_hostname
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
-        metricsYaml                  = data.terraform_remote_state.spinnaker.outputs.metrics_yml_files_map[k]
-        clusterName                  = v["clusterPrefix"]
-        kubeConfig                   = "/${var.service_account_name}/.kube/${k}.config"
+        metricsYaml = data.terraform_remote_state.spinnaker.outputs.metrics_yml_files_map[k]
+        clusterName = v["clusterPrefix"]
+        kubeConfig  = "/${var.service_account_name}/.kube/${k}.config"
         }
       }
     })

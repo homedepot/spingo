@@ -10,9 +10,9 @@ provider "google" {
   project     = var.gcp_project
 }
 
-resource "google_compute_address" "ui" {
+resource "google_compute_address" "api" {
   for_each = var.ship_plans
-  name     = "ui-${each.key}"
+  name     = "api-${each.key}"
   region   = each.value["clusterRegion"]
 }
 
@@ -37,8 +37,8 @@ resource "google_compute_address" "halyard" {
   region = var.region
 }
 
-output "ui_ips_map" {
-  value = { for k, v in var.ship_plans : k => google_compute_address.ui[k].address }
+output "api_ips_map" {
+  value = { for k, v in var.ship_plans : k => google_compute_address.api[k].address }
 }
 
 output "api_x509_ips_map" {

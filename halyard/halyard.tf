@@ -84,7 +84,7 @@ data "template_file" "ingress" {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         kubeConfig     = "/${var.service_account_name}/.kube/${k}.config"
         clusterName    = "${k}"
-        loadBalancerIP = data.terraform_remote_state.static_ips.outputs.ui_ips_map[k]
+        loadBalancerIP = data.terraform_remote_state.static_ips.outputs.api_ips_map[k]
         }
       }
       USER = var.service_account_name

@@ -1,5 +1,5 @@
-provider "vault" {
-}
+rovider "vault" {
+
 
 data "vault_generic_secret" "terraform_account" {
   path = "secret/${var.gcp_project}/${var.terraform_account}"
@@ -155,12 +155,12 @@ data "http" "local_outgoing_ip_address" {
 module "spinnaker_dns" {
   source               = "./modules/dns"
   gcp_project          = var.gcp_project
-  ui_ip_addresses      = data.terraform_remote_state.static_ips.outputs.ui_ips_map
-  api_ip_addresses     = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  ui_ip_addresses      = data.terraform_remote_state.static_ips.outputs.api_ips_map
+  api_ip_addresses     = data.terraform_remote_state.static_ips.outputs.api_ips_map
   x509_ip_addresses    = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map
-  vault_ip_addresses   = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  vault_ip_addresses   = data.terraform_remote_state.static_ips.outputs.api_ips_map
   ship_plans           = data.terraform_remote_state.static_ips.outputs.ship_plans
-  grafana_ip_addresses = data.terraform_remote_state.static_ips.outputs.ui_ips_map
+  grafana_ip_addresses = data.terraform_remote_state.static_ips.outputs.api_ips_map
 
   providers = {
     google = google.dns-zone

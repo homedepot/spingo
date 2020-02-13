@@ -112,14 +112,15 @@ data "template_file" "setup_onboarding" {
   }
 }
 
-data "template_file" "setup-cleanup-operator"{
-    template = file("./hal-scripts/setup-cleanup-operator.sh")
+data "template_file" "setup-cleanup-operator" {
+  template = file("./hal-scripts/setup-cleanup-operator.sh")
 
-    vars = {
-        deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
-            kubeConfig      = "/${var.service_account_name}/.kube/${k}.config"
-        }
+  vars = {
+    deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+      kubeConfig = "/${var.service_account_name}/.kube/${k}.config"
+      }
     }
+  }
 }
 
 data "template_file" "cert_script" {
@@ -153,30 +154,30 @@ data "template_file" "start_script" {
   template = file("./start.sh")
 
   vars = {
-    GOOGLE_PROJECT       = var.gcp_project
-    USER                 = var.service_account_name
-    BUCKET               = "${var.gcp_project}${var.bucket_name}"
-    PROJECT              = var.gcp_project
-    SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
-    REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard_svc_key.data))
-    SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
-    SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
-    SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)
-    SCRIPT_KUBERNETES    = base64encode(data.template_file.setupKubernetesMultiple.rendered)
-    SCRIPT_HALPUSH       = base64encode(data.template_file.halpush.rendered)
-    SCRIPT_HALGET        = base64encode(data.template_file.halget.rendered)
-    SCRIPT_HALDIFF       = base64encode(data.template_file.haldiff.rendered)
-    SCRIPT_ALIASES       = base64encode(data.template_file.aliases.rendered)
-    SCRIPT_K8SSL         = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
-    SCRIPT_RESETGCP      = base64encode(data.template_file.resetgcp.rendered)
-    SCRIPT_SWITCH        = base64encode(data.template_file.halswitch.rendered)
-    SCRIPT_MONITORING    = base64encode(data.template_file.setupMonitoring.rendered)
-    SCRIPT_SSL_KEYSTORE  = base64encode(data.template_file.make_update_keystore_script.rendered)
-    SCRIPT_ONBOARDING    = base64encode(data.template_file.setup_onboarding.rendered)
-    SCRIPT_X509          = base64encode(data.template_file.cert_script.rendered)
-    SCRIPT_VAULT         = base64encode(data.template_file.vault.rendered)
+    GOOGLE_PROJECT          = var.gcp_project
+    USER                    = var.service_account_name
+    BUCKET                  = "${var.gcp_project}${var.bucket_name}"
+    PROJECT                 = var.gcp_project
+    SPIN_CLUSTER_ACCOUNT    = "spin_cluster_account"
+    REPLACE                 = base64encode(jsonencode(data.vault_generic_secret.halyard_svc_key.data))
+    SCRIPT_SSL              = base64encode(data.template_file.setupSSLMultiple.rendered)
+    SCRIPT_OAUTH            = base64encode(data.template_file.setupOAuthMultiple.rendered)
+    SCRIPT_HALYARD          = base64encode(data.template_file.setupHalyardMultiple.rendered)
+    SCRIPT_KUBERNETES       = base64encode(data.template_file.setupKubernetesMultiple.rendered)
+    SCRIPT_HALPUSH          = base64encode(data.template_file.halpush.rendered)
+    SCRIPT_HALGET           = base64encode(data.template_file.halget.rendered)
+    SCRIPT_HALDIFF          = base64encode(data.template_file.haldiff.rendered)
+    SCRIPT_ALIASES          = base64encode(data.template_file.aliases.rendered)
+    SCRIPT_K8SSL            = base64encode(data.template_file.setupK8sSSlMultiple.rendered)
+    SCRIPT_RESETGCP         = base64encode(data.template_file.resetgcp.rendered)
+    SCRIPT_SWITCH           = base64encode(data.template_file.halswitch.rendered)
+    SCRIPT_MONITORING       = base64encode(data.template_file.setupMonitoring.rendered)
+    SCRIPT_SSL_KEYSTORE     = base64encode(data.template_file.make_update_keystore_script.rendered)
+    SCRIPT_ONBOARDING       = base64encode(data.template_file.setup_onboarding.rendered)
+    SCRIPT_X509             = base64encode(data.template_file.cert_script.rendered)
+    SCRIPT_VAULT            = base64encode(data.template_file.vault.rendered)
     SCRIPT_CLEANUP_OPERATOR = base64encode(data.template_file.setup-cleanup-operator.rendered)
-    SCRIPT_CREATE_FIAT   = base64encode(templatefile("./hal-scripts/create-fiat-service-account.sh", {}))
+    SCRIPT_CREATE_FIAT      = base64encode(templatefile("./hal-scripts/create-fiat-service-account.sh", {}))
     SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./hal-scripts/onboarding-notifications-pipeline.json", {
       ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.spinnaker.outputs.created_onboarding_subscription_name
       ADMIN_GROUP             = var.spinnaker_admin_group

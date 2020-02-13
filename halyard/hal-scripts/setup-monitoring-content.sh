@@ -11,46 +11,8 @@ echo "Creating monitoring namespace for deployment ${deployment}"
 
 kubectl --kubeconfig="${details.kubeConfig}" create namespace monitoring
 
-echo "generating load balancer for ${deployment} grafana instance"
-
-cat <<EOF | kubectl -n monitoring --kubeconfig="${details.kubeConfig}" apply -f - 
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: grafana
-  name: grafana
-  namespace: monitoring
-spec:
-  loadBalancerIP: ${details.grafanaLoadBalancerIpAddress}
-  ports:
-  - name: https
-    port: 443
-    protocol: TCP
-    targetPort: 3000
-  selector:
-    app: grafana
-  type: LoadBalancer
-EOF
-
-
 echo "${details.metricsYaml}" | base64 -d > /${USER}/metrics/metrics_${details.clusterName}_helm_values.yml
 
-echo "Creating TLS cert kubernetes secrets for deployment ${deployment}"
-
-
-cat <<SECRET_EOF | kubectl -n monitoring --kubeconfig="${details.kubeConfig}" apply -f -
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana-tls
-  namespace: monitoring
-type: Opaque
-data:
-  grafana.pem: $(cat /${USER}/certbot/${DNS}_wildcard.crt | base64 -w 0)
-  grafana.key: $(cat /${USER}/certbot/${DNS}_wildcard.key | base64 -w 0)
-SECRET_EOF
-  
 echo -e "Creating grafana dashboards as ConfigMaps for deployment ${deployment}\n"
 
 git clone https://github.com/spinnaker/spinnaker-monitoring.git

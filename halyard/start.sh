@@ -70,6 +70,7 @@ runuser -l ${USER} -c 'ln -s /${USER}/.kube /home/${USER}/'
 runuser -l ${USER} -c 'ln -s /${USER}/.spin /home/${USER}/'
 
 echo "Setting up helper scripts"
+runuser -l ${USER} -c 'echo "${SCRIPT_INGRESS}" | base64 -d > /home/${USER}/setup-ingress.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_SSL}" | base64 -d > /home/${USER}/setupSSL.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_OAUTH}" | base64 -d > /home/${USER}/setupOAuth.sh'
 runuser -l ${USER} -c 'echo "${SCRIPT_HALYARD}" | base64 -d > /home/${USER}/setupHalyard.sh'

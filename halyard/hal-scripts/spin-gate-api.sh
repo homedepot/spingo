@@ -76,7 +76,7 @@ spec:
         path: /
   tls:
   - hosts:
-    - sandbox.spinnaker.homedepot.com
+    - ${details.deckHostname}
 SVC_EOF
 
 echo "Added Deck UI Service for deployment named ${deployment}"

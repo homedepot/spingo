@@ -1,4 +1,4 @@
-rovider "vault" {
+provider "vault" {
 
 
 data "vault_generic_secret" "terraform_account" {

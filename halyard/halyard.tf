@@ -166,7 +166,7 @@ data "template_file" "start_script" {
     PROJECT              = var.gcp_project
     SPIN_CLUSTER_ACCOUNT = "spin_cluster_account"
     REPLACE              = base64encode(jsonencode(data.vault_generic_secret.halyard_svc_key.data))
-    SCRIPT_INGRESS = base64encode(data.template_file.setupIngress.rendered)
+    SCRIPT_INGRESS = base64encode(data.template_file.ingress.rendered)
     SCRIPT_SSL           = base64encode(data.template_file.setupSSLMultiple.rendered)
     SCRIPT_OAUTH         = base64encode(data.template_file.setupOAuthMultiple.rendered)
     SCRIPT_HALYARD       = base64encode(data.template_file.setupHalyardMultiple.rendered)

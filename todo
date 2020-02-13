@@ -1,2 +1,1 @@
-add ssl cert to secret
-deploy ingress controller
+populate ingress-content, ingress-setup, and startsh

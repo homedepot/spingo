@@ -27,6 +27,8 @@ echo "Auto running setupOnboarding.sh"
 ./setupOnboarding.sh
 echo "Auto running setupMonitoring.sh"
 ./setupMonitoring.sh
+echo "Auto running setup-cleanup-operator.sh"
+./setup-cleanup-operator.sh
 
 echo "Auto running halpush to save configuration to halyard bucket"
 ./halpush.sh

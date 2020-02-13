@@ -66,6 +66,7 @@ cat <<EOF > /${USER}/ingress/ingress_${details.clusterName}_nginx-ingress.yml
 controller:
   service:
     loadBalancerIP: ${details.loadBalancerIP}
+  replicaCount: 3
   extraArgs:
     default-ssl-certificate: "kube-system/wildcard-cert"
     enable-ssl-passthrough: {}

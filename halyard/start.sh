@@ -93,6 +93,7 @@ runuser -l ${USER} -c 'echo "${SCRIPT_CURRENT_DEPLOYMENT}" | base64 -d > /home/$
 runuser -l ${USER} -c 'echo "${SCRIPT_ONBOARDING_PIPELINE}" | base64 -d > /home/${USER}/onboardingNotificationsPipeline.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_SPINGO_ADMIN_APP}" | base64 -d > /home/${USER}/spingoAdminApplication.json'
 runuser -l ${USER} -c 'echo "${SCRIPT_VAULT}" | base64 -d > /home/${USER}/setupVault.sh'
+runuser -l ${USER} -c 'echo "${SCRIPT_CLEANUP_OPERATOR}" | base64 -d > /home/${USER}/setup-cleanup-operator.sh'
 
 #extract userscripts
 runuser -l ${USER} -c 'echo "${USER_SCRIPTS}" | base64 -d | tar -xf - -C /home/${USER}'

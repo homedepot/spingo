@@ -51,11 +51,11 @@ data "vault_generic_secret" "spinnaker_api_address" {
 }
 
 data "template_file" "vault" {
-  template = file("./hal-scripts/setup-vault.sh")
+  template = file("./scripts/setup-vault.sh")
 
   vars = {
     USER = var.service_account_name
-    SETUP_VAULT_CONTENTS = templatefile("./hal-scripts/setup-vault-contents.sh", {
+    SETUP_VAULT_CONTENTS = templatefile("./scripts/setup-vault-contents.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_yml_files_map[k]
         clusterName         = "${k}"
@@ -76,11 +76,11 @@ data "template_file" "vault" {
 }
 
 data "template_file" "ingress" {
-  template = file("./hal-scripts/setup-ingress.sh")
+  template = file("./scripts/setup-ingress.sh")
 
   vars = {
     USER = var.service_account_name
-    SETUP_INGRESS_CONTENT = templatefile("./hal-scripts/setup-ingress-content.sh", {
+    SETUP_INGRESS_CONTENT = templatefile("./scripts/setup-ingress-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         kubeConfig     = "/${var.service_account_name}/.kube/${k}.config"
         clusterName    = "${k}"
@@ -93,7 +93,7 @@ data "template_file" "ingress" {
   }
 }
 data "template_file" "make_update_keystore_script" {
-  template = file("./hal-scripts/make-or-update-keystore.sh")
+  template = file("./scripts/make-or-update-keystore.sh")
 
   vars = {
     DNS             = var.cloud_dns_hostname
@@ -106,7 +106,7 @@ data "template_file" "make_update_keystore_script" {
 }
 
 data "template_file" "setup_onboarding" {
-  template = file("./hal-scripts/setup-onboarding.sh")
+  template = file("./scripts/setup-onboarding.sh")
 
   vars = {
     PROJECT_NAME            = var.gcp_project
@@ -115,7 +115,7 @@ data "template_file" "setup_onboarding" {
     ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.spinnaker.outputs.created_onboarding_subscription_name
     USER                    = var.service_account_name
     ADMIN_GROUP             = var.spinnaker_admin_group
-    HALYARD_COMMANDS = templatefile("./hal-scripts/onboarding-halyard.sh", {
+    HALYARD_COMMANDS = templatefile("./scripts/onboarding-halyard.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         clientIP        = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
         clientHostnames = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_x509_hosts_map[k]
@@ -129,10 +129,10 @@ data "template_file" "setup_onboarding" {
 }
 
 data "template_file" "setup-cleanup-operator" {
-  template = file("./hal-scripts/setup-cleanup-operator.sh")
+  template = file("./scripts/setup-cleanup-operator.sh")
 
   vars = {
-    SETUP_CLEANUP_OPERATOR_CONTENTS = templatefile("./hal-scripts/setup-cleanup-operator-contents.sh", {
+    SETUP_CLEANUP_OPERATOR_CONTENTS = templatefile("./scripts/setup-cleanup-operator-contents.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         kubeConfig = "/${var.service_account_name}/.kube/${k}.config"
         }
@@ -142,7 +142,7 @@ data "template_file" "setup-cleanup-operator" {
 }
 
 data "template_file" "cert_script" {
-  template = file("./hal-scripts/x509-cert.sh")
+  template = file("./scripts/x509-cert.sh")
 
   vars = {
     USER              = var.service_account_name
@@ -153,7 +153,7 @@ data "template_file" "cert_script" {
 }
 
 data "template_file" "aliases" {
-  template = file("./hal-scripts/aliases.sh")
+  template = file("./scripts/aliases.sh")
 
   vars = {
     USER = var.service_account_name
@@ -161,7 +161,7 @@ data "template_file" "aliases" {
 }
 
 data "template_file" "profile_aliases" {
-  template = file("./hal-scripts/profile-aliases.sh")
+  template = file("./scripts/profile-aliases.sh")
 
   vars = {
     USER = var.service_account_name
@@ -196,37 +196,37 @@ data "template_file" "start_script" {
     SCRIPT_X509             = base64encode(data.template_file.cert_script.rendered)
     SCRIPT_VAULT            = base64encode(data.template_file.vault.rendered)
     SCRIPT_CLEANUP_OPERATOR = base64encode(data.template_file.setup-cleanup-operator.rendered)
-    SCRIPT_CREATE_FIAT      = base64encode(templatefile("./hal-scripts/create-fiat-service-account.sh", {}))
-    SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./hal-scripts/onboarding-notifications-pipeline.json", {
+    SCRIPT_CREATE_FIAT      = base64encode(templatefile("./scripts/create-fiat-service-account.sh", {}))
+    SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./scripts/onboarding-notifications-pipeline.json", {
       ONBOARDING_SUBSCRIPTION = data.terraform_remote_state.spinnaker.outputs.created_onboarding_subscription_name
       ADMIN_GROUP             = var.spinnaker_admin_group
       SLACK_ADMIN_CHANNEL     = var.spinnaker_admin_slack_channel
     }))
-    SCRIPT_SPINGO_ADMIN_APP = base64encode(templatefile("./hal-scripts/spingo-admin-application.json", {
+    SCRIPT_SPINGO_ADMIN_APP = base64encode(templatefile("./scripts/spingo-admin-application.json", {
       ADMIN_GROUP       = var.spinnaker_admin_group
       SPINGO_ADMIN_USER = var.spingo_user_email
     }))
-    SCRIPT_COMMON = base64encode(templatefile("./hal-scripts/common-functions.sh", {
+    SCRIPT_COMMON = base64encode(templatefile("./scripts/common-functions.sh", {
       USER = var.service_account_name
     }))
-    SCRIPT_SLACK = base64encode(templatefile("./hal-scripts/setup-slack.sh", {
+    SCRIPT_SLACK = base64encode(templatefile("./scripts/setup-slack.sh", {
       TOKEN_FROM_SLACK = data.vault_generic_secret.slack_token.data["value"]
       deployments      = [for s in keys(data.terraform_remote_state.static_ips.outputs.ship_plans) : s]
     }))
-    SCRIPT_QUICKSTART = base64encode(templatefile("./hal-scripts/quickstart.sh", {
+    SCRIPT_QUICKSTART = base64encode(templatefile("./scripts/quickstart.sh", {
       USER = var.service_account_name
     }))
-    SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./hal-scripts/configure-to-current-deployment.sh", {
+    SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./scripts/configure-to-current-deployment.sh", {
       USER = var.service_account_name
     }))
-    USER_SCRIPTS                  = filebase64("./hal-scripts/user-scripts.tar")
+    USER_SCRIPTS                  = filebase64("./scripts/user-scripts.tar")
     AUTO_START_HALYARD_QUICKSTART = var.auto_start_halyard_quickstart
     PROFILE_ALIASES               = base64encode(data.template_file.profile_aliases.rendered)
   }
 }
 
 data "template_file" "resetgcp" {
-  template = file("./hal-scripts/reset-gcp.sh")
+  template = file("./scripts/reset-gcp.sh")
 
   vars = {
     USER                 = var.service_account_name
@@ -237,7 +237,7 @@ data "template_file" "resetgcp" {
 }
 
 data "template_file" "halpush" {
-  template = file("./hal-scripts/hal-push.sh")
+  template = file("./scripts/hal-push.sh")
 
   vars = {
     USER   = var.service_account_name
@@ -246,7 +246,7 @@ data "template_file" "halpush" {
 }
 
 data "template_file" "halget" {
-  template = file("./hal-scripts/hal-get.sh")
+  template = file("./scripts/hal-get.sh")
 
   vars = {
     USER   = var.service_account_name
@@ -255,7 +255,7 @@ data "template_file" "halget" {
 }
 
 data "template_file" "halswitch" {
-  template = file("./hal-scripts/hal-switch.sh")
+  template = file("./scripts/hal-switch.sh")
 
   vars = {
     USER = var.service_account_name
@@ -263,7 +263,7 @@ data "template_file" "halswitch" {
 }
 
 data "template_file" "haldiff" {
-  template = file("./hal-scripts/hal-diff.sh")
+  template = file("./scripts/hal-diff.sh")
 
   vars = {
     USER   = var.service_account_name
@@ -273,7 +273,7 @@ data "template_file" "haldiff" {
 
 data "template_file" "setupSSL" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  template = file("./hal-scripts/setup-ssl.sh")
+  template = file("./scripts/setup-ssl.sh")
 
   vars = {
     USER            = var.service_account_name
@@ -290,13 +290,13 @@ data "template_file" "setupSSL" {
 
 data "template_file" "k8ssl" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  template = file("./hal-scripts/setup-k8-ssl.sh")
+  template = file("./scripts/setup-k8-ssl.sh")
 
   vars = {
     SPIN_UI_IP  = data.google_compute_address.ui[each.key].address
     SPIN_API_IP = data.google_compute_address.api[each.key].address
     KUBE_CONFIG = "/${var.service_account_name}/.kube/${each.key}.config"
-    SPIN_SERVICES = templatefile("./hal-scripts/spin-gate-api.sh", {
+    SPIN_SERVICES = templatefile("./scripts/spin-gate-api.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         gateSpinApiIP   = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
         gateApiHostname = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_hosts_map[k]
@@ -310,7 +310,7 @@ data "template_file" "k8ssl" {
 
 data "template_file" "setupOAuth" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  template = file("./hal-scripts/setup-oauth.sh")
+  template = file("./scripts/setup-oauth.sh")
 
   vars = {
     USER                = var.service_account_name
@@ -325,7 +325,7 @@ data "template_file" "setupOAuth" {
 
 data "template_file" "setupHalyard" {
   for_each = data.terraform_remote_state.static_ips.outputs.ship_plans
-  template = file("./hal-scripts/setup-halyard.sh")
+  template = file("./scripts/setup-halyard.sh")
 
   vars = {
     USER                            = var.service_account_name
@@ -347,7 +347,7 @@ data "template_file" "setupHalyard" {
     DEPLOYMENT_INDEX                = index(keys(data.terraform_remote_state.static_ips.outputs.ship_plans), each.key)
     VAULT_ADDR                      = data.terraform_remote_state.spinnaker.outputs.vault_hosts_map[each.key]
     KUBE_CONFIG                     = "/${var.service_account_name}/.kube/${each.key}.config"
-    SPIN_SERVICES = templatefile("./hal-scripts/spin-gate-api.sh", {
+    SPIN_SERVICES = templatefile("./scripts/spin-gate-api.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         gateSpinApiIP   = data.terraform_remote_state.static_ips.outputs.api_x509_ips_map[k]
         gateApiHostname = data.terraform_remote_state.spinnaker.outputs.spinnaker_api_hosts_map[k]
@@ -360,11 +360,11 @@ data "template_file" "setupHalyard" {
 }
 
 data "template_file" "setupHalyardMultiple" {
-  template = file("./hal-scripts/multiple-script-template.sh")
+  template = file("./scripts/multiple-script-template.sh")
 
   vars = {
     SHEBANG = "#!/bin/bash"
-    SCRIPT_CONTENT = templatefile("./hal-scripts/multiple-script-template-content.sh", {
+    SCRIPT_CONTENT = templatefile("./scripts/multiple-script-template-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         script = data.template_file.setupHalyard[k].rendered
         }
@@ -374,11 +374,11 @@ data "template_file" "setupHalyardMultiple" {
 }
 
 data "template_file" "setupKubernetesMultiple" {
-  template = file("./hal-scripts/multiple-script-template.sh")
+  template = file("./scripts/multiple-script-template.sh")
 
   vars = {
     SHEBANG = "#!/bin/bash"
-    SCRIPT_CONTENT = templatefile("./hal-scripts/setup-kubernetes-dynamic.sh", {
+    SCRIPT_CONTENT = templatefile("./scripts/setup-kubernetes-dynamic.sh", {
       PROJECT             = var.gcp_project
       USER                = var.service_account_name
       ONBOARDING_SA_EMAIL = data.terraform_remote_state.spinnaker.outputs.spinnaker_onboarding_service_account_email
@@ -389,11 +389,11 @@ data "template_file" "setupKubernetesMultiple" {
 }
 
 data "template_file" "setupK8sSSlMultiple" {
-  template = file("./hal-scripts/multiple-script-template.sh")
+  template = file("./scripts/multiple-script-template.sh")
 
   vars = {
     SHEBANG = "#!/bin/bash"
-    SCRIPT_CONTENT = templatefile("./hal-scripts/multiple-script-template-content.sh", {
+    SCRIPT_CONTENT = templatefile("./scripts/multiple-script-template-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         script = data.template_file.k8ssl[k].rendered
         }
@@ -403,11 +403,11 @@ data "template_file" "setupK8sSSlMultiple" {
 }
 
 data "template_file" "setupSSLMultiple" {
-  template = file("./hal-scripts/multiple-script-template.sh")
+  template = file("./scripts/multiple-script-template.sh")
 
   vars = {
     SHEBANG = "#!/bin/bash"
-    SCRIPT_CONTENT = templatefile("./hal-scripts/multiple-script-template-content.sh", {
+    SCRIPT_CONTENT = templatefile("./scripts/multiple-script-template-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         script = data.template_file.setupSSL[k].rendered
         }
@@ -417,11 +417,11 @@ data "template_file" "setupSSLMultiple" {
 }
 
 data "template_file" "setupOAuthMultiple" {
-  template = file("./hal-scripts/multiple-script-template.sh")
+  template = file("./scripts/multiple-script-template.sh")
 
   vars = {
     SHEBANG = "#!/bin/bash"
-    SCRIPT_CONTENT = templatefile("./hal-scripts/multiple-script-template-content.sh", {
+    SCRIPT_CONTENT = templatefile("./scripts/multiple-script-template-content.sh", {
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
         script = data.template_file.setupOAuth[k].rendered
         }
@@ -431,10 +431,10 @@ data "template_file" "setupOAuthMultiple" {
 }
 
 data "template_file" "setupMonitoring" {
-  template = file("./hal-scripts/setup-monitoring.sh")
+  template = file("./scripts/setup-monitoring.sh")
 
   vars = {
-    SETUP_MONITORING_CONTENTS = templatefile("./hal-scripts/setup-monitoring-content.sh", {
+    SETUP_MONITORING_CONTENTS = templatefile("./scripts/setup-monitoring-content.sh", {
       USER = var.service_account_name
       DNS  = var.cloud_dns_hostname
       deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {

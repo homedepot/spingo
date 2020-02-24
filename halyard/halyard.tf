@@ -219,7 +219,7 @@ data "template_file" "start_script" {
     SCRIPT_CURRENT_DEPLOYMENT = base64encode(templatefile("./scripts/configure-to-current-deployment.sh", {
       USER = var.service_account_name
     }))
-    USER_SCRIPTS                  = filebase64("./scripts/user-scripts.tar")
+    USER_SCRIPTS                  = "${fileexists("./scripts/user-scripts.tar") ? filebase64("./scripts/user-scripts.tar") : ""}"
     AUTO_START_HALYARD_QUICKSTART = var.auto_start_halyard_quickstart
     PROFILE_ALIASES               = base64encode(data.template_file.profile_aliases.rendered)
   }

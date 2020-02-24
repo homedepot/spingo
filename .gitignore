@@ -32,4 +32,4 @@ terraform-account-dns.json
 
 # Ignore user-scripts
 user-scripts/*
-halyard/hal-scripts/user-scripts.tar
+halyard/scripts/user-scripts.tar

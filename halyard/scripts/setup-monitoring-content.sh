@@ -67,6 +67,6 @@ helm install \
     --namespace monitoring \
     --kubeconfig "${details.kubeConfig}" \
     --values /${USER}/metrics/metrics_${details.clusterName}_helm_values.yml \
-    stable/prometheus-operator
+    stable/prometheus-operator --version 8.10.2
 
 %{ endfor ~}

@@ -1,5 +1,5 @@
 grafana:
-  adminPassowd: ${gf_admin_password}
+  adminPassword: ${gf_admin_password}
   persistence:
     enabled: true
   grafana.ini:

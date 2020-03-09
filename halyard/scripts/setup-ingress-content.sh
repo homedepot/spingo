@@ -29,7 +29,7 @@ controller:
 EOF
 
 helm install \
-	--name nginx-ingress \
+	nginx-ingress \
 	--namespace kube-system \
 	--kubeconfig "${details.kubeConfig}" \
 	--values /${USER}/ingress/ingress_${details.clusterName}_nginx-ingress.yml \

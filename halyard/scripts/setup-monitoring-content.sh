@@ -57,7 +57,7 @@ hal deploy apply
 echo "Starting up prometheus-operator through helm for deployment ${deployment}"
 
 helm install \
-    --name spin \
+    spin \
     --namespace monitoring \
     --kubeconfig "${details.kubeConfig}" \
     --values /${USER}/metrics/metrics_${details.clusterName}_helm_values.yml \

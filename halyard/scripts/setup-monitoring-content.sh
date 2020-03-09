@@ -56,12 +56,6 @@ hal deploy apply
 
 echo "Starting up prometheus-operator through helm for deployment ${deployment}"
 
-
-helm init \
-    --service-account tiller \
-    --kubeconfig "${details.kubeConfig}" \
-    --history-max 200
-
 helm install \
     --name spin \
     --namespace monitoring \

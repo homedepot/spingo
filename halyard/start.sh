@@ -50,9 +50,9 @@ runuser -l ${USER} -c 'sudo mv /home/${USER}/vault /usr/local/bin/vault'
 runuser -l ${USER} -c 'rm /home/${USER}/vault.zip'
 
 echo "Installing Helm"
-runuser -l ${USER} -c 'curl -LO https://git.io/get_helm.sh'
-runuser -l ${USER} -c 'chmod 700 /home/${USER}/get_helm.sh'
-runuser -l ${USER} -c './get_helm.sh'
+runuser -l ${USER} -c 'curl -L https://get.helm.sh/helm-v3.1.1-linux-amd64.tar.gz | tar -xzf -'
+runuser -l ${USER} -c 'mv linux-amd64/helm /usr/bin'
+runuser -l ${USER} -c 'rm -rf linux-amd64'
 
 #this is hard coded because it is necessary name.
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'

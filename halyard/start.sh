@@ -27,9 +27,10 @@ mkhomedir_helper ${USER}
 echo "Setting up repos"
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
-add-apt-repository -y ppa:rmescandon/yq
 apt-get update
-apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk expect yq docker.io unzip
+apt-get install -y --allow-unauthenticated --no-install-recommends kubectl python-pip jq google-cloud-sdk expect docker.io unzip
+sudo curl -s -L https://github.com/mikefarah/yq/releases/download/2.2.1/yq_linux_amd64 -o /usr/bin/yq
+sudo chmod +x /usr/bin/yq
 
 echo "Setting up directory permissions."
 mkdir /${USER}

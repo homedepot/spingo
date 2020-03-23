@@ -27,7 +27,7 @@ SECRET_EOF
 echo "Starting up vault through helm for deployment ${deployment}"
 
 helm install \
-    --name vault \
+    vault \
     --namespace vault \
     --kubeconfig "${details.kubeConfig}" \
     --values /${USER}/vault/vault_${details.clusterName}_helm_values.yml \

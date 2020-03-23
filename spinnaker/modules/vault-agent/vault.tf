@@ -7,3 +7,7 @@ data "template_file" "vault" {
     vault_ui_hostname      = lookup(var.vault_hosts_map, each.key, "")
   }
 }
+
+output "vault_agent_yml_files_map" {
+  value = { for k, v in var.ship_plans : k => base64encode(data.template_file.vault[k].rendered) }
+}

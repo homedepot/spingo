@@ -316,7 +316,12 @@ module "vault_setup" {
   service_account_email_map = module.k8s.service_account_map
   vault_hosts_map           = module.spinnaker_dns.vault_hosts_map
   allowed_cidrs             = join(",", concat(var.default_networks_that_can_access_k8s_api, data.terraform_remote_state.static_ips.outputs.cloudnat_ips, [data.terraform_remote_state.static_ips.outputs.halyard_ip]))
+}
 
+module "vault_agent_setup" {
+  source                    = "./modules/vault-agent"
+  ship_plans                = data.terraform_remote_state.static_ips.outputs.ship_plans
+  vault_hosts_map           = module.spinnaker_dns.vault_hosts_map
 }
 
 resource "google_compute_firewall" "iap" {

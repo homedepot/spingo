@@ -212,6 +212,7 @@ data "template_file" "start_script" {
     SCRIPT_ONBOARDING       = base64encode(data.template_file.setup_onboarding.rendered)
     SCRIPT_X509             = base64encode(data.template_file.cert_script.rendered)
     SCRIPT_VAULT            = base64encode(data.template_file.vault.rendered)
+    SCRIPT_AGENT_VAULT      = base64encode(data.template_file.vault_agent.rendered)
     SCRIPT_CLEANUP_OPERATOR = base64encode(data.template_file.setup-cleanup-operator.rendered)
     SCRIPT_CREATE_FIAT      = base64encode(templatefile("./scripts/create-fiat-service-account.sh", {}))
     SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./scripts/onboarding-notifications-pipeline.json", {

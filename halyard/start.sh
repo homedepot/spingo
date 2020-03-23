@@ -54,6 +54,7 @@ echo "Installing Helm"
 runuser -l ${USER} -c 'curl -L https://get.helm.sh/helm-v3.1.1-linux-amd64.tar.gz | tar -xzf -'
 runuser -l ${USER} -c 'sudo mv linux-amd64/helm /usr/bin'
 runuser -l ${USER} -c 'rm -rf linux-amd64'
+runuser -l ${USER} -c 'helm repo add stable https://kubernetes-charts.storage.googleapis.com/'
 
 #this is hard coded because it is necessary name.
 runuser -l ${USER} -c 'echo "${REPLACE}" | base64 -d > /home/${USER}/${USER}.json'

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+${SETUP_AGENT_VAULT_CONTENTS}

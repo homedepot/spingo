@@ -383,8 +383,13 @@ output "vault_crypto_key_id_map" {
 output "vault_crypto_key_name_map" {
   value = module.vault_keys.crypto_key_name_map
 }
+
 output "vault_yml_files_map" {
   value = module.vault_setup.vault_yml_files_map
+}
+
+output "vault_agent_yml_files_map" {
+  value = module.vault_agent_setup.vault_agent_yml_files_map
 }
 
 output "vault_bucket_name_map" {

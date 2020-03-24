@@ -9,7 +9,7 @@ injector:
     tag: "0.3.0"
     pullPolicy: IfNotPresent
 
-  externalVaultAddr: "${vault_ui_hostname}"
+  externalVaultAddr: "https://${vault_ui_hostname}"
 
   agentImage:
     repository: "vault"

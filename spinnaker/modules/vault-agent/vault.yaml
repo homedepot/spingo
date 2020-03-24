@@ -4,30 +4,8 @@ global:
 injector:
   enabled: true
 
-  image:
-    repository: "hashicorp/vault-k8s"
-    tag: "0.3.0"
-    pullPolicy: IfNotPresent
-
   externalVaultAddr: "https://${vault_ui_hostname}"
-
-  agentImage:
-    repository: "vault"
-    tag: "1.3.1"
 
   namespaceSelector:
      matchLabels:
        sidecar-injector: enabled
-
-server:
-  authDelegator:
-    enabled: false
-
-  readinessProbe:
-    enabled: false
-
-  service:
-    enabled: false
-
-  dataStorage:
-    enabled: false

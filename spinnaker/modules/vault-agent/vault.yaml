@@ -1,0 +1,11 @@
+global:
+  enabled: true
+
+injector:
+  enabled: true
+
+  externalVaultAddr: "https://${vault_ui_hostname}"
+
+  namespaceSelector:
+     matchLabels:
+       sidecar-injector: enabled

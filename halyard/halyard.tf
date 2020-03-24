@@ -75,6 +75,23 @@ data "template_file" "vault" {
   }
 }
 
+data "template_file" "vault_agent" {
+  template = file("./scripts/setup-agent-vault.sh")
+
+  vars = {
+    USER = var.service_account_name
+    SETUP_AGENT_VAULT_CONTENTS = templatefile("./scripts/setup-agent-vault-contents.sh", {
+      deployments = { for k, v in data.terraform_remote_state.static_ips.outputs.ship_plans : k => {
+        vaultYaml           = data.terraform_remote_state.spinnaker.outputs.vault_agent_yml_files_map[k]
+        clusterName         = "${k}"
+        kubeConfig          = "/${var.service_account_name}/.kube/${k}-agent.config"
+        }
+      }
+      USER    = var.service_account_name
+    })
+  }
+}
+
 data "template_file" "ingress" {
   template = file("./scripts/setup-ingress.sh")
 
@@ -195,6 +212,7 @@ data "template_file" "start_script" {
     SCRIPT_ONBOARDING       = base64encode(data.template_file.setup_onboarding.rendered)
     SCRIPT_X509             = base64encode(data.template_file.cert_script.rendered)
     SCRIPT_VAULT            = base64encode(data.template_file.vault.rendered)
+    SCRIPT_AGENT_VAULT      = base64encode(data.template_file.vault_agent.rendered)
     SCRIPT_CLEANUP_OPERATOR = base64encode(data.template_file.setup-cleanup-operator.rendered)
     SCRIPT_CREATE_FIAT      = base64encode(templatefile("./scripts/create-fiat-service-account.sh", {}))
     SCRIPT_ONBOARDING_PIPELINE = base64encode(templatefile("./scripts/onboarding-notifications-pipeline.json", {

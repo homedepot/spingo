@@ -177,4 +177,12 @@ jobs:
         with:
           find_regex: '.*\.sh'
           exclusions: '.*halyard.*'
+  kebab-caser:
+    runs-on: [ubuntu-latest]
+    name: 'Validate kebab case file naming conventions'
+    steps:
+      - uses: actions/checkout@master
+      - name: 'Validate kebab naming conventions'
+        uses: npmaile/kebab-case-validator
+    
     

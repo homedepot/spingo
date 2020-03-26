@@ -352,7 +352,8 @@ resource "google_compute_firewall" "vault_agent_injector" {
   }
 
   source_ranges = [
-    var.k8s_ip_ranges["master_cidr"]
+    module.k8s.master_ipv4_cidr_block_map[each.key],
+    module.k8s.master_ipv4_cidr_block_map["${each.key}-agent"]
   ]
 
   target_tags = [

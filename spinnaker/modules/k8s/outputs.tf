@@ -60,3 +60,8 @@ output "cloud_nat_adddress_map" {
 output "created_nodepool_map" {
   value = { for k, v in var.ship_plans : k => google_container_node_pool.primary_pool[k] }
 }
+
+output "master_ipv4_cidr_block_map" {
+  value = { for k, v in var.ship_plans : k => google_container_cluster.cluster[k].private_cluster_config[0].master_ipv4_cidr_block }
+}
+

@@ -28,6 +28,11 @@ resource "google_compute_router_nat" "nat" {
   nat_ips                            = [data.google_compute_address.existing_nat[each.key].self_link]
   source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
 
+  log_config {
+    enable = false
+    filter = "ALL"
+  }
+
   subnetwork {
     name                    = google_compute_subnetwork.subnet[each.key].self_link
     source_ip_ranges_to_nat = ["PRIMARY_IP_RANGE", "LIST_OF_SECONDARY_IP_RANGES"]
